@@ -1,0 +1,77 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-top-nav">
+      <%= link_to "←", tournaments_path, class: "app-top-nav-left", style: "text-decoration:none;" %>
+      <div class="app-top-nav-center">เพิ่มรายการแข่ง</div>
+      <div class="app-top-nav-right"></div>
+    </div>
+    <div class="app-header-title">กรอกรายละเอียดทัวร์นาเมนต์</div>
+  </header>
+
+  <div class="tournament-form">
+    <%= form_with model: @tournament, local: true do |f| %>
+      <% if @tournament.errors.any? %>
+        <div class="tournament-form-errors">
+          <div>กรุณาตรวจสอบข้อมูล (<%= @tournament.errors.count %> รายการ)</div>
+          <ul>
+            <% @tournament.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="tournament-form-group">
+        <label>ชื่อรายการ</label>
+        <%= f.text_field :title, class: "tournament-form-input", placeholder: "เช่น THUNDER CUP U16" %>
+      </div>
+
+      <div class="tournament-form-group">
+        <label>คำอธิบาย</label>
+        <%= f.text_area :description, class: "tournament-form-input", rows: 3, placeholder: "รายละเอียดสั้น ๆ ของรายการ" %>
+      </div>
+
+      <div class="tournament-form-group">
+        <label>สนาม / สถานที่</label>
+        <%= f.text_field :location_name, class: "tournament-form-input" %>
+      </div>
+
+      <div class="tournament-form-inline">
+        <div class="tournament-form-group">
+          <label>อำเภอ / เขต</label>
+          <%= f.text_field :city, class: "tournament-form-input" %>
+        </div>
+        <div class="tournament-form-group">
+          <label>จังหวัด</label>
+          <%= f.text_field :province, class: "tournament-form-input" %>
+        </div>
+      </div>
+
+      <div class="tournament-form-inline">
+        <div class="tournament-form-group">
+          <label>ช่วงอายุ (เช่น U16)</label>
+          <%= f.text_field :age_category, class: "tournament-form-input" %>
+        </div>
+        <div class="tournament-form-group">
+          <label>จำนวนผู้เล่นต่อทีม</label>
+          <%= f.number_field :team_size, class: "tournament-form-input" %>
+        </div>
+      </div>
+
+      <div class="tournament-form-inline">
+        <div class="tournament-form-group">
+          <label>ค่าสมัคร (บาท)</label>
+          <%= f.number_field :entry_fee, class: "tournament-form-input", step: 100 %>
+        </div>
+        <div class="tournament-form-group">
+          <label>เงินรางวัลรวม (บาท)</label>
+          <%= f.number_field :prize_amount, class: "tournament-form-input", step: 100 %>
+        </div>
+      </div>
+
+      <div class="tournament-form-actions">
+        <%= f.submit "บันทึกรายการแข่ง", class: "link-button" %>
+      </div>
+    <% end %>
+  </div>
+</div>

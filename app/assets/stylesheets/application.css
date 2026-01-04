@@ -525,3 +525,46 @@
   width: 100%;
   text-align: center;
 }
+
+.tournament-form {
+  padding: 12px 16px 24px;
+}
+
+.tournament-form-group {
+  margin-bottom: 10px;
+}
+
+.tournament-form-inline {
+  display: flex;
+  gap: 8px;
+}
+
+.tournament-form-inline .tournament-form-group {
+  flex: 1;
+}
+
+.tournament-form-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #cfd8dc;
+  font-size: 13px;
+}
+
+.tournament-form-errors {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ffebee;
+  color: #b71c1c;
+  font-size: 12px;
+}
+
+.tournament-form-errors ul {
+  padding-left: 18px;
+  margin: 4px 0 0;
+}
+
+.tournament-form-actions {
+  margin-top: 16px;
+}
