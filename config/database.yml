@@ -78,8 +78,12 @@ test:
 # Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
 # for a full overview on how database connection configuration can be specified.
 #
+# production:
+#   <<: *default
+#   database: football_link_production
+#   username: football_link
+#   password: <%= ENV["FOOTBALL_LINK_DATABASE_PASSWORD"] %>
+
 production:
   <<: *default
-  database: football_link_production
-  username: football_link
-  password: <%= ENV["FOOTBALL_LINK_DATABASE_PASSWORD"] %>
+  url: <%= ENV['DATABASE_URL'] %>
