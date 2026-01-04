@@ -1,0 +1,108 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-top-nav">
+      <div class="app-top-nav-left">≡</div>
+      <div class="app-top-nav-center">ฟุตบอลเดินสาย</div>
+      <div class="app-top-nav-right">
+        <span>🔍</span>
+        <span>☰</span>
+      </div>
+    </div>
+    <div class="app-header-title">ค้นหารายการแข่ง</div>
+  </header>
+
+  <div class="province-filter-form">
+    <%= form_with url: tournaments_path, method: :get, local: true do |f| %>
+      <div class="filter-row" style="margin-bottom: 8px;">
+        <%= f.text_field :q, value: params[:q], placeholder: "ค้นหาคำว่า...", class: "filter-text-input" %>
+        <button type="submit" class="filter-search-button">ค้นหา</button>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-pill-select">
+          <%= f.select :age_category,
+                options_for_select([["ทุกช่วงอายุ", ""]] + @age_categories.map { |a| [a, a] }, params[:age_category]),
+                {},
+                class: "",
+                onchange: "this.form.submit()" %>
+        </div>
+
+        <div class="filter-pill-select">
+          <%= f.select :province,
+                options_for_select([["ทุกจังหวัด", ""]] + @provinces.map { |p| [p, p] }, params[:province]),
+                {},
+                class: "",
+                onchange: "this.form.submit()" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-pill">รายการใกล้ตัว</span>
+    <% if params[:province].present? %>
+      <span>จังหวัด: <strong><%= params[:province] %></strong></span>
+    <% else %>
+      <span>ทุกจังหวัด</span>
+    <% end %>
+  </div>
+
+  <div class="tournament-list">
+    <% if @tournaments.any? %>
+      <% @tournaments.each do |tournament| %>
+        <% bg_class = begin
+             age = tournament.age_category.to_s
+             if age =~ /\AU(\d+)\z/ && $1.to_i < 20
+               "tournament-card--bg1"
+             else
+               "tournament-card--bg2"
+             end
+           end %>
+        <div class="tournament-card <%= bg_class %>">
+          <div class="tournament-card-body">
+            <div class="tournament-title"><%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %></div>
+            <div class="tournament-meta">
+              <div>7 - 8 ก.พ. 2026</div>
+              <div>📍 <%= tournament.location_name %> · <%= tournament.city %>, <%= tournament.province %></div>
+              <div>👥 ทีมละ <%= tournament.team_size %> คน</div>
+              <div class="tournament-meta-divider"></div>
+              <div>🏆 เงินรางวัล <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %> · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %></div>
+            </div>
+          </div>
+          <div class="tournament-footer">
+            <div class="tournament-footer-left">
+              <span class="tournament-footer-dot"></span>
+              <span class="tournament-footer-text">มีทีมสนใจสมัคร <%= rand(5..20) %> ทีม</span>
+            </div>
+            <div class="tournament-footer-actions">
+              <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
+              <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="tournaments-empty">ยังไม่มีรายการแข่งในจังหวัดนี้</div>
+    <% end %>
+  </div>
+
+  <% if @total_pages > 1 %>
+    <div class="pagination">
+      <% if @current_page > 1 %>
+        <%= link_to "ก่อนหน้า", tournaments_path(request.query_parameters.merge(page: @current_page - 1)), class: "pagination-link" %>
+      <% end %>
+
+      <% (1..@total_pages).each do |page| %>
+        <% if page == @current_page %>
+          <span class="pagination-link pagination-link--active"><%= page %></span>
+        <% else %>
+          <%= link_to page, tournaments_path(request.query_parameters.merge(page: page)), class: "pagination-link" %>
+        <% end %>
+      <% end %>
+
+      <% if @current_page < @total_pages %>
+        <%= link_to "ถัดไป", tournaments_path(request.query_parameters.merge(page: @current_page + 1)), class: "pagination-link" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

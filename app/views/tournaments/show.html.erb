@@ -1,0 +1,118 @@
+<div class="app-shell">
+  <div class="tournament-show-header">
+    <div style="position:absolute;inset:0;background-image:url('/assets/back1.png');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
+    <div style="position:relative;">
+      <div class="tournament-show-title"><%= @tournament.title %></div>
+      <div class="tournament-show-subtitle">
+        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+      </div>
+      <div class="tournament-show-actions">
+        <button type="button" class="btn-pill btn-share" id="detail-share-button">แชร์</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="share-dialog-backdrop" id="share-dialog-backdrop" style="display:none;"></div>
+  <div class="share-dialog" id="share-dialog" style="display:none;">
+    <div class="share-dialog-title">แชร์รายการแข่ง</div>
+    <button type="button" class="share-dialog-item" id="share-system">แชร์ผ่านระบบมือถือ</button>
+    <button type="button" class="share-dialog-item" id="share-facebook">แชร์ไป Facebook</button>
+    <button type="button" class="share-dialog-item" id="share-copy">คัดลอกลิงก์</button>
+    <button type="button" class="share-dialog-cancel" id="share-cancel">ยกเลิก</button>
+  </div>
+
+  <script>
+    (function() {
+      var shareUrl = "<%= tournament_url(@tournament) %>";
+      var shareTitle = "<%= @tournament.title %>";
+
+      var dialog = document.getElementById('share-dialog');
+      var backdrop = document.getElementById('share-dialog-backdrop');
+
+      function openShareDialog() {
+        if (dialog && backdrop) {
+          dialog.style.display = 'block';
+          backdrop.style.display = 'block';
+        }
+      }
+
+      function closeShareDialog() {
+        if (dialog && backdrop) {
+          dialog.style.display = 'none';
+          backdrop.style.display = 'none';
+        }
+      }
+
+      document.getElementById('detail-share-button').addEventListener('click', function() {
+        openShareDialog();
+      });
+
+      document.getElementById('share-cancel').addEventListener('click', closeShareDialog);
+      document.getElementById('share-dialog-backdrop').addEventListener('click', closeShareDialog);
+
+      document.getElementById('share-system').addEventListener('click', function() {
+        if (navigator.share && shareUrl) {
+          navigator.share({
+            title: shareTitle || document.title,
+            url: shareUrl
+          }).catch(function(){});
+        } else if (shareUrl) {
+          window.open(shareUrl, '_blank');
+        }
+        closeShareDialog();
+      });
+
+      document.getElementById('share-facebook').addEventListener('click', function() {
+        if (!shareUrl) return;
+        var fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl);
+        window.open(fbUrl, '_blank');
+        closeShareDialog();
+      });
+
+      document.getElementById('share-copy').addEventListener('click', function() {
+        if (!shareUrl) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(shareUrl).catch(function(){});
+        }
+        closeShareDialog();
+      });
+    })();
+  </script>
+
+  <div class="tournament-show-body">
+    <div class="tournament-info-card">
+      <div><span class="label">ช่วงอายุ:</span> <%= @tournament.age_category %></div>
+      <div><span class="label">จำนวนผู้เล่น:</span> <%= @tournament.team_size %> คน</div>
+      <div><span class="label">ค่าสมัคร:</span> <%= number_to_currency(@tournament.entry_fee, unit: "฿", precision: 0) %></div>
+      <div><span class="label">รางวัล:</span> <%= number_to_currency(@tournament.prize_amount, unit: "฿", precision: 0) %></div>
+      <div><span class="label">ผู้จัด:</span> <%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</div>
+    </div>
+
+    <div class="team-list-card">
+      <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
+      <% if @tournament.team_registrations.any? %>
+        <% @tournament.team_registrations.includes(:team).each do |reg| %>
+          <% badge_class = case reg.status
+                          when "interested" then "team-status-badge team-status-badge--interested"
+                          when "applied"    then "team-status-badge team-status-badge--applied"
+                          when "confirmed"  then "team-status-badge team-status-badge--confirmed"
+                          when "paid"       then "team-status-badge team-status-badge--paid"
+                          end %>
+          <div class="team-list-row">
+            <div>
+              <div><strong><%= reg.team.name %></strong></div>
+              <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
+            </div>
+            <div class="<%= badge_class %>"><%= reg.status.humanize %></div>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัคร</div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="tournament-show-bottom-bar">
+    <%= link_to "ย้อนกลับไปหน้ารายการแข่ง", tournaments_path, class: "link-button" %>
+  </div>
+</div>
