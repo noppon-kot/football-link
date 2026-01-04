@@ -1,6 +1,14 @@
 <div class="app-shell">
+  <% bg_image = begin
+       age_str = @tournament.age_category.to_s
+       if age_str =~ /U(\d+)/ && $1.to_i < 20
+         "back1.png"
+       else
+         "back2.png"
+       end
+     end %>
   <div class="tournament-show-header">
-    <div style="position:absolute;inset:0;background-image:url('<%= asset_path("back1.png") %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
+    <div style="position:absolute;inset:0;background-image:url('<%= asset_path(bg_image) %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
     <div style="position:relative;">
       <div class="tournament-show-title"><%= @tournament.title %></div>
       <div class="tournament-show-subtitle">
@@ -92,18 +100,23 @@
       <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
       <% if @tournament.team_registrations.any? %>
         <% @tournament.team_registrations.includes(:team).each do |reg| %>
-          <% badge_class = case reg.status
-                          when "interested" then "team-status-badge team-status-badge--interested"
-                          when "applied"    then "team-status-badge team-status-badge--applied"
-                          when "confirmed"  then "team-status-badge team-status-badge--confirmed"
-                          when "paid"       then "team-status-badge team-status-badge--paid"
-                          end %>
+          <% display_state = case reg.status
+                             when "confirmed", "paid" then :confirmed
+                             else :applied
+                             end %>
+
+          <% badge_class = case display_state
+                           when :applied   then "team-status-badge team-status-badge--applied"
+                           when :confirmed then "team-status-badge team-status-badge--confirmed"
+                           end %>
+
+          <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
           <div class="team-list-row">
             <div>
               <div><strong><%= reg.team.name %></strong></div>
               <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
             </div>
-            <div class="<%= badge_class %>"><%= reg.status.humanize %></div>
+            <div class="<%= badge_class %>"><%= label %></div>
           </div>
         <% end %>
       <% else %>

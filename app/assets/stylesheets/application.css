@@ -49,6 +49,10 @@
 
 .app-top-nav-left {
   font-size: 22px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 0;
 }
 
 .app-top-nav-center {
@@ -60,6 +64,20 @@
   display: flex;
   gap: 8px;
   font-size: 18px;
+}
+
+.app-menu {
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.app-menu-item {
+  display: block;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #1565c0;
+  text-decoration: none;
+  border-top: 1px solid #e0e0e0;
 }
 
 .filter-bar {
@@ -173,11 +191,11 @@
 }
 
 .tournament-card--bg1::before {
-  background-image: url("/assets/back1.png");
+  background-image: url("back1.png");
 }
 
 .tournament-card--bg2::before {
-  background-image: url("/assets/back2.png");
+  background-image: url("back2.png");
 }
 
 .tournament-card-body,
@@ -187,6 +205,51 @@
 
 .tournament-card-body {
   padding: 10px 12px 12px;
+}
+
+.tournament-card-compact {
+  display: flex;
+  align-items: stretch;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.tournament-card-compact-image {
+  width: 96px;
+  min-width: 96px;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: right center;
+}
+
+.tournament-card-compact-image.tournament-card--bg1 {
+  background-image: url("back1.png");
+}
+
+.tournament-card-compact-image.tournament-card--bg2 {
+  background-image: url("back2.png");
+}
+
+.tournament-card-compact-body {
+  flex: 1;
+  padding: 8px 10px;
+}
+
+.tournament-card-compact .tournament-title {
+  color: #0d47a1;
+  margin-bottom: 4px;
+}
+
+.tournament-card-compact .tournament-meta {
+  color: #37474f;
+}
+
+.tournament-card-compact-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
 }
 
 .tournament-title {

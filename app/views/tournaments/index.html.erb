@@ -1,15 +1,17 @@
 <div class="app-shell">
   <header class="app-header">
     <div class="app-top-nav">
-      <div class="app-top-nav-left">≡</div>
+      <button type="button" class="app-top-nav-left" id="app-menu-toggle">≡</button>
       <div class="app-top-nav-center">ฟุตบอลเดินสาย</div>
-      <div class="app-top-nav-right">
-        <span>🔍</span>
-        <span>☰</span>
-      </div>
+      <div class="app-top-nav-right"></div>
     </div>
     <div class="app-header-title">ค้นหารายการแข่ง</div>
   </header>
+
+  <nav class="app-menu" id="app-menu" style="display:none;">
+    <%= link_to "หน้าแรก", tournaments_path, class: "app-menu-item" %>
+    <%= link_to "เพิ่มข้อมูลรายการ", "#", class: "app-menu-item" %>
+  </nav>
 
   <div class="province-filter-form">
     <%= form_with url: tournaments_path, method: :get, local: true do |f| %>
@@ -49,7 +51,7 @@
 
   <div class="tournament-list">
     <% if @tournaments.any? %>
-      <% @tournaments.each do |tournament| %>
+      <% @tournaments.each_with_index do |tournament, index| %>
         <% bg_class = begin
              age = tournament.age_category.to_s
              if age =~ /\AU(\d+)\z/ && $1.to_i < 20
@@ -58,28 +60,49 @@
                "tournament-card--bg2"
              end
            end %>
-        <div class="tournament-card <%= bg_class %>">
-          <div class="tournament-card-body">
-            <div class="tournament-title"><%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %></div>
-            <div class="tournament-meta">
-              <div>7 - 8 ก.พ. 2026</div>
-              <div>📍 <%= tournament.location_name %> · <%= tournament.city %>, <%= tournament.province %></div>
-              <div>👥 ทีมละ <%= tournament.team_size %> คน</div>
-              <div class="tournament-meta-divider"></div>
-              <div>🏆 เงินรางวัล <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %> · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %></div>
+
+        <% if index < 2 %>
+          <!-- สองรายการแรก: การ์ดเต็มแบบเดิม -->
+          <div class="tournament-card <%= bg_class %>">
+            <div class="tournament-card-body">
+              <div class="tournament-title"><%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %></div>
+              <div class="tournament-meta">
+                <div>7 - 8 ก.พ. 2026</div>
+                <div>📍 <%= tournament.location_name %> · <%= tournament.city %>, <%= tournament.province %></div>
+                <div>👥 ทีมละ <%= tournament.team_size %> คน</div>
+                <div class="tournament-meta-divider"></div>
+                <div>🏆 เงินรางวัล <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %> · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %></div>
+              </div>
+            </div>
+            <div class="tournament-footer">
+              <div class="tournament-footer-left">
+                <span class="tournament-footer-dot"></span>
+                <span class="tournament-footer-text">มีทีมสนใจสมัคร <%= rand(5..20) %> ทีม</span>
+              </div>
+              <div class="tournament-footer-actions">
+                <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
+                <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
+              </div>
             </div>
           </div>
-          <div class="tournament-footer">
-            <div class="tournament-footer-left">
-              <span class="tournament-footer-dot"></span>
-              <span class="tournament-footer-text">มีทีมสนใจสมัคร <%= rand(5..20) %> ทีม</span>
-            </div>
-            <div class="tournament-footer-actions">
-              <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
-              <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
+        <% else %>
+          <!-- รายการถัดไป: การ์ดแบบ compact รูปสี่เหลี่ยมซ้าย รายละเอียดขวา -->
+          <div class="tournament-card-compact">
+            <div class="tournament-card-compact-image <%= bg_class %>"></div>
+            <div class="tournament-card-compact-body">
+              <div class="tournament-title"><%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %></div>
+              <div class="tournament-meta">
+                <div>7 - 8 ก.พ. 2026</div>
+                <div>📍 <%= tournament.location_name %></div>
+                <div>🏆 <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %> · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %></div>
+              </div>
+              <div class="tournament-card-compact-actions">
+                <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
+                <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
+              </div>
             </div>
           </div>
-        </div>
+        <% end %>
       <% end %>
     <% else %>
       <div class="tournaments-empty">ยังไม่มีรายการแข่งในจังหวัดนี้</div>
@@ -106,3 +129,19 @@
     </div>
   <% end %>
 </div>
+
+<script>
+  (function() {
+    var toggle = document.getElementById('app-menu-toggle');
+    var menu   = document.getElementById('app-menu');
+    if (!toggle || !menu) return;
+
+    toggle.addEventListener('click', function() {
+      if (menu.style.display === 'none' || menu.style.display === '') {
+        menu.style.display = 'block';
+      } else {
+        menu.style.display = 'none';
+      }
+    });
+  })();
+</script>
