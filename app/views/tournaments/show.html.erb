@@ -15,6 +15,7 @@
         7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
       </div>
       <div class="tournament-show-actions">
+        <%= link_to "แก้ไข", edit_tournament_path(@tournament), class: "btn-pill btn-apply", style: "margin-right:6px;" %>
         <button type="button" class="btn-pill btn-share" id="detail-share-button">แชร์</button>
       </div>
     </div>
@@ -85,40 +86,161 @@
         closeShareDialog();
       });
     })();
+
+    // simple tab handler for teams by division (ใช้ event delegation จาก document)
+    (function() {
+      document.addEventListener('click', function(e) {
+        var tab = e.target.closest('.team-tab');
+        if (!tab) return;
+
+        var tabsContainer = tab.parentElement;
+        var panelsContainer = document.getElementById('team-tab-panels');
+        if (!tabsContainer || !panelsContainer) return;
+
+        var targetId = tab.getAttribute('data-tab');
+        if (!targetId) return;
+
+        // toggle active tab
+        var allTabs = tabsContainer.querySelectorAll('.team-tab');
+        allTabs.forEach(function(t) { t.classList.remove('team-tab--active'); });
+        tab.classList.add('team-tab--active');
+
+        // toggle panels
+        var allPanels = panelsContainer.querySelectorAll('.team-tab-panel');
+        allPanels.forEach(function(panel) {
+          panel.style.display = (panel.id === targetId) ? 'block' : 'none';
+        });
+      });
+    })();
   </script>
 
   <div class="tournament-show-body">
     <div class="tournament-info-card">
-      <div><span class="label">ช่วงอายุ:</span> <%= @tournament.age_category %></div>
+      <% if @tournament.description.present? %>
+        <div class="tournament-description">
+          <div class="tournament-description-label">รายละเอียด</div>
+          <div class="tournament-description-body"><%= simple_format(@tournament.description) %></div>
+        </div>
+      <% end %>
+
       <div><span class="label">จำนวนผู้เล่น:</span> <%= @tournament.team_size %> คน</div>
-      <div><span class="label">ค่าสมัคร:</span> <%= number_to_currency(@tournament.entry_fee, unit: "฿", precision: 0) %></div>
-      <div><span class="label">รางวัล:</span> <%= number_to_currency(@tournament.prize_amount, unit: "฿", precision: 0) %></div>
-      <div><span class="label">ผู้จัด:</span> <%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</div>
+
+      <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
+      <% if divisions.any? %>
+        <div style="margin-top:8px;">
+          <div class="tournament-description-label" style="margin-bottom:4px;">รุ่นที่เปิดแข่ง</div>
+          <% divisions.each do |div| %>
+            <div style="padding:4px 0;border-top:1px solid #eceff1;">
+              <div><span class="label">ช่วงอายุ:</span> <%= div.name %></div>
+              <% if div.entry_fee.present? %>
+                <div><span class="label">ค่าสมัครรุ่นนี้:</span> <%= number_to_currency(div.entry_fee, unit: "฿", precision: 0) %></div>
+              <% end %>
+              <% if div.prize_amount.present? %>
+                <div><span class="label">รางวัลรุ่นนี้:</span> <%= number_to_currency(div.prize_amount, unit: "฿", precision: 0) %></div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div><span class="label">ช่วงอายุ (หลัก):</span> <%= @tournament.age_category %></div>
+        <div><span class="label">ค่าสมัคร:</span> <%= number_to_currency(@tournament.entry_fee, unit: "฿", precision: 0) %></div>
+        <div><span class="label">รางวัล:</span> <%= number_to_currency(@tournament.prize_amount, unit: "฿", precision: 0) %></div>
+      <% end %>
+
+      <div style="margin-top:8px;"><span class="label">ผู้จัด:</span> <%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</div>
     </div>
 
     <div class="team-list-card">
       <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
-      <% if @tournament.team_registrations.any? %>
-        <% @tournament.team_registrations.includes(:team).each do |reg| %>
-          <% display_state = case reg.status
-                             when "confirmed", "paid" then :confirmed
-                             else :applied
-                             end %>
+      <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
+      <% regs_without_div = @tournament.team_registrations.where(tournament_division_id: nil).includes(:team).to_a %>
 
-          <% badge_class = case display_state
-                           when :applied   then "team-status-badge team-status-badge--applied"
-                           when :confirmed then "team-status-badge team-status-badge--confirmed"
-                           end %>
+      <% if divisions.any? || @tournament.team_registrations.any? %>
 
-          <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
-          <div class="team-list-row">
-            <div>
-              <div><strong><%= reg.team.name %></strong></div>
-              <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
+        <div class="team-tabs" id="team-tabs">
+          <% divisions.each_with_index do |div, idx| %>
+            <% count = div.team_registrations.count %>
+            <button
+              type="button"
+              class="team-tab <%= 'team-tab--active' if idx == 0 %>"
+              data-tab="division-<%= div.id %>">
+              <span><%= div.name %></span>
+              <span class="team-tab-count"><%= count %></span>
+            </button>
+          <% end %>
+          <% if regs_without_div.any? %>
+            <button
+              type="button"
+              class="team-tab <%= 'team-tab--active' if divisions.empty? %>"
+              data-tab="division-unassigned">
+              <span>ไม่ระบุรุ่น</span>
+              <span class="team-tab-count"><%= regs_without_div.size %></span>
+            </button>
+          <% end %>
+        </div>
+
+        <div class="team-tab-panels" id="team-tab-panels">
+          <% divisions.each_with_index do |div, idx| %>
+            <% regs = div.team_registrations.includes(:team) %>
+            <div
+              class="team-tab-panel"
+              id="division-<%= div.id %>"
+              style="display:<%= idx == 0 ? 'block' : 'none' %>;">
+              <% if regs.any? %>
+                <% regs.each do |reg| %>
+                  <% display_state = case reg.status
+                                     when "confirmed", "paid" then :confirmed
+                                     else :applied
+                                     end %>
+
+                  <% badge_class = case display_state
+                                   when :applied   then "team-status-badge team-status-badge--applied"
+                                   when :confirmed then "team-status-badge team-status-badge--confirmed"
+                                   end %>
+
+                  <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
+                  <div class="team-list-row">
+                    <div>
+                      <div><strong><%= reg.team.name %></strong></div>
+                      <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
+                    </div>
+                    <div class="<%= badge_class %>"><%= label %></div>
+                  </div>
+                <% end %>
+              <% else %>
+                <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัครในรุ่นนี้</div>
+              <% end %>
             </div>
-            <div class="<%= badge_class %>"><%= label %></div>
-          </div>
-        <% end %>
+          <% end %>
+
+          <% if regs_without_div.any? %>
+            <div
+              class="team-tab-panel"
+              id="division-unassigned"
+              style="display:<%= divisions.empty? ? 'block' : 'none' %>;">
+              <% regs_without_div.each do |reg| %>
+                <% display_state = case reg.status
+                                   when "confirmed", "paid" then :confirmed
+                                   else :applied
+                                   end %>
+
+                <% badge_class = case display_state
+                                 when :applied   then "team-status-badge team-status-badge--applied"
+                                 when :confirmed then "team-status-badge team-status-badge--confirmed"
+                                 end %>
+
+                <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
+                <div class="team-list-row">
+                  <div>
+                    <div><strong><%= reg.team.name %></strong></div>
+                    <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
+                  </div>
+                  <div class="<%= badge_class %>"><%= label %></div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
       <% else %>
         <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัคร</div>
       <% end %>
@@ -126,6 +248,9 @@
   </div>
 
   <div class="tournament-show-bottom-bar">
-    <%= link_to "ย้อนกลับไปหน้ารายการแข่ง", tournaments_path, class: "link-button" %>
+    <div style="display:flex;gap:8px;">
+      <%= link_to "สมัครแข่งขัน", new_tournament_team_registration_path(@tournament), class: "link-button" %>
+      <%= link_to "ย้อนกลับไปหน้ารายการแข่ง", tournaments_path, class: "link-button" %>
+    </div>
   </div>
 </div>

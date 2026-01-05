@@ -16,6 +16,9 @@ module FootballLink
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # autoload service objects
+    config.autoload_paths << Rails.root.join("app/services")
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
@@ -23,5 +26,8 @@ module FootballLink
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    # ใช้ภาษาไทยเป็นค่าเริ่มต้นสำหรับ I18n
+    config.i18n.default_locale = :th
   end
 end

@@ -40,13 +40,9 @@
     <% end %>
   </div>
 
+  <!-- แถบคั่นระหว่างตัวกรองกับผลลัพธ์ -->
   <div class="filter-bar">
-    <span class="filter-pill">รายการใกล้ตัว</span>
-    <% if params[:province].present? %>
-      <span>จังหวัด: <strong><%= params[:province] %></strong></span>
-    <% else %>
-      <span>ทุกจังหวัด</span>
-    <% end %>
+    <span class="filter-pill">ผลลัพธ์การค้นหา</span>
   </div>
 
   <div class="tournament-list">

@@ -2,17 +2,18 @@
   <header class="app-header">
     <div class="app-top-nav">
       <%= link_to "←", tournaments_path, class: "app-top-nav-left", style: "text-decoration:none;" %>
-      <div class="app-top-nav-center">เพิ่มรายการแข่ง</div>
+      <div class="app-top-nav-center"><%= t('tournaments.form.header.title_short') %></div>
       <div class="app-top-nav-right"></div>
     </div>
-    <div class="app-header-title">กรอกรายละเอียดทัวร์นาเมนต์</div>
+    <div class="app-header-title"><%= t('tournaments.form.header.title_full') %></div>
   </header>
 
   <div class="tournament-form">
+    <% age_options = I18n.t('tournaments.options.age_categories') %>
     <%= form_with model: @tournament, local: true do |f| %>
       <% if @tournament.errors.any? %>
         <div class="tournament-form-errors">
-          <div>กรุณาตรวจสอบข้อมูล (<%= @tournament.errors.count %> รายการ)</div>
+          <div><%= t('tournaments.form.errors.title', count: @tournament.errors.count) %></div>
           <ul>
             <% @tournament.errors.full_messages.each do |msg| %>
               <li><%= msg %></li>
@@ -22,56 +23,238 @@
       <% end %>
 
       <div class="tournament-form-group">
-        <label>ชื่อรายการ</label>
-        <%= f.text_field :title, class: "tournament-form-input", placeholder: "เช่น THUNDER CUP U16" %>
+        <label><%= t('tournaments.form.fields.title') %></label>
+        <%= f.text_field :title,
+              class: "tournament-form-input",
+              placeholder: t('tournaments.form.placeholders.title') %>
       </div>
 
       <div class="tournament-form-group">
-        <label>คำอธิบาย</label>
-        <%= f.text_area :description, class: "tournament-form-input", rows: 3, placeholder: "รายละเอียดสั้น ๆ ของรายการ" %>
+        <label><%= t('tournaments.form.fields.description') %></label>
+        <%= f.text_area :description,
+              class: "tournament-form-input",
+              rows: 6,
+              id: "tournament_description",
+              placeholder: t('tournaments.form.placeholders.description') %>
+        <div class="description-helper">
+          <span class="description-helper-label"><%= t('tournaments.form.description_helper_label') %></span>
+          <button type="button"
+                  class="description-chip"
+                  data-snippet="<%= t('tournaments.form.description_chips.prize') %>">
+            <%= t('tournaments.form.description_chips.prize') %>
+          </button>
+          <button type="button"
+                  class="description-chip"
+                  data-snippet="<%= t('tournaments.form.description_chips.location') %>">
+            <%= t('tournaments.form.description_chips.location') %>
+          </button>
+          <button type="button"
+                  class="description-chip"
+                  data-snippet="<%= t('tournaments.form.description_chips.players') %>">
+            <%= t('tournaments.form.description_chips.players') %>
+          </button>
+          <button type="button"
+                  class="description-chip"
+                  data-snippet="<%= t('tournaments.form.description_chips.contact') %>">
+            <%= t('tournaments.form.description_chips.contact') %>
+          </button>
+        </div>
       </div>
 
       <div class="tournament-form-group">
-        <label>สนาม / สถานที่</label>
-        <%= f.text_field :location_name, class: "tournament-form-input" %>
+        <label><%= t('tournaments.form.fields.location_name') %></label>
+        <%= f.text_field :location_name, class: "tournament-form-input tournament-form-input--medium" %>
       </div>
 
       <div class="tournament-form-inline">
         <div class="tournament-form-group">
-          <label>อำเภอ / เขต</label>
+          <label><%= t('tournaments.form.fields.city') %></label>
           <%= f.text_field :city, class: "tournament-form-input" %>
         </div>
         <div class="tournament-form-group">
-          <label>จังหวัด</label>
-          <%= f.text_field :province, class: "tournament-form-input" %>
+          <label><%= t('tournaments.form.fields.province') %></label>
+          <% thai_provinces = I18n.t('tournaments.options.provinces') %>
+          <%= f.select :province,
+                options_for_select(thai_provinces, @tournament.province),
+                { include_blank: "เลือกจังหวัด" },
+                class: "tournament-form-input" %>
         </div>
       </div>
 
       <div class="tournament-form-inline">
         <div class="tournament-form-group">
-          <label>ช่วงอายุ (เช่น U16)</label>
-          <%= f.text_field :age_category, class: "tournament-form-input" %>
-        </div>
-        <div class="tournament-form-group">
-          <label>จำนวนผู้เล่นต่อทีม</label>
-          <%= f.number_field :team_size, class: "tournament-form-input" %>
+          <label><%= t('tournaments.form.fields.team_size') %></label>
+          <%= f.number_field :team_size, class: "tournament-form-input tournament-form-input--narrow" %>
         </div>
       </div>
 
-      <div class="tournament-form-inline">
-        <div class="tournament-form-group">
-          <label>ค่าสมัคร (บาท)</label>
-          <%= f.number_field :entry_fee, class: "tournament-form-input", step: 100 %>
+      <div class="tournament-form-group">
+        <label><%= t('tournaments.form.divisions.section_title') %></label>
+        <div style="font-size:11px;color:#90a4ae;">(debug: divisions = <%= @tournament.tournament_divisions.size %>)</div>
+        <div style="font-size:11px;color:#90a4ae;">
+          <% @tournament.tournament_divisions.each do |d| %>
+            [<%= d.id %>] <%= d.name %>
+          <% end %>
         </div>
-        <div class="tournament-form-group">
-          <label>เงินรางวัลรวม (บาท)</label>
-          <%= f.number_field :prize_amount, class: "tournament-form-input", step: 100 %>
+        <div class="description-helper-label" style="margin-bottom:4px;"><%= t('tournaments.form.divisions.hint') %></div>
+        <div id="tournament-divisions-container"
+             data-next-index="<%= @tournament.tournament_divisions.size %>"
+             data-age-label="<%= t('tournaments.form.divisions.age_label') %>"
+             data-age-placeholder="<%= t('tournaments.form.divisions.age_placeholder') %>"
+             data-entry-fee-label="<%= t('tournaments.form.divisions.entry_fee_label') %>"
+             data-prize-amount-label="<%= t('tournaments.form.divisions.prize_amount_label') %>">
+          <% @tournament.tournament_divisions.build if @tournament.tournament_divisions.empty? %>
+
+          <%= f.fields_for :tournament_divisions do |df| %>
+            <div class="tournament-form-inline" style="margin-bottom:4px;">
+              <div class="tournament-form-group" style="flex: 2;">
+                <label><%= t('tournaments.form.divisions.age_label') %></label>
+                <%= df.select :name,
+                      options_for_select(age_options, df.object.name),
+                      { include_blank: "เลือกช่วงอายุ" },
+                      class: "tournament-form-input" %>
+              </div>
+              <div class="tournament-form-group" style="flex: 1;">
+                <label><%= t('tournaments.form.divisions.entry_fee_label') %></label>
+                <%= df.number_field :entry_fee,
+                      class: "tournament-form-input",
+                      min: 0,
+                      max: 9999,
+                      step: 1 %>
+              </div>
+              <div class="tournament-form-group" style="flex: 1;">
+                <label><%= t('tournaments.form.divisions.prize_amount_label') %></label>
+                <%= df.number_field :prize_amount,
+                      class: "tournament-form-input",
+                      min: 0,
+                      max: 99999999,
+                      step: 1 %>
+              </div>
+              <div class="tournament-form-group" style="align-self:flex-end;flex:0;">
+                <%= df.hidden_field :id if df.object.persisted? %>
+                <%= df.hidden_field :_destroy, class: "division-destroy-flag" %>
+                <button type="button" class="description-chip division-remove-button" title="ลบรุ่นนี้">🗑</button>
+              </div>
+            </div>
+          <% end %>
         </div>
+
+        <button type="button" id="add-division-button" class="link-button" style="margin-top:4px;width:100%;">
+          + <%= t('tournaments.form.divisions.age_label') %>
+        </button>
       </div>
 
       <div class="tournament-form-actions">
-        <%= f.submit "บันทึกรายการแข่ง", class: "link-button" %>
+        <%= f.submit t('tournaments.form.submit.create'), class: "link-button" %>
       </div>
     <% end %>
   </div>
 </div>
+
+<script>
+  (function() {
+    var textarea = document.getElementById('tournament_description');
+    if (!textarea) return;
+
+    document.addEventListener('click', function(e) {
+      if (!e.target || !e.target.closest) return;
+      var chip = e.target.closest('.description-chip');
+      if (!chip) return;
+
+      var snippet = chip.getAttribute('data-snippet') || '';
+
+      var start = textarea.selectionStart || textarea.value.length;
+      var end   = textarea.selectionEnd || textarea.value.length;
+      var before = textarea.value.slice(0, start);
+      var after  = textarea.value.slice(end);
+
+      if (before.length > 0 && !before.endsWith('\n')) {
+        snippet = '\n' + snippet;
+      }
+
+      if (!snippet.endsWith('\n')) {
+        snippet = snippet + '\n';
+      }
+
+      var newValue = before + snippet + after;
+      textarea.value = newValue;
+      textarea.focus();
+
+      var newCaretPos = (before + snippet).length;
+      textarea.selectionStart = textarea.selectionEnd = newCaretPos;
+    });
+  })();
+
+  (function() {
+    var container = document.getElementById('tournament-divisions-container');
+    var addButton = document.getElementById('add-division-button');
+    if (!container || !addButton) return;
+
+    var nextIndex = parseInt(container.getAttribute('data-next-index') || '0', 10);
+    var ageLabel = container.getAttribute('data-age-label') || '';
+    var agePlaceholder = container.getAttribute('data-age-placeholder') || '';
+    var entryFeeLabel = container.getAttribute('data-entry-fee-label') || '';
+    var prizeAmountLabel = container.getAttribute('data-prize-amount-label') || '';
+
+    addButton.addEventListener('click', function() {
+      var index = nextIndex++;
+      container.setAttribute('data-next-index', String(nextIndex));
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'tournament-form-inline';
+      wrapper.style.marginBottom = '4px';
+
+      var ageOptionsHtml = '<option value="">เลือกช่วงอายุ</option>' +
+        <% age_options.each do |opt| %>
+          '<option value="<%= opt %>"><%= opt %></option>' +
+        <% end %>
+        '';
+
+      wrapper.innerHTML =
+        '<div class="tournament-form-group" style="flex: 2;">' +
+          '<label>' + ageLabel + '</label>' +
+          '<select class="tournament-form-input" ' +
+                  'name="tournament[tournament_divisions_attributes][' + index + '][name]">' +
+            ageOptionsHtml +
+          '</select>' +
+        '</div>' +
+        '<div class="tournament-form-group" style="flex: 1;">' +
+          '<label>' + entryFeeLabel + '</label>' +
+          '<input class="tournament-form-input" ' +
+                 'type="number" min="0" max="9999" step="1" ' +
+                 'name="tournament[tournament_divisions_attributes][' + index + '][entry_fee]" />' +
+        '</div>' +
+        '<div class="tournament-form-group" style="flex: 1;">' +
+          '<label>' + prizeAmountLabel + '</label>' +
+          '<input class="tournament-form-input" ' +
+                 'type="number" min="0" max="99999999" step="1" ' +
+                 'name="tournament[tournament_divisions_attributes][' + index + '][prize_amount]" />' +
+        '</div>' +
+        '<div class="tournament-form-group" style="align-self:flex-end;flex:0;">' +
+          '<input type="hidden" class="division-destroy-flag" ' +
+                 'name="tournament[tournament_divisions_attributes][' + index + '][_destroy]" value="0" />' +
+          '<button type="button" class="description-chip division-remove-button" title="ลบรุ่นนี้">🗑</button>' +
+        '</div>';
+
+      container.appendChild(wrapper);
+    });
+  })();
+
+  // handle delete division buttons (mark _destroy and hide row)
+  (function() {
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.division-remove-button');
+      if (!btn) return;
+
+      var group = btn.closest('.tournament-form-inline');
+      if (!group) return;
+
+      var destroyInput = group.querySelector('.division-destroy-flag');
+      if (destroyInput) {
+        destroyInput.value = '1';
+      }
+
+      group.style.display = 'none';
+    });
+  })();
+</script>

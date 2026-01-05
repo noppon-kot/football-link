@@ -29,23 +29,40 @@ class TournamentsController < ApplicationController
   end
 
   def show
-    @tournament = Tournament.includes(:field, :organizer, :teams, :team_registrations).find(params[:id])
+    @tournament = Tournament.includes(:field, :organizer, :teams, :team_registrations, :tournament_divisions).find(params[:id])
   end
 
   def new
     @tournament = Tournament.new
+    3.times { @tournament.tournament_divisions.build }
+  end
+
+  def edit
+    @tournament = Tournament.includes(:tournament_divisions).find(params[:id])
+    # ให้มีแถวกรอกรุ่นอย่างน้อย 3 แถวเสมอ ระหว่างแก้ไข
+    missing = 3 - @tournament.tournament_divisions.size
+    missing.times { @tournament.tournament_divisions.build } if missing.positive?
   end
 
   def create
-    @tournament = Tournament.new(tournament_params)
-    # ชั่วคราว: ถ้ายังไม่ได้เลือกผู้จัด/สนาม ใช้ค่าเริ่มต้นจากข้อมูลที่มีอยู่
-    @tournament.organizer ||= User.organizer.first || User.first
-    @tournament.field     ||= Field.first
+    service = ::Tournaments::CreateService.new(tournament_params)
+    @tournament = service.tournament
 
-    if @tournament.save
-      redirect_to @tournament, notice: "สร้างรายการแข่งเรียบร้อยแล้ว"
+    if service.call
+      redirect_to @tournament, notice: I18n.t("tournaments.flash.create_success")
     else
       render :new, status: :unprocessable_entity
+    end
+  end
+
+  def update
+    @tournament = Tournament.find(params[:id])
+    service = ::Tournaments::UpdateService.new(@tournament, tournament_params)
+
+    if service.call
+      redirect_to @tournament, notice: I18n.t("tournaments.flash.update_success")
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -58,12 +75,16 @@ class TournamentsController < ApplicationController
       :location_name,
       :city,
       :province,
-      :age_category,
       :team_size,
-      :entry_fee,
-      :prize_amount,
       :organizer_id,
-      :field_id
+      :field_id,
+      tournament_divisions_attributes: [
+        :id,
+        :name,
+        :entry_fee,
+        :prize_amount,
+        :_destroy
+      ]
     )
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_04_070000) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_05_191500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -36,7 +36,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_04_070000) do
     t.bigint "tournament_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "tournament_division_id"
     t.index ["team_id"], name: "index_team_registrations_on_team_id"
+    t.index ["tournament_division_id"], name: "index_team_registrations_on_tournament_division_id"
     t.index ["tournament_id"], name: "index_team_registrations_on_tournament_id"
   end
 
@@ -48,6 +50,17 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_04_070000) do
     t.string "province"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "tournament_divisions", force: :cascade do |t|
+    t.bigint "tournament_id", null: false
+    t.string "name", null: false
+    t.integer "position"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "entry_fee"
+    t.integer "prize_amount"
+    t.index ["tournament_id"], name: "index_tournament_divisions_on_tournament_id"
   end
 
   create_table "tournaments", force: :cascade do |t|
@@ -82,5 +95,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_04_070000) do
 
   add_foreign_key "fields", "users"
   add_foreign_key "team_registrations", "teams"
+  add_foreign_key "team_registrations", "tournament_divisions"
+  add_foreign_key "tournament_divisions", "tournaments"
   add_foreign_key "tournaments", "users", column: "organizer_id"
 end

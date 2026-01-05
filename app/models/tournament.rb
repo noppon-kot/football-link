@@ -7,4 +7,9 @@ class Tournament < ApplicationRecord
 
   has_many :team_registrations, dependent: :destroy
   has_many :teams, through: :team_registrations
+  has_many :tournament_divisions, dependent: :destroy
+
+  accepts_nested_attributes_for :tournament_divisions, allow_destroy: true, reject_if: proc { |attrs|
+    attrs["name"].blank? && attrs["entry_fee"].blank? && attrs["prize_amount"].blank?
+  }
 end

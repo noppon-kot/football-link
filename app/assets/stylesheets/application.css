@@ -454,6 +454,22 @@
   color: #78909c;
 }
 
+.tournament-description {
+  margin-bottom: 8px;
+}
+
+.tournament-description-label {
+  font-size: 12px;
+  color: #78909c;
+  margin-bottom: 2px;
+}
+
+.tournament-description-body {
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
 .team-list-card {
   background: #ffffff;
   border-radius: 12px;
@@ -507,6 +523,53 @@
   color: #6a1b9a;
 }
 
+/* Tabs for teams grouped by division on show page */
+.team-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 6px;
+  padding: 6px 8px 4px;
+  border-bottom: 1px solid #eceff1;
+  background: #fafafa;
+}
+
+.team-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  border: 1px solid #bbdefb;
+  background: #ffffff;
+  color: #1565c0;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.team-tab-count {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-tab--active {
+  background: #1565c0;
+  color: #ffffff;
+  border-color: #1565c0;
+}
+
+.team-tab--active .team-tab-count {
+  background: #0d47a1;
+  color: #ffffff;
+}
+
 .tournament-show-bottom-bar {
   position: fixed;
   left: 50%;
@@ -531,12 +594,13 @@
 }
 
 .tournament-form-group {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 
 .tournament-form-inline {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  margin-bottom: 4px;
 }
 
 .tournament-form-inline .tournament-form-group {
@@ -549,6 +613,46 @@
   border-radius: 8px;
   border: 1px solid #cfd8dc;
   font-size: 13px;
+}
+
+/* ใช้กับช่องตัวเลขที่ไม่ควรยาวเกินไป เช่น จำนวนผู้เล่นต่อทีม */
+.tournament-form-input--narrow {
+  max-width: 120px;
+}
+
+/* ใช้กับช่องที่ควรมีความกว้างปานกลาง เช่น สนาม / สถานที่ */
+.tournament-form-input--medium {
+  max-width: 260px;
+}
+
+.description-helper {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.description-helper-label {
+  font-size: 11px;
+  color: #78909c;
+  margin-right: 4px;
+}
+
+.description-chip {
+  border-radius: 999px;
+  border: 1px solid #e0e0e0;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* ปุ่มลบรุ่น: ถังขยะสีแดง */
+.division-remove-button {
+  border-color: #ffcdd2;
+  background: #ffebee;
+  color: #c62828;
 }
 
 .tournament-form-errors {

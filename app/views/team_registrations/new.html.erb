@@ -1,0 +1,60 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-top-nav">
+      <%= link_to "←", tournament_path(@tournament), class: "app-top-nav-left", style: "text-decoration:none;" %>
+      <div class="app-top-nav-center"><%= t('team_registrations.form.header.title_short') %></div>
+      <div class="app-top-nav-right"></div>
+    </div>
+    <div class="app-header-title"><%= t('team_registrations.form.header.title_full') %></div>
+  </header>
+
+  <div class="tournament-form">
+    <%= form_with url: tournament_team_registrations_path(@tournament), scope: :registration, local: true do |f| %>
+      <div class="tournament-form-group">
+        <label><%= t('team_registrations.form.fields.tournament') %></label>
+        <div class="tournament-description-label"><%= @tournament.title %></div>
+      </div>
+
+      <% if @divisions.size > 1 %>
+        <div class="tournament-form-group">
+          <label><%= t('team_registrations.form.fields.division') %></label>
+          <%= f.select :tournament_division_id,
+                options_from_collection_for_select(@divisions, :id, :name),
+                { include_blank: t('team_registrations.form.placeholders.division') },
+                class: "tournament-form-input" %>
+        </div>
+      <% elsif @divisions.size == 1 %>
+        <div class="tournament-form-group">
+          <label><%= t('team_registrations.form.fields.division') %></label>
+          <div class="tournament-description-label"><%= @divisions.first.name %></div>
+          <%= f.hidden_field :tournament_division_id, value: @divisions.first.id %>
+        </div>
+      <% end %>
+
+      <div class="tournament-form-group">
+        <label><%= t('team_registrations.form.fields.team_name') %></label>
+        <%= f.text_field :team_name,
+              class: "tournament-form-input",
+              placeholder: t('team_registrations.form.placeholders.team_name') %>
+      </div>
+
+      <div class="tournament-form-group">
+        <label><%= t('team_registrations.form.fields.contact_name') %></label>
+        <%= f.text_field :contact_name,
+              class: "tournament-form-input",
+              placeholder: t('team_registrations.form.placeholders.contact_name') %>
+      </div>
+
+      <div class="tournament-form-group">
+        <label><%= t('team_registrations.form.fields.contact_phone') %></label>
+        <%= f.telephone_field :contact_phone,
+              class: "tournament-form-input",
+              placeholder: t('team_registrations.form.placeholders.contact_phone') %>
+      </div>
+
+      <div class="tournament-form-actions">
+        <%= f.submit t('team_registrations.form.submit'), class: "link-button" %>
+      </div>
+    <% end %>
+  </div>
+</div>
