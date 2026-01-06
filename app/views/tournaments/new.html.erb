@@ -15,9 +15,7 @@
         <div class="tournament-form-errors">
           <div><%= t('tournaments.form.errors.title', count: @tournament.errors.count) %></div>
           <ul>
-            <% @tournament.errors.full_messages.each do |msg| %>
-              <li><%= msg %></li>
-            <% end %>
+            <li>กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน</li>
           </ul>
         </div>
       <% end %>
@@ -27,6 +25,9 @@
         <%= f.text_field :title,
               class: "tournament-form-input",
               placeholder: t('tournaments.form.placeholders.title') %>
+        <% if @tournament.errors[:title].present? %>
+          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกชื่อรายการแข่ง</div>
+        <% end %>
       </div>
 
       <div class="tournament-form-group">
@@ -36,6 +37,9 @@
               rows: 6,
               id: "tournament_description",
               placeholder: t('tournaments.form.placeholders.description') %>
+        <% if @tournament.errors[:description].present? %>
+          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกรายละเอียดรายการแข่ง</div>
+        <% end %>
         <div class="description-helper">
           <span class="description-helper-label"><%= t('tournaments.form.description_helper_label') %></span>
           <button type="button"
@@ -64,12 +68,43 @@
       <div class="tournament-form-group">
         <label><%= t('tournaments.form.fields.location_name') %></label>
         <%= f.text_field :location_name, class: "tournament-form-input tournament-form-input--medium" %>
+        <% if @tournament.errors[:location_name].present? %>
+          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกชื่อสนาม / สถานที่แข่งขัน</div>
+        <% end %>
+      </div>
+
+      <div class="tournament-form-inline">
+        <div class="tournament-form-group">
+          <label>วันเปิดรับสมัคร</label>
+          <%= f.date_field :registration_open_on, class: "tournament-form-input" %>
+          <% if @tournament.errors[:registration_open_on].present? %>
+            <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาระบุวันเปิดรับสมัครให้ถูกต้อง</div>
+          <% end %>
+        </div>
+        <div class="tournament-form-group">
+          <label>วันปิดรับสมัคร</label>
+          <%= f.date_field :registration_close_on, class: "tournament-form-input" %>
+          <% if @tournament.errors[:registration_close_on].present? %>
+            <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาระบุวันปิดรับสมัครให้ถูกต้อง</div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="tournament-form-group">
+        <label>วันที่แข่งขัน</label>
+        <%= f.date_field :competition_date, class: "tournament-form-input tournament-form-input--medium" %>
+        <% if @tournament.errors[:competition_date].present? %>
+          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาระบุวันที่แข่งขัน</div>
+        <% end %>
       </div>
 
       <div class="tournament-form-inline">
         <div class="tournament-form-group">
           <label><%= t('tournaments.form.fields.city') %></label>
           <%= f.text_field :city, class: "tournament-form-input" %>
+          <% if @tournament.errors[:city].present? %>
+            <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกอำเภอ / เขต</div>
+          <% end %>
         </div>
         <div class="tournament-form-group">
           <label><%= t('tournaments.form.fields.province') %></label>
@@ -78,24 +113,42 @@
                 options_for_select(thai_provinces, @tournament.province),
                 { include_blank: "เลือกจังหวัด" },
                 class: "tournament-form-input" %>
+          <% if @tournament.errors[:province].present? %>
+            <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาเลือกจังหวัด</div>
+          <% end %>
         </div>
+      </div>
+
+      <div class="tournament-form-group">
+        <label>LINE ID สำหรับติดต่อ</label>
+        <%= f.text_field :line_id, class: "tournament-form-input" %>
       </div>
 
       <div class="tournament-form-inline">
         <div class="tournament-form-group">
           <label><%= t('tournaments.form.fields.team_size') %></label>
           <%= f.number_field :team_size, class: "tournament-form-input tournament-form-input--narrow" %>
+          <% if @tournament.errors[:team_size].present? %>
+            <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาระบุจำนวนผู้เล่นต่อทีม</div>
+          <% end %>
+        </div>
+        <div class="tournament-form-group" style="flex:1;">
+          <label>เบอร์โทรผู้ติดต่อรายการแข่ง</label>
+          <%= f.text_field :contact_phone, class: "tournament-form-input" %>
+          <% if @tournament.errors[:contact_phone].present? %>
+            <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกเบอร์โทรผู้ติดต่อรายการแข่ง</div>
+          <% end %>
         </div>
       </div>
 
       <div class="tournament-form-group">
         <label><%= t('tournaments.form.divisions.section_title') %></label>
-        <div style="font-size:11px;color:#90a4ae;">(debug: divisions = <%= @tournament.tournament_divisions.size %>)</div>
-        <div style="font-size:11px;color:#90a4ae;">
-          <% @tournament.tournament_divisions.each do |d| %>
-            [<%= d.id %>] <%= d.name %>
-          <% end %>
-        </div>
+        <% if @tournament.errors.any? && (
+             @tournament.tournament_divisions.any? { |d| d.errors[:name].present? } ||
+             @tournament.errors[:tournament_divisions].present?
+           ) %>
+          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาเลือกช่วงอายุให้ครบทุกแถวที่ยังไม่ได้ลบ</div>
+        <% end %>
         <div class="description-helper-label" style="margin-bottom:4px;"><%= t('tournaments.form.divisions.hint') %></div>
         <div id="tournament-divisions-container"
              data-next-index="<%= @tournament.tournament_divisions.size %>"

@@ -61,6 +61,24 @@
 
       <div><span class="label">จำนวนผู้เล่น:</span> <%= @tournament.team_size %> คน</div>
 
+      <div style="margin-top:4px;">
+        <div><span class="label">วันเปิดรับสมัคร:</span> <%= @tournament.registration_open_on&.strftime("%Y-%m-%d") %></div>
+        <div><span class="label">วันปิดรับสมัคร:</span> <%= @tournament.registration_close_on&.strftime("%Y-%m-%d") %></div>
+        <div><span class="label">วันแข่งขัน:</span> <%= @tournament.competition_date&.strftime("%Y-%m-%d") %></div>
+      </div>
+
+      <div style="margin-top:4px;">
+        <span class="label">สถานะรายการ:</span>
+        <% status_label = if @tournament.pending?
+                            "รออนุมัติจากแอดมิน"
+                          elsif @tournament.expired?
+                            "หมดอายุ (แข่งเสร็จแล้ว)"
+                          else
+                            "เปิดให้ค้นหาและสมัครได้"
+                          end %>
+        <%= status_label %>
+      </div>
+
       <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
       <% if divisions.any? %>
         <div style="margin-top:8px;">
@@ -84,6 +102,18 @@
       <% end %>
 
       <div style="margin-top:8px;"><span class="label">ผู้จัด:</span> <%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</div>
+      <% if @tournament.contact_phone.present? %>
+        <div><span class="label">เบอร์โทรผู้ติดต่อรายการแข่ง:</span> <%= @tournament.contact_phone %></div>
+      <% end %>
+      <% if @tournament.line_id.present? %>
+        <div style="margin-top:8px;">
+          <% line_url = "line://ti/p/~#{@tournament.line_id}" %>
+          <%= link_to "LINE ID: #{@tournament.line_id}",
+                      line_url,
+                      class: "btn-pill btn-apply",
+                      style: "background-color:#00c300;border-color:#00c300;color:#ffffff;" %>
+        </div>
+      <% end %>
     </div>
 
     <div class="team-list-card">

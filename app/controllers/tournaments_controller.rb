@@ -1,12 +1,20 @@
 class TournamentsController < ApplicationController
   before_action :require_login, except: [:index, :show]
-  before_action :set_tournament, only: [:show, :edit, :update]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve]
   before_action :require_edit_permission, only: [:edit, :update]
   def index
     @age_categories = Tournament.distinct.order(:age_category).pluck(:age_category).compact
     @provinces      = Tournament.distinct.order(:province).pluck(:province).compact
 
-    @tournaments = Tournament.includes(:field, :organizer, :team_registrations).order(created_at: :desc)
+    base_scope = if admin?
+                   Tournament.all
+                 else
+                   Tournament.active_for_search
+                 end
+
+    @tournaments = base_scope
+                     .includes(:field, :organizer, :team_registrations)
+                     .order(created_at: :desc)
 
     if params[:q].present?
       q = "%#{params[:q].strip}%"
@@ -15,7 +23,6 @@ class TournamentsController < ApplicationController
         q: q
       )
     end
-
     if params[:age_category].present?
       @tournaments = @tournaments.where(age_category: params[:age_category])
     end
@@ -31,13 +38,33 @@ class TournamentsController < ApplicationController
     @tournaments = @tournaments.offset((@current_page - 1) * per_page).limit(per_page)
   end
 
+  def approve
+    unless admin?
+      return redirect_to dashboard_path, alert: "คุณไม่มีสิทธิ์อนุมัติรายการแข่ง"
+    end
+
+    target_status = params[:status]
+
+    if target_status.present? && Tournament.statuses.key?(target_status)
+      @tournament.update(status: target_status)
+      message = target_status == "active" ? "อนุมัติรายการแข่งเรียบร้อยแล้ว" : "เปลี่ยนสถานะเป็นรออนุมัติเรียบร้อยแล้ว"
+      redirect_to dashboard_path, notice: message
+    elsif @tournament.pending?
+      # fallback เดิม: ถ้าไม่ส่ง status มาและยัง pending ให้อนุมัติเป็น active
+      @tournament.update(status: :active)
+      redirect_to dashboard_path, notice: "อนุมัติรายการแข่งเรียบร้อยแล้ว"
+    else
+      redirect_to dashboard_path, alert: "ไม่สามารถเปลี่ยนสถานะรายการแข่งได้"
+    end
+  end
+
   def show
     # @tournament is loaded in before_action :set_tournament
   end
 
   def new
     @tournament = Tournament.new
-    3.times { @tournament.tournament_divisions.build }
+    @tournament.tournament_divisions.build
   end
 
   def edit
@@ -88,6 +115,11 @@ class TournamentsController < ApplicationController
       :location_name,
       :city,
       :province,
+      :line_id,
+      :competition_date,
+      :registration_open_on,
+      :registration_close_on,
+      :contact_phone,
       :team_size,
       :organizer_id,
       :field_id,

@@ -14,5 +14,7 @@ Rails.application.routes.draw do
     resources :team_registrations, only: [:new, :create, :update, :destroy]
   end
 
+  patch "tournaments/:id/approve", to: "tournaments#approve", as: :approve_tournament
+
   root "tournaments#index"
 end

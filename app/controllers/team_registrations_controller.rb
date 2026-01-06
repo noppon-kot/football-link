@@ -17,7 +17,7 @@ class TeamRegistrationsController < ApplicationController
                     params.dig(:registration, :tournament_division_id)
                   end
 
-    team_params = params.require(:registration).permit(:team_name, :contact_name, :contact_phone)
+    team_params = params.require(:registration).permit(:team_name, :contact_name, :contact_phone, :line_id)
 
     ActiveRecord::Base.transaction do
       team = Team.create!(
@@ -25,7 +25,8 @@ class TeamRegistrationsController < ApplicationController
         contact_name:  team_params[:contact_name],
         contact_phone: team_params[:contact_phone],
         city:          @tournament.city,
-        province:      @tournament.province
+        province:      @tournament.province,
+        line_id:       team_params[:line_id]
       )
 
       TeamRegistration.create!(
@@ -38,8 +39,8 @@ class TeamRegistrationsController < ApplicationController
     end
 
     redirect_to @tournament, notice: I18n.t("team_registrations.flash.create_success")
-  rescue ActiveRecord::RecordInvalid => e
-    flash.now[:alert] = e.record.errors.full_messages.join(", ")
+  rescue ActiveRecord::RecordInvalid
+    flash.now[:alert] = "กรุณากรอกข้อมูลทีมและข้อมูลผู้ติดต่อให้ครบถ้วน"
     render :new, status: :unprocessable_entity
   end
 

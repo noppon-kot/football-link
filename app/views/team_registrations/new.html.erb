@@ -9,6 +9,15 @@
   </header>
 
   <div class="tournament-form">
+    <% if flash[:alert].present? %>
+      <div class="tournament-form-errors">
+        <div>กรุณาตรวจสอบข้อมูลการสมัครทีม</div>
+        <ul>
+          <li><%= flash[:alert] %></li>
+        </ul>
+      </div>
+    <% end %>
+
     <%= form_with url: tournament_team_registrations_path(@tournament), scope: :registration, local: true do |f| %>
       <div class="tournament-form-group">
         <label><%= t('team_registrations.form.fields.tournament') %></label>
@@ -50,6 +59,11 @@
         <%= f.telephone_field :contact_phone,
               class: "tournament-form-input",
               placeholder: t('team_registrations.form.placeholders.contact_phone') %>
+      </div>
+
+      <div class="tournament-form-group">
+        <label>LINE ID ผู้ติดต่อทีม (ไม่บังคับ)</label>
+        <%= f.text_field :line_id, class: "tournament-form-input" %>
       </div>
 
       <div class="tournament-form-actions">

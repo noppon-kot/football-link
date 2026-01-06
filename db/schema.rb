@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_05_191500) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_06_031950) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -50,6 +50,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_05_191500) do
     t.string "province"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "line_id"
   end
 
   create_table "tournament_divisions", force: :cascade do |t|
@@ -78,6 +79,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_05_191500) do
     t.bigint "field_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "line_id"
+    t.string "contact_phone"
+    t.date "competition_date"
+    t.date "registration_open_on"
+    t.date "registration_close_on"
     t.index ["field_id"], name: "index_tournaments_on_field_id"
     t.index ["organizer_id"], name: "index_tournaments_on_organizer_id"
   end

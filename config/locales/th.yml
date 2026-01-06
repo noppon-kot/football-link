@@ -1,4 +1,12 @@
 th:
+  activerecord:
+    errors:
+      models:
+        tournament_division:
+          attributes:
+            name:
+              blank: "กรุณาเลือกช่วงอายุของรุ่น"
+
   tournaments:
     form:
       header:

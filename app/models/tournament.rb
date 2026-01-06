@@ -2,14 +2,67 @@ class Tournament < ApplicationRecord
   belongs_to :organizer, class_name: "User"
   belongs_to :field
 
-  # status: 0 = draft, 1 = published, 2 = closed
-  enum status: { draft: 0, published: 1, closed: 2 }
+  # status: 0 = pending (รออนุมัติ), 1 = active (แสดงในหน้าค้นหา)
+  enum status: { pending: 0, active: 1 }
 
   has_many :team_registrations, dependent: :destroy
   has_many :teams, through: :team_registrations
   has_many :tournament_divisions, dependent: :destroy
 
-  accepts_nested_attributes_for :tournament_divisions, allow_destroy: true, reject_if: proc { |attrs|
-    attrs["name"].blank? && attrs["entry_fee"].blank? && attrs["prize_amount"].blank?
+  accepts_nested_attributes_for :tournament_divisions, allow_destroy: true
+
+  validates :title,
+            :description,
+            :location_name,
+            :city,
+            :province,
+            :team_size,
+            :contact_phone,
+            :competition_date,
+            :registration_open_on,
+            :registration_close_on,
+            presence: true
+
+  validate :registration_dates_must_be_in_order
+
+  validate :must_have_at_least_one_division
+
+  scope :active_for_search, -> {
+    where(status: :active)
+      .where("competition_date >= ?", Date.current)
   }
+
+  before_validation :set_default_status, on: :create
+
+  private
+
+  def set_default_status
+    self.status ||= :pending
+  end
+
+  def registration_dates_must_be_in_order
+    return if registration_open_on.blank? || registration_close_on.blank?
+
+    if registration_open_on > registration_close_on
+      errors.add(:registration_open_on, "ต้องไม่ช้ากว่าวันปิดรับสมัคร")
+      errors.add(:registration_close_on, "ต้องไม่เร็วกว่าวันเปิดรับสมัคร")
+    end
+  end
+
+  def must_have_at_least_one_division
+    # อนุญาตให้สร้าง Tournament เปล่า ๆ ได้ในเคสพิเศษ เช่น seed หรือสร้างตรงจาก console
+    # ถ้าต้องการบังคับผ่านฟอร์ม จะมี tournament_divisions ติดมาด้วยอยู่แล้ว
+    return if new_record? && tournament_divisions.empty?
+
+    valid_divisions = tournament_divisions.reject(&:marked_for_destruction?).select { |d| d.name.present? }
+    if valid_divisions.empty?
+      errors.add(:tournament_divisions, "กรุณาเพิ่มอย่างน้อยหนึ่งรุ่นอายุของการแข่งขัน")
+    end
+  end
+
+  public
+
+  def expired?
+    competition_date.present? && competition_date < Date.current
+  end
 end
