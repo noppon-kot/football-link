@@ -169,3 +169,15 @@ th:
 
     flash:
       create_success: "บันทึกทีมที่สนใจสมัครเรียบร้อยแล้ว"
+
+  sessions:
+    form:
+      header: "เข้าสู่ระบบ"
+      select_user_label: "เลือกผู้ใช้งานสำหรับทดสอบ"
+      select_placeholder: "เลือกผู้ใช้ที่ต้องการเข้าสู่ระบบ"
+      submit: "เข้าสู่ระบบ"
+    flash:
+      login_required: "กรุณาเข้าสู่ระบบก่อนทำรายการนี้"
+      login_success: "เข้าสู่ระบบเรียบร้อยแล้ว"
+      login_failed: "ไม่พบผู้ใช้ กรุณาลองใหม่อีกครั้ง"
+      logout_success: "ออกจากระบบเรียบร้อยแล้ว"

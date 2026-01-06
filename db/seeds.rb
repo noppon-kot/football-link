@@ -9,18 +9,32 @@ User.delete_all
 
 puts "Seeding users..."
 
-organizer = User.create!(
-  name:  "Thunder Organizer",
-  email: "organizer@example.com",
-  phone: "091-234-5678",
+admin = User.create!(
+  name:  "Admin",
+  email: "admin@example.com",
+  phone: "080-000-0000",
   role:  :organizer
 )
 
-field_owner = User.create!(
-  name:  "Supachai Field Owner",
-  email: "field.owner@example.com",
-  phone: "089-000-1111",
-  role:  :field_owner
+user1 = User.create!(
+  name:  "User One",
+  email: "user1@example.com",
+  phone: "091-111-1111",
+  role:  :player
+)
+
+user2 = User.create!(
+  name:  "User Two",
+  email: "user2@example.com",
+  phone: "092-222-2222",
+  role:  :player
+)
+
+user3 = User.create!(
+  name:  "User Three",
+  email: "user3@example.com",
+  phone: "093-333-3333",
+  role:  :player
 )
 
 puts "Seeding fields..."
@@ -34,7 +48,7 @@ kk_arena = Field.create!(
   longitude:      102.8280,
   field_type:     :turf,
   price_per_hour: 1200,
-  user:           field_owner
+  user:           admin
 )
 
 thunder_arena = Field.create!(
@@ -46,7 +60,7 @@ thunder_arena = Field.create!(
   longitude:      102.8290,
   field_type:     :turf,
   price_per_hour: 1500,
-  user:           field_owner
+  user:           admin
 )
 
 kalasin_arena = Field.create!(
@@ -58,7 +72,7 @@ kalasin_arena = Field.create!(
   longitude:      103.5050,
   field_type:     :turf,
   price_per_hour: 1300,
-  user:           field_owner
+  user:           admin
 )
 
 srk_arena = Field.create!(
@@ -70,7 +84,7 @@ srk_arena = Field.create!(
   longitude:      103.3020,
   field_type:     :turf,
   price_per_hour: 1400,
-  user:           field_owner
+  user:           admin
 )
 
 puts "Seeding tournaments with multiple divisions..."
@@ -110,7 +124,7 @@ tournaments << create_tournament_with_divisions(
   province:      thunder_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         thunder_arena,
   divisions: [
     { name: "12 ปี",            entry_fee: 1499, prize_amount: 3000 },
@@ -128,7 +142,7 @@ tournaments << create_tournament_with_divisions(
   province:      kk_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         kk_arena,
   divisions: [
     { name: "U14",   entry_fee: 2200, prize_amount: 4000 },
@@ -145,7 +159,7 @@ tournaments << create_tournament_with_divisions(
   province:      thunder_arena.province,
   team_size:     5,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         thunder_arena,
   divisions: [
     { name: "U10",   entry_fee: 1200, prize_amount: 2500 },
@@ -164,7 +178,7 @@ tournaments << create_tournament_with_divisions(
   province:      kk_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         kk_arena,
   divisions: [
     { name: "U13",  entry_fee: 1600, prize_amount: 3000 },
@@ -180,7 +194,7 @@ tournaments << create_tournament_with_divisions(
   province:      thunder_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         thunder_arena,
   divisions: [
     { name: "35+", entry_fee: 1800, prize_amount: 5000 },
@@ -198,7 +212,7 @@ tournaments << create_tournament_with_divisions(
   province:      kalasin_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         kalasin_arena,
   divisions: [
     { name: "U12",        entry_fee: 1500, prize_amount: 3000 },
@@ -214,7 +228,7 @@ tournaments << create_tournament_with_divisions(
   province:      kalasin_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         kalasin_arena,
   divisions: [
     { name: "U16",  entry_fee: 1600, prize_amount: 3200 },
@@ -230,7 +244,7 @@ tournaments << create_tournament_with_divisions(
   province:      kalasin_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         kalasin_arena,
   divisions: [
     { name: "30+", entry_fee: 1700, prize_amount: 4000 },
@@ -248,7 +262,7 @@ tournaments << create_tournament_with_divisions(
   province:      srk_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         srk_arena,
   divisions: [
     { name: "U18",   entry_fee: 1800, prize_amount: 5000 },
@@ -264,7 +278,7 @@ tournaments << create_tournament_with_divisions(
   province:      srk_arena.province,
   team_size:     7,
   status:        :published,
-  organizer:     organizer,
+  organizer:     admin,
   field:         srk_arena,
   divisions: [
     { name: "U15",        entry_fee: 1500, prize_amount: 3200 },

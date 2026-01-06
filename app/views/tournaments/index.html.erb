@@ -1,17 +1,12 @@
 <div class="app-shell">
   <header class="app-header">
     <div class="app-top-nav">
-      <button type="button" class="app-top-nav-left" id="app-menu-toggle">≡</button>
+      <div class="app-top-nav-left"></div>
       <div class="app-top-nav-center">ฟุตบอลเดินสาย</div>
       <div class="app-top-nav-right"></div>
     </div>
     <div class="app-header-title">ค้นหารายการแข่ง</div>
   </header>
-
-  <nav class="app-menu" id="app-menu" style="display:none;">
-    <%= link_to "หน้าแรก", tournaments_path, class: "app-menu-item" %>
-    <%= link_to "เพิ่มข้อมูลรายการ", new_tournament_path, class: "app-menu-item" %>
-  </nav>
 
   <div class="province-filter-form">
     <%= form_with url: tournaments_path, method: :get, local: true do |f| %>
@@ -73,7 +68,7 @@
             <div class="tournament-footer">
               <div class="tournament-footer-left">
                 <span class="tournament-footer-dot"></span>
-                <span class="tournament-footer-text">มีทีมสนใจสมัคร <%= rand(5..20) %> ทีม</span>
+                <span class="tournament-footer-text">มีทีมสนใจสมัคร <%= tournament.team_registrations.count %> ทีม</span>
               </div>
               <div class="tournament-footer-actions">
                 <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>

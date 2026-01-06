@@ -1,9 +1,12 @@
 class TournamentsController < ApplicationController
+  before_action :require_login, except: [:index, :show]
+  before_action :set_tournament, only: [:show, :edit, :update]
+  before_action :require_edit_permission, only: [:edit, :update]
   def index
     @age_categories = Tournament.distinct.order(:age_category).pluck(:age_category).compact
     @provinces      = Tournament.distinct.order(:province).pluck(:province).compact
 
-    @tournaments = Tournament.includes(:field, :organizer).order(created_at: :desc)
+    @tournaments = Tournament.includes(:field, :organizer, :team_registrations).order(created_at: :desc)
 
     if params[:q].present?
       q = "%#{params[:q].strip}%"
@@ -29,7 +32,7 @@ class TournamentsController < ApplicationController
   end
 
   def show
-    @tournament = Tournament.includes(:field, :organizer, :teams, :team_registrations, :tournament_divisions).find(params[:id])
+    # @tournament is loaded in before_action :set_tournament
   end
 
   def new
@@ -38,14 +41,14 @@ class TournamentsController < ApplicationController
   end
 
   def edit
-    @tournament = Tournament.includes(:tournament_divisions).find(params[:id])
-    # ให้มีแถวกรอกรุ่นอย่างน้อย 3 แถวเสมอ ระหว่างแก้ไข
-    missing = 3 - @tournament.tournament_divisions.size
-    missing.times { @tournament.tournament_divisions.build } if missing.positive?
   end
 
   def create
-    service = ::Tournaments::CreateService.new(tournament_params)
+    attrs = tournament_params.dup
+    # ถ้าไม่ได้ระบุ organizer มาจากฟอร์ม ให้ผูกกับผู้ใช้ปัจจุบัน
+    attrs[:organizer_id] ||= current_user&.id
+
+    service = ::Tournaments::CreateService.new(attrs)
     @tournament = service.tournament
 
     if service.call
@@ -67,6 +70,16 @@ class TournamentsController < ApplicationController
   end
 
   private
+
+  def set_tournament
+    @tournament = Tournament.includes(:field, :organizer, :teams, :team_registrations, :tournament_divisions).find(params[:id])
+  end
+
+  def require_edit_permission
+    unless can_edit_tournament?(@tournament)
+      redirect_to tournaments_path, alert: I18n.t("sessions.flash.login_required")
+    end
+  end
 
   def tournament_params
     params.require(:tournament).permit(

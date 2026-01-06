@@ -18,6 +18,25 @@
   </head>
 
   <body>
-    <%= yield %>
+    <div style="max-width:960px;margin:0 auto;">
+      <div style="padding:6px 12px;font-size:11px;background:#eceff1;color:#455a64;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <%= link_to "หน้าแรก", root_path, style: "text-decoration:none;color:#1565c0;font-weight:bold;" %>
+          <% if can_create_tournaments? %>
+            <%= link_to "แดชบอร์ด", dashboard_path, style: "text-decoration:none;color:#1565c0;" %>
+          <% end %>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <% if current_user %>
+            <span><strong><%= current_user.name %></strong></span>
+            <%= button_to "ออกจากระบบ", logout_path, method: :delete, form: { style: "margin:0;display:inline;" }, class: "link-button", params: {} %>
+          <% else %>
+            <%= link_to "เข้าสู่ระบบ", login_path, class: "link-button" %>
+          <% end %>
+        </div>
+      </div>
+
+      <%= yield %>
+    </div>
   </body>
 </html>

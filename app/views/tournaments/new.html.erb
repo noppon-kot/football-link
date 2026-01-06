@@ -139,13 +139,18 @@
           <% end %>
         </div>
 
-        <button type="button" id="add-division-button" class="link-button" style="margin-top:4px;width:100%;">
-          + <%= t('tournaments.form.divisions.age_label') %>
-        </button>
       </div>
 
       <div class="tournament-form-actions">
-        <%= f.submit t('tournaments.form.submit.create'), class: "link-button" %>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button"
+                  id="add-division-button"
+                  class="link-button"
+                  style="background-color:#eceff1;color:#455a64;border-color:#cfd8dc;">
+            + <%= t('tournaments.form.divisions.age_label') %>
+          </button>
+          <%= f.submit t('tournaments.form.submit.create'), class: "link-button" %>
+        </div>
       </div>
     <% end %>
   </div>

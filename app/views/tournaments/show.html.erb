@@ -15,78 +15,14 @@
         7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
       </div>
       <div class="tournament-show-actions">
-        <%= link_to "แก้ไข", edit_tournament_path(@tournament), class: "btn-pill btn-apply", style: "margin-right:6px;" %>
-        <button type="button" class="btn-pill btn-share" id="detail-share-button">แชร์</button>
+        <% if can_edit_tournament?(@tournament) %>
+          <%= link_to "แก้ไข", edit_tournament_path(@tournament), class: "btn-pill btn-apply", style: "margin-right:6px;" %>
+        <% end %>
       </div>
     </div>
   </div>
 
-  <div class="share-dialog-backdrop" id="share-dialog-backdrop" style="display:none;"></div>
-  <div class="share-dialog" id="share-dialog" style="display:none;">
-    <div class="share-dialog-title">แชร์รายการแข่ง</div>
-    <button type="button" class="share-dialog-item" id="share-system">แชร์ผ่านระบบมือถือ</button>
-    <button type="button" class="share-dialog-item" id="share-facebook">แชร์ไป Facebook</button>
-    <button type="button" class="share-dialog-item" id="share-copy">คัดลอกลิงก์</button>
-    <button type="button" class="share-dialog-cancel" id="share-cancel">ยกเลิก</button>
-  </div>
-
   <script>
-    (function() {
-      var shareUrl = "<%= tournament_url(@tournament) %>";
-      var shareTitle = "<%= @tournament.title %>";
-
-      var dialog = document.getElementById('share-dialog');
-      var backdrop = document.getElementById('share-dialog-backdrop');
-
-      function openShareDialog() {
-        if (dialog && backdrop) {
-          dialog.style.display = 'block';
-          backdrop.style.display = 'block';
-        }
-      }
-
-      function closeShareDialog() {
-        if (dialog && backdrop) {
-          dialog.style.display = 'none';
-          backdrop.style.display = 'none';
-        }
-      }
-
-      document.getElementById('detail-share-button').addEventListener('click', function() {
-        openShareDialog();
-      });
-
-      document.getElementById('share-cancel').addEventListener('click', closeShareDialog);
-      document.getElementById('share-dialog-backdrop').addEventListener('click', closeShareDialog);
-
-      document.getElementById('share-system').addEventListener('click', function() {
-        if (navigator.share && shareUrl) {
-          navigator.share({
-            title: shareTitle || document.title,
-            url: shareUrl
-          }).catch(function(){});
-        } else if (shareUrl) {
-          window.open(shareUrl, '_blank');
-        }
-        closeShareDialog();
-      });
-
-      document.getElementById('share-facebook').addEventListener('click', function() {
-        if (!shareUrl) return;
-        var fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl);
-        window.open(fbUrl, '_blank');
-        closeShareDialog();
-      });
-
-      document.getElementById('share-copy').addEventListener('click', function() {
-        if (!shareUrl) return;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(shareUrl).catch(function(){});
-        }
-        closeShareDialog();
-      });
-    })();
-
     // simple tab handler for teams by division (ใช้ event delegation จาก document)
     (function() {
       document.addEventListener('click', function(e) {
@@ -154,6 +90,7 @@
       <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
       <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
       <% regs_without_div = @tournament.team_registrations.where(tournament_division_id: nil).includes(:team).to_a %>
+      <% status_order = { "confirmed" => 0, "paid" => 0, "applied" => 1, "interested" => 1 } %>
 
       <% if divisions.any? || @tournament.team_registrations.any? %>
 
@@ -181,13 +118,14 @@
 
         <div class="team-tab-panels" id="team-tab-panels">
           <% divisions.each_with_index do |div, idx| %>
-            <% regs = div.team_registrations.includes(:team) %>
+            <% regs = div.team_registrations.includes(:team).to_a %>
+            <% sorted_regs = regs.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
             <div
               class="team-tab-panel"
               id="division-<%= div.id %>"
               style="display:<%= idx == 0 ? 'block' : 'none' %>;">
-              <% if regs.any? %>
-                <% regs.each do |reg| %>
+              <% if sorted_regs.any? %>
+                <% sorted_regs.each do |reg| %>
                   <% display_state = case reg.status
                                      when "confirmed", "paid" then :confirmed
                                      else :applied
@@ -204,7 +142,25 @@
                       <div><strong><%= reg.team.name %></strong></div>
                       <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
                     </div>
-                    <div class="<%= badge_class %>"><%= label %></div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <% if can_manage_registrations?(@tournament) %>
+                        <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
+                        <%= button_to label,
+                              tournament_team_registration_path(@tournament, reg),
+                              method: :patch,
+                              params: { team_registration: { status: target_status } },
+                              class: "team-status-badge #{badge_class}",
+                              form_class: "inline-form" %>
+                        <%= button_to "ลบ",
+                              tournament_team_registration_path(@tournament, reg),
+                              method: :delete,
+                              data: { confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
+                              class: "btn-pill btn-secondary",
+                              form_class: "inline-form" %>
+                      <% else %>
+                        <div class="<%= badge_class %>"><%= label %></div>
+                      <% end %>
+                    </div>
                   </div>
                 <% end %>
               <% else %>
@@ -218,7 +174,8 @@
               class="team-tab-panel"
               id="division-unassigned"
               style="display:<%= divisions.empty? ? 'block' : 'none' %>;">
-              <% regs_without_div.each do |reg| %>
+              <% sorted_regs = regs_without_div.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
+              <% sorted_regs.each do |reg| %>
                 <% display_state = case reg.status
                                    when "confirmed", "paid" then :confirmed
                                    else :applied
@@ -235,7 +192,25 @@
                     <div><strong><%= reg.team.name %></strong></div>
                     <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
                   </div>
-                  <div class="<%= badge_class %>"><%= label %></div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <% if can_manage_registrations?(@tournament) %>
+                      <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
+                      <%= button_to label,
+                            tournament_team_registration_path(@tournament, reg),
+                            method: :patch,
+                            params: { team_registration: { status: target_status } },
+                            class: "team-status-badge #{badge_class}",
+                            form_class: "inline-form" %>
+                      <%= button_to "ลบ",
+                            tournament_team_registration_path(@tournament, reg),
+                            method: :delete,
+                            data: { confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
+                            class: "btn-pill btn-secondary",
+                            form_class: "inline-form" %>
+                    <% else %>
+                      <div class="<%= badge_class %>"><%= label %></div>
+                    <% end %>
+                  </div>
                 </div>
               <% end %>
             </div>
@@ -249,8 +224,7 @@
 
   <div class="tournament-show-bottom-bar">
     <div style="display:flex;gap:8px;">
-      <%= link_to "สมัครแข่งขัน", new_tournament_team_registration_path(@tournament), class: "link-button" %>
-      <%= link_to "ย้อนกลับไปหน้ารายการแข่ง", tournaments_path, class: "link-button" %>
+      <%= link_to "สมัครแข่งขัน", new_tournament_team_registration_path(@tournament), class: "link-button", style: "background-color:#e53935;color:#ffffff;border-color:#e53935;" %>
     </div>
   </div>
 </div>

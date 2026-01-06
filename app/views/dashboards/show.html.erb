@@ -1,0 +1,59 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-top-nav">
+      <div class="app-top-nav-left"></div>
+      <div class="app-top-nav-center"></div>
+      <div class="app-top-nav-right">
+        <% if can_create_tournaments? %>
+          <%= link_to "เพิ่มรายการแข่งขัน", new_tournament_path, class: "btn-pill btn-apply" %>
+        <% end %>
+      </div>
+    </div>
+    <div class="app-header-title">รายการแข่งที่ฉันสร้าง</div>
+  </header>
+
+  <div class="tournament-form" style="padding-top:8px;">
+    <% if @tournaments.any? %>
+      <div class="tournament-list">
+        <% @tournaments.each do |t| %>
+          <% bg_class = begin
+               age = t.age_category.to_s
+               if age =~ /\AU(\d+)\z/ && $1.to_i < 20
+                 "tournament-card--bg1"
+               else
+                 "tournament-card--bg2"
+               end
+             end %>
+
+          <div class="tournament-card-compact">
+            <div class="tournament-card-compact-image <%= bg_class %>"></div>
+            <div class="tournament-card-compact-body">
+              <div class="tournament-title">
+                <%= link_to t.title, tournament_path(t), style: "color: inherit; text-decoration: none;" %>
+              </div>
+              <div class="tournament-meta">
+                <div>สนาม: <%= t.location_name %> · <%= t.city %>, <%= t.province %></div>
+                <div>
+                  ทีมสมัครทั้งหมด: <%= t.team_registrations.count %>
+                  · รอพิจารณา: <%= t.team_registrations.interested.count %>
+                  · สมัครแล้ว: <%= t.team_registrations.applied.count %>
+                  · ยืนยันแล้ว/จ่ายแล้ว: <%= t.team_registrations.confirmed.count + t.team_registrations.paid.count %>
+                </div>
+                <div>
+                  อัปเดตล่าสุด: <%= (t.updated_at || t.created_at).strftime("%Y-%m-%d %H:%M") %>
+                </div>
+              </div>
+              <div class="tournament-card-compact-actions">
+                <% if can_edit_tournament?(t) %>
+                  <%= link_to "แก้ไข", edit_tournament_path(t), class: "btn-pill btn-apply" %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="tournaments-empty">ตอนนี้ยังไม่มีรายการแข่งในแดชบอร์ดของคุณ</div>
+    <% end %>
+  </div>
+</div>

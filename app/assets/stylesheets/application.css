@@ -509,8 +509,8 @@
 }
 
 .team-status-badge--applied {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: #eceff1;
+  color: #455a64;
 }
 
 .team-status-badge--confirmed {
@@ -521,6 +521,48 @@
 .team-status-badge--paid {
   background: #f3e5f5;
   color: #6a1b9a;
+}
+
+/* Toggle-style switch for team status (สมัครแล้ว/ยืนยันแล้ว) */
+.team-status-toggle {
+  position: relative;
+  border-radius: 999px;
+  border: none;
+  padding: 3px 10px 3px 6px;
+  font-size: 11px;
+  cursor: pointer;
+  min-width: 80px;
+  text-align: left;
+}
+
+.team-status-toggle::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease;
+}
+
+.team-status-toggle--off {
+  background: #eceff1;
+  color: #455a64;
+}
+
+.team-status-toggle--off::before {
+  transform: translateX(2px);
+}
+
+.team-status-toggle--on {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.team-status-toggle--on::before {
+  transform: translateX(32px);
 }
 
 /* Tabs for teams grouped by division on show page */
