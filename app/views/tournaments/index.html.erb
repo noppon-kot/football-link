@@ -8,117 +8,174 @@
     <div class="app-header-title">ค้นหารายการแข่ง</div>
   </header>
 
-  <div class="province-filter-form">
-    <%= form_with url: tournaments_path, method: :get, local: true do |f| %>
-      <div class="filter-row" style="margin-bottom: 8px;">
-        <%= f.text_field :q, value: params[:q], placeholder: "ค้นหาคำว่า...", class: "filter-text-input" %>
-        <button type="submit" class="filter-search-button">ค้นหา</button>
-      </div>
-
-      <div class="filter-row">
-        <div class="filter-pill-select">
-          <%= f.select :age_category,
-                options_for_select([["ทุกช่วงอายุ", ""]] + @age_categories.map { |a| [a, a] }, params[:age_category]),
-                {},
-                class: "",
-                onchange: "this.form.submit()" %>
-        </div>
-
-        <div class="filter-pill-select">
-          <%= f.select :province,
-                options_for_select([["ทุกจังหวัด", ""]] + @provinces.map { |p| [p, p] }, params[:province]),
-                {},
-                class: "",
-                onchange: "this.form.submit()" %>
-        </div>
-      </div>
-    <% end %>
-  </div>
-
-  <!-- แถบคั่นระหว่างตัวกรองกับผลลัพธ์ -->
-  <div class="filter-bar">
-    <span class="filter-pill">ผลลัพธ์การค้นหา</span>
-  </div>
-
-  <div class="tournament-list">
-    <% if @tournaments.any? %>
-      <% @tournaments.each_with_index do |tournament, index| %>
-        <% bg_class = begin
-             age = tournament.age_category.to_s
-             if age =~ /\AU(\d+)\z/ && $1.to_i < 20
-               "tournament-card--bg1"
-             else
-               "tournament-card--bg2"
-             end
-           end %>
-
-        <% if index < 2 %>
-          <!-- สองรายการแรก: การ์ดเต็มแบบเดิม -->
-          <div class="tournament-card <%= bg_class %>">
-            <div class="tournament-card-body">
-              <div class="tournament-title"><%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %></div>
-              <div class="tournament-meta">
-                <div>7 - 8 ก.พ. 2026</div>
-                <div>📍 <%= tournament.location_name %> · <%= tournament.city %>, <%= tournament.province %></div>
-                <div>👥 ทีมละ <%= tournament.team_size %> คน</div>
-                <div class="tournament-meta-divider"></div>
-                <div>🏆 เงินรางวัล <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %> · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %></div>
+  <div class="container py-3">
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <%= form_with url: tournaments_path, method: :get, local: true do |f| %>
+              <div class="row g-2 align-items-center mb-2">
+                <div class="col-8 col-md-10">
+                  <%= f.text_field :q, value: params[:q], placeholder: "ค้นหาคำว่า...", class: "form-control form-control-sm" %>
+                </div>
+                <div class="col-4 col-md-2 text-end">
+                  <button type="submit" class="btn btn-sm btn-primary w-100">ค้นหา</button>
+                </div>
               </div>
-            </div>
-            <div class="tournament-footer">
-              <div class="tournament-footer-left">
-                <span class="tournament-footer-dot"></span>
-                <span class="tournament-footer-text">มีทีมสนใจสมัคร <%= tournament.team_registrations.count %> ทีม</span>
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <%= f.select :age_category,
+                        options_for_select([["ทุกช่วงอายุ", ""]] + @age_categories.map { |a| [a, a] }, params[:age_category]),
+                        {},
+                        class: "form-select",
+                        onchange: "this.form.submit()" %>
+                </div>
+
+                <div class="col-6">
+                  <%= f.select :province,
+                        options_for_select([["ทุกจังหวัด", ""]] + @provinces.map { |p| [p, p] }, params[:province]),
+                        {},
+                        class: "form-select",
+                        onchange: "this.form.submit()" %>
+                </div>
               </div>
-              <div class="tournament-footer-actions">
-                <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
-                <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
-              </div>
-            </div>
+            <% end %>
           </div>
-        <% else %>
-          <!-- รายการถัดไป: การ์ดแบบ compact รูปสี่เหลี่ยมซ้าย รายละเอียดขวา -->
-          <div class="tournament-card-compact">
-            <div class="tournament-card-compact-image <%= bg_class %>"></div>
-            <div class="tournament-card-compact-body">
-              <div class="tournament-title"><%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %></div>
-              <div class="tournament-meta">
-                <div>7 - 8 ก.พ. 2026</div>
-                <div>📍 <%= tournament.location_name %></div>
-                <div>🏆 <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %> · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %></div>
-              </div>
-              <div class="tournament-card-compact-actions">
-                <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
-                <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mb-2">
+      <div class="col-12">
+        <span class="badge bg-secondary">ผลลัพธ์การค้นหา</span>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <% if @tournaments.any? %>
+        <% @tournaments.each_with_index do |tournament, index| %>
+          <% bg_class = begin
+               age = tournament.age_category.to_s
+               if age =~ /\AU(\d+)\z/ && $1.to_i < 20
+                 "tournament-card--bg1"
+               else
+                 "tournament-card--bg2"
+               end
+             end %>
+
+          <% if index < 4 %>
+            <!-- สี่รายการแรก: การ์ดใหญ่เต็มใบ พร้อมรูปพื้นหลัง (2 ใบต่อแถวบนจอใหญ่) -->
+            <div class="col-12 col-md-6">
+              <div class="tournament-card <%= bg_class %>">
+                <div class="tournament-card-body">
+                  <div class="tournament-title">
+                    <%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %>
+                  </div>
+                  <div class="tournament-meta">
+                    <div>7 - 8 ก.พ. 2026</div>
+                    <div>📍 <%= tournament.location_name %> · <%= tournament.city %>, <%= tournament.province %></div>
+                    <div>👥 ทีมละ <%= tournament.team_size %> คน</div>
+                    <div class="tournament-meta-divider"></div>
+                    <div>
+                      🏆 เงินรางวัล <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %>
+                      · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %>
+                    </div>
+                  </div>
+                </div>
+                <div class="tournament-footer">
+                  <div class="tournament-footer-left">
+                    <span class="tournament-footer-dot"></span>
+                    <span class="tournament-footer-text">มีทีมสนใจสมัคร <%= tournament.team_registrations.count %> ทีม</span>
+                  </div>
+                  <div class="tournament-footer-actions">
+                    <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
+                    <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
+                  </div>
+                </div>
               </div>
             </div>
+          <% else %>
+            <!-- รายการถัดไป: การ์ด compact 2 คอลัมน์ -->
+            <div class="col-12 col-md-6">
+              <div class="tournament-card-compact">
+                <div class="tournament-card-compact-image <%= bg_class %>"></div>
+                <div class="tournament-card-compact-body">
+                  <div class="tournament-title">
+                    <%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %>
+                  </div>
+                  <div class="tournament-meta">
+                    <div>7 - 8 ก.พ. 2026</div>
+                    <div>📍 <%= tournament.location_name %></div>
+                    <div>🏆 <%= number_to_currency(tournament.prize_amount, unit: "฿", precision: 0) %> · ค่าสมัคร <%= number_to_currency(tournament.entry_fee, unit: "฿", precision: 0) %></div>
+                  </div>
+                  <div class="tournament-card-compact-actions">
+                    <%= link_to "สนใจสมัคร", tournament_path(tournament), class: "btn-pill btn-interest" %>
+                    <%= link_to "รายละเอียด", tournament_path(tournament), class: "btn-pill btn-apply" %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      <% else %>
+        <div class="col-12">
+          <div class="alert alert-info" role="alert">
+            ยังไม่มีรายการแข่งในจังหวัดนี้
           </div>
-        <% end %>
-      <% end %>
-    <% else %>
-      <div class="tournaments-empty">ยังไม่มีรายการแข่งในจังหวัดนี้</div>
-    <% end %>
-  </div>
-
-  <% if @total_pages > 1 %>
-    <div class="pagination">
-      <% if @current_page > 1 %>
-        <%= link_to "ก่อนหน้า", tournaments_path(request.query_parameters.merge(page: @current_page - 1)), class: "pagination-link" %>
-      <% end %>
-
-      <% (1..@total_pages).each do |page| %>
-        <% if page == @current_page %>
-          <span class="pagination-link pagination-link--active"><%= page %></span>
-        <% else %>
-          <%= link_to page, tournaments_path(request.query_parameters.merge(page: page)), class: "pagination-link" %>
-        <% end %>
-      <% end %>
-
-      <% if @current_page < @total_pages %>
-        <%= link_to "ถัดไป", tournaments_path(request.query_parameters.merge(page: @current_page + 1)), class: "pagination-link" %>
+        </div>
       <% end %>
     </div>
-  <% end %>
+
+    <% if @total_pages > 1 %>
+      <div class="d-flex justify-content-center mt-3">
+        <nav aria-label="tournament-pages">
+          <ul class="pagination pagination-sm mb-0">
+            <% if @current_page > 1 %>
+              <li class="page-item">
+                <%= link_to "ก่อนหน้า", tournaments_path(request.query_parameters.merge(page: @current_page - 1)), class: "page-link" %>
+              </li>
+            <% end %>
+
+            <% max_pages = 10 %>
+            <% if @total_pages <= max_pages %>
+              <% start_page = 1; end_page = @total_pages %>
+            <% else %>
+              <% half_window = max_pages / 2 %>
+              <% start_page = @current_page - half_window %>
+              <% end_page   = @current_page + half_window %>
+
+              <% if start_page < 1 %>
+                <% end_page += (1 - start_page) %>
+                <% start_page = 1 %>
+              <% end %>
+
+              <% if end_page > @total_pages %>
+                <% start_page -= (end_page - @total_pages) %>
+                <% end_page = @total_pages %>
+              <% end %>
+
+              <% start_page = 1 if start_page < 1 %>
+            <% end %>
+
+            <% (start_page..end_page).each do |page| %>
+              <% if page == @current_page %>
+                <li class="page-item active"><span class="page-link"><%= page %></span></li>
+              <% else %>
+                <li class="page-item"><%= link_to page, tournaments_path(request.query_parameters.merge(page: page)), class: "page-link" %></li>
+              <% end %>
+            <% end %>
+
+            <% if @current_page < @total_pages %>
+              <li class="page-item">
+                <%= link_to "ถัดไป", tournaments_path(request.query_parameters.merge(page: @current_page + 1)), class: "page-link" %>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+      </div>
+    <% end %>
+  </div>
 </div>
 
 <script>

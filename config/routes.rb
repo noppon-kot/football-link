@@ -14,6 +14,10 @@ Rails.application.routes.draw do
     resources :team_registrations, only: [:new, :create, :update, :destroy]
   end
 
+  resources :admin_messages, only: [:index, :show, :new, :create, :update] do
+    resources :admin_message_comments, only: [:create]
+  end
+
   patch "tournaments/:id/approve", to: "tournaments#approve", as: :approve_tournament
 
   root "tournaments#index"

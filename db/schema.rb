@@ -10,9 +10,34 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_06_031950) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_06_112000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "admin_message_comments", force: :cascade do |t|
+    t.bigint "admin_message_id", null: false
+    t.bigint "user_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_message_id"], name: "index_admin_message_comments_on_admin_message_id"
+    t.index ["user_id"], name: "index_admin_message_comments_on_user_id"
+  end
+
+  create_table "admin_messages", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "tournament_id"
+    t.string "subject", null: false
+    t.text "body", null: false
+    t.integer "status", default: 0, null: false
+    t.string "message_type"
+    t.text "admin_reply"
+    t.datetime "replied_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tournament_id"], name: "index_admin_messages_on_tournament_id"
+    t.index ["user_id"], name: "index_admin_messages_on_user_id"
+  end
 
   create_table "fields", force: :cascade do |t|
     t.string "name"
@@ -99,6 +124,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_06_031950) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "admin_message_comments", "admin_messages"
+  add_foreign_key "admin_message_comments", "users"
+  add_foreign_key "admin_messages", "tournaments"
+  add_foreign_key "admin_messages", "users"
   add_foreign_key "fields", "users"
   add_foreign_key "team_registrations", "teams"
   add_foreign_key "team_registrations", "tournament_divisions"

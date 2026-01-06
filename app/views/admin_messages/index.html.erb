@@ -1,0 +1,135 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-header-title"><%= admin? ? "ข้อความจากผู้ใช้" : "ข้อความของฉัน" %></div>
+  </header>
+
+  <div class="container py-3">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <%= form_with url: admin_messages_path, method: :get, local: true do |f| %>
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-5">
+              <label class="form-label">ค้นหาหัวข้อ</label>
+              <%= f.text_field :q, value: params[:q], class: "form-control form-control-sm" %>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label">ช่วงวันที่สร้าง</label>
+              <%= f.select :created_period,
+                    options_for_select([["ทั้งหมด", "all"], ["7 วันล่าสุด", "7_days"], ["30 วันล่าสุด", "30_days"]], params[:created_period].presence || "all"),
+                    {},
+                    class: "form-select form-select-sm" %>
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label">สถานะข้อความ</label>
+              <%= f.select :status,
+                    options_for_select([["ทั้งหมด", ""], ["ใหม่", "new_message"], ["กำลังดำเนินการ", "in_progress"], ["เสร็จแล้ว", "done"]], params[:status]),
+                    {},
+                    class: "form-select form-select-sm" %>
+            </div>
+
+            <div class="col-12 col-md-2 d-flex justify-content-end">
+              <div class="w-100">
+                <label class="form-label">&nbsp;</label>
+                <%= f.submit "กรองผล", class: "btn btn-primary btn-sm w-100" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @admin_messages.any? %>
+      <div class="card shadow-sm">
+        <div class="card-body p-2 p-md-3">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">วันที่</th>
+                  <th scope="col">ผู้ใช้</th>
+                  <th scope="col">หัวข้อ</th>
+                  <th scope="col">สถานะ</th>
+                  <th scope="col" class="text-end"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @admin_messages.each do |m| %>
+                  <tr>
+                    <td style="white-space:nowrap;"><%= m.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+                    <td><%= m.user&.name %></td>
+                    <td><%= m.subject %></td>
+                    <td>
+                      <% status_text = case m.status
+                         when "new_message" then "ใหม่"
+                         when "in_progress" then "กำลังดำเนินการ"
+                         else "เสร็จแล้ว"
+                         end %>
+                      <span class="team-status-badge"><%= status_text %></span>
+                    </td>
+                    <td class="text-end">
+                      <%= link_to "ดูรายละเอียด", admin_message_path(m), class: "btn btn-sm btn-outline-primary" %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <% if @total_pages && @total_pages > 1 %>
+        <div class="d-flex justify-content-center mt-3">
+          <nav aria-label="admin-messages-pages">
+            <ul class="pagination pagination-sm mb-0">
+              <% if @current_page > 1 %>
+                <li class="page-item">
+                  <%= link_to "ก่อนหน้า", admin_messages_path(request.query_parameters.merge(page: @current_page - 1)), class: "page-link" %>
+                </li>
+              <% end %>
+
+              <% max_pages = 10 %>
+              <% if @total_pages <= max_pages %>
+                <% start_page = 1; end_page = @total_pages %>
+              <% else %>
+                <% half_window = max_pages / 2 %>
+                <% start_page = @current_page - half_window %>
+                <% end_page   = @current_page + half_window %>
+
+                <% if start_page < 1 %>
+                  <% end_page += (1 - start_page) %>
+                  <% start_page = 1 %>
+                <% end %>
+
+                <% if end_page > @total_pages %>
+                  <% start_page -= (end_page - @total_pages) %>
+                  <% end_page = @total_pages %>
+                <% end %>
+
+                <% start_page = 1 if start_page < 1 %>
+              <% end %>
+
+              <% (start_page..end_page).each do |page| %>
+                <% if page == @current_page %>
+                  <li class="page-item active"><span class="page-link"><%= page %></span></li>
+                <% else %>
+                  <li class="page-item"><%= link_to page, admin_messages_path(request.query_parameters.merge(page: page)), class: "page-link" %></li>
+                <% end %>
+              <% end %>
+
+              <% if @current_page < @total_pages %>
+                <li class="page-item">
+                  <%= link_to "ถัดไป", admin_messages_path(request.query_parameters.merge(page: @current_page + 1)), class: "page-link" %>
+                </li>
+              <% end %>
+            </ul>
+          </nav>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="alert alert-info" role="alert">ยังไม่มีข้อความจากผู้ใช้</div>
+    <% end %>
+  </div>
+</div>

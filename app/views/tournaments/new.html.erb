@@ -8,7 +8,10 @@
     <div class="app-header-title"><%= t('tournaments.form.header.title_full') %></div>
   </header>
 
-  <div class="tournament-form">
+  <div class="container py-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="tournament-form" style="padding-top:0;">
     <% age_options = I18n.t('tournaments.options.age_categories') %>
     <%= form_with model: @tournament, local: true do |f| %>
       <% if @tournament.errors.any? %>
@@ -198,14 +201,16 @@
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button type="button"
                   id="add-division-button"
-                  class="link-button"
-                  style="background-color:#eceff1;color:#455a64;border-color:#cfd8dc;">
+                  class="btn btn-sm btn-outline-secondary">
             + <%= t('tournaments.form.divisions.age_label') %>
           </button>
-          <%= f.submit t('tournaments.form.submit.create'), class: "link-button" %>
+          <%= f.submit t('tournaments.form.submit.create'), class: "btn btn-primary" %>
         </div>
       </div>
     <% end %>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

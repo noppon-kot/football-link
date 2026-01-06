@@ -14,9 +14,9 @@
       <div class="tournament-show-subtitle">
         7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
       </div>
-      <div class="tournament-show-actions">
+      <div class="tournament-show-actions" style="margin-top:6px;">
         <% if can_edit_tournament?(@tournament) %>
-          <%= link_to "แก้ไข", edit_tournament_path(@tournament), class: "btn-pill btn-apply", style: "margin-right:6px;" %>
+          <%= link_to "แก้ไข", edit_tournament_path(@tournament), class: "btn btn-sm btn-light" %>
         <% end %>
       </div>
     </div>
@@ -51,24 +51,30 @@
   </script>
 
   <div class="tournament-show-body">
-    <div class="tournament-info-card">
+    <div class="container py-3">
+      <div class="row g-3">
+        <div class="col-12 col-lg-5">
+          <div class="tournament-info-card card shadow-sm">
       <% if @tournament.description.present? %>
-        <div class="tournament-description">
-          <div class="tournament-description-label">รายละเอียด</div>
-          <div class="tournament-description-body"><%= simple_format(@tournament.description) %></div>
+        <div class="mb-3">
+          <div class="fw-bold mb-1">รายละเอียด</div>
+          <div class="small text-muted"><%= simple_format(@tournament.description) %></div>
         </div>
       <% end %>
 
-      <div><span class="label">จำนวนผู้เล่น:</span> <%= @tournament.team_size %> คน</div>
-
-      <div style="margin-top:4px;">
-        <div><span class="label">วันเปิดรับสมัคร:</span> <%= @tournament.registration_open_on&.strftime("%Y-%m-%d") %></div>
-        <div><span class="label">วันปิดรับสมัคร:</span> <%= @tournament.registration_close_on&.strftime("%Y-%m-%d") %></div>
-        <div><span class="label">วันแข่งขัน:</span> <%= @tournament.competition_date&.strftime("%Y-%m-%d") %></div>
+      <div class="mb-2 small">
+        <span class="fw-bold">จำนวนผู้เล่น:</span>
+        <span class="ms-1"><%= @tournament.team_size %> คน</span>
       </div>
 
-      <div style="margin-top:4px;">
-        <span class="label">สถานะรายการ:</span>
+      <div class="mb-2 small">
+        <div><span class="fw-bold">วันเปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_open_on&.strftime("%Y-%m-%d") %></span></div>
+        <div><span class="fw-bold">วันปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_close_on&.strftime("%Y-%m-%d") %></span></div>
+        <div><span class="fw-bold">วันแข่งขัน:</span> <span class="ms-1"><%= @tournament.competition_date&.strftime("%Y-%m-%d") %></span></div>
+      </div>
+
+      <div class="mb-3 small">
+        <span class="fw-bold">สถานะรายการ:</span>
         <% status_label = if @tournament.pending?
                             "รออนุมัติจากแอดมิน"
                           elsif @tournament.expired?
@@ -76,60 +82,64 @@
                           else
                             "เปิดให้ค้นหาและสมัครได้"
                           end %>
-        <%= status_label %>
+        <span class="badge bg-info text-dark ms-1"><%= status_label %></span>
       </div>
 
       <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
       <% if divisions.any? %>
-        <div style="margin-top:8px;">
-          <div class="tournament-description-label" style="margin-bottom:4px;">รุ่นที่เปิดแข่ง</div>
-          <% divisions.each do |div| %>
-            <div style="padding:4px 0;border-top:1px solid #eceff1;">
-              <div><span class="label">ช่วงอายุ:</span> <%= div.name %></div>
-              <% if div.entry_fee.present? %>
-                <div><span class="label">ค่าสมัครรุ่นนี้:</span> <%= number_to_currency(div.entry_fee, unit: "฿", precision: 0) %></div>
-              <% end %>
-              <% if div.prize_amount.present? %>
-                <div><span class="label">รางวัลรุ่นนี้:</span> <%= number_to_currency(div.prize_amount, unit: "฿", precision: 0) %></div>
-              <% end %>
+        <div class="mb-3">
+          <div class="fw-bold mb-1">รุ่นที่เปิดแข่ง</div>
+          <div class="list-group list-group-flush">
+            <% divisions.each do |div| %>
+              <div class="list-group-item px-0 py-2 small">
+                <div><span class="fw-bold">ช่วงอายุ:</span> <span class="ms-1"><%= div.name %></span></div>
+                <% if div.entry_fee.present? %>
+                  <div><span class="fw-bold">ค่าสมัครรุ่นนี้:</span> <span class="ms-1"><%= number_to_currency(div.entry_fee, unit: "฿", precision: 0) %></span></div>
+                <% end %>
+                <% if div.prize_amount.present? %>
+                  <div><span class="fw-bold">รางวัลรุ่นนี้:</span> <span class="ms-1"><%= number_to_currency(div.prize_amount, unit: "฿", precision: 0) %></span></div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div class="mb-1 small"><span class="fw-bold">ช่วงอายุ (หลัก):</span> <span class="ms-1"><%= @tournament.age_category %></span></div>
+        <div class="mb-1 small"><span class="fw-bold">ค่าสมัคร:</span> <span class="ms-1"><%= number_to_currency(@tournament.entry_fee, unit: "฿", precision: 0) %></span></div>
+        <div class="mb-3 small"><span class="fw-bold">รางวัล:</span> <span class="ms-1"><%= number_to_currency(@tournament.prize_amount, unit: "฿", precision: 0) %></span></div>
+      <% end %>
+
+      <div class="mb-1 small"><span class="fw-bold">ผู้จัด:</span> <span class="ms-1"><%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</span></div>
+      <% if @tournament.contact_phone.present? %>
+        <div class="mb-2 small"><span class="fw-bold">เบอร์โทรผู้ติดต่อรายการแข่ง:</span> <span class="ms-1"><%= @tournament.contact_phone %></span></div>
+      <% end %>
+          <% if @tournament.line_id.present? %>
+            <div style="margin-top:8px;">
+              <% line_url = "line://ti/p/~#{@tournament.line_id}" %>
+              <%= link_to "LINE ID: #{@tournament.line_id}",
+                          line_url,
+                          class: "btn-pill btn-apply",
+                          style: "background-color:#00c300;border-color:#00c300;color:#ffffff;" %>
             </div>
           <% end %>
         </div>
-      <% else %>
-        <div><span class="label">ช่วงอายุ (หลัก):</span> <%= @tournament.age_category %></div>
-        <div><span class="label">ค่าสมัคร:</span> <%= number_to_currency(@tournament.entry_fee, unit: "฿", precision: 0) %></div>
-        <div><span class="label">รางวัล:</span> <%= number_to_currency(@tournament.prize_amount, unit: "฿", precision: 0) %></div>
-      <% end %>
+      </div>
 
-      <div style="margin-top:8px;"><span class="label">ผู้จัด:</span> <%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</div>
-      <% if @tournament.contact_phone.present? %>
-        <div><span class="label">เบอร์โทรผู้ติดต่อรายการแข่ง:</span> <%= @tournament.contact_phone %></div>
-      <% end %>
-      <% if @tournament.line_id.present? %>
-        <div style="margin-top:8px;">
-          <% line_url = "line://ti/p/~#{@tournament.line_id}" %>
-          <%= link_to "LINE ID: #{@tournament.line_id}",
-                      line_url,
-                      class: "btn-pill btn-apply",
-                      style: "background-color:#00c300;border-color:#00c300;color:#ffffff;" %>
-        </div>
-      <% end %>
-    </div>
-
-    <div class="team-list-card">
-      <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
+        <div class="col-12 col-lg-7">
+          <div class="team-list-card card shadow-sm">
+            <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
       <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
       <% regs_without_div = @tournament.team_registrations.where(tournament_division_id: nil).includes(:team).to_a %>
       <% status_order = { "confirmed" => 0, "paid" => 0, "applied" => 1, "interested" => 1 } %>
 
       <% if divisions.any? || @tournament.team_registrations.any? %>
 
-        <div class="team-tabs" id="team-tabs">
+        <div class="team-tabs nav nav-pills mb-2" id="team-tabs">
           <% divisions.each_with_index do |div, idx| %>
             <% count = div.team_registrations.count %>
             <button
               type="button"
-              class="team-tab <%= 'team-tab--active' if idx == 0 %>"
+              class="team-tab btn btn-sm btn-outline-primary <%= 'team-tab--active' if idx == 0 %>"
               data-tab="division-<%= div.id %>">
               <span><%= div.name %></span>
               <span class="team-tab-count"><%= count %></span>
@@ -138,7 +148,7 @@
           <% if regs_without_div.any? %>
             <button
               type="button"
-              class="team-tab <%= 'team-tab--active' if divisions.empty? %>"
+              class="team-tab btn btn-sm btn-outline-primary <%= 'team-tab--active' if divisions.empty? %>"
               data-tab="division-unassigned">
               <span>ไม่ระบุรุ่น</span>
               <span class="team-tab-count"><%= regs_without_div.size %></span>
@@ -235,7 +245,7 @@
                             tournament_team_registration_path(@tournament, reg),
                             method: :delete,
                             data: { confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
-                            class: "btn-pill btn-secondary",
+                            class: "btn btn-sm btn-outline-danger",
                             form_class: "inline-form" %>
                     <% else %>
                       <div class="<%= badge_class %>"><%= label %></div>
@@ -249,12 +259,15 @@
       <% else %>
         <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัคร</div>
       <% end %>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="tournament-show-bottom-bar">
     <div style="display:flex;gap:8px;">
-      <%= link_to "สมัครแข่งขัน", new_tournament_team_registration_path(@tournament), class: "link-button", style: "background-color:#e53935;color:#ffffff;border-color:#e53935;" %>
+      <%= link_to "สมัครแข่งขัน", new_tournament_team_registration_path(@tournament), class: "btn btn-danger w-100" %>
     </div>
   </div>
 </div>

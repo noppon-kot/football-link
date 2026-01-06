@@ -1,0 +1,51 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-header-title">ติดต่อแอดมิน</div>
+  </header>
+
+  <div class="container py-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <%= form_with model: @admin_message, local: true do |f| %>
+          <div class="mb-3">
+            <label class="form-label">หัวข้อ</label>
+            <%= f.text_field :subject, class: "form-control" %>
+            <% if @admin_message.errors[:subject].any? %>
+              <div class="text-danger small mt-1"><%= @admin_message.errors[:subject].first %></div>
+            <% end %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">รายละเอียดข้อความ</label>
+            <%= f.text_area :body, rows: 5, class: "form-control" %>
+            <% if @admin_message.errors[:body].any? %>
+              <div class="text-danger small mt-1"><%= @admin_message.errors[:body].first %></div>
+            <% end %>
+          </div>
+
+          <% if @admin_message.tournament_id.present? %>
+            <div class="mb-3">
+              <label class="form-label">เกี่ยวกับรายการแข่งขัน</label>
+              <% tournament = Tournament.find_by(id: @admin_message.tournament_id) %>
+              <% if tournament %>
+                <div class="form-control-plaintext"><%= tournament.title %></div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="mb-3">
+            <label class="form-label">ประเภทข้อความ</label>
+            <%= f.select :message_type,
+                  options_for_select([["ทั่วไป", "general"], ["ขออนุมัติรายการ", "approve_request"], ["แจ้งโอนเงิน", "payment_notify"]], @admin_message.message_type),
+                  {},
+                  class: "form-select" %>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <%= f.submit "ส่งข้อความถึงแอดมิน", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

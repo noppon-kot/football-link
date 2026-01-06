@@ -5,53 +5,61 @@
       <div class="app-top-nav-center"></div>
       <div class="app-top-nav-right">
         <% if can_create_tournaments? %>
-          <%= link_to "เพิ่มรายการแข่งขัน", new_tournament_path, class: "btn-pill btn-apply" %>
+          <%= link_to "เพิ่มรายการแข่งขัน", new_tournament_path, class: "btn btn-sm btn-light" %>
         <% end %>
       </div>
     </div>
     <div class="app-header-title">รายการแข่งที่ฉันสร้าง</div>
   </header>
 
-  <div class="tournament-form" style="padding-top:8px;">
-    <%= form_with url: dashboard_path, method: :get, local: true, class: "tournament-form-inline", style: "margin-bottom:12px;gap:8px;align-items:flex-end;flex-wrap:wrap;" do |f| %>
-      <div class="tournament-form-group" style="flex:1;min-width:120px;">
-        <label>ค้นหาชื่อรายการ</label>
-        <%= f.text_field :q, value: params[:q], class: "tournament-form-input" %>
-      </div>
+  <div class="container py-3">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <%= form_with url: dashboard_path, method: :get, local: true do |f| %>
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+              <label class="form-label">ค้นหาชื่อรายการ</label>
+              <%= f.text_field :q, value: params[:q], class: "form-control form-control-sm" %>
+            </div>
 
-      <div class="tournament-form-group" style="flex:0 0 140px;">
-        <label>ช่วงวันที่สร้าง</label>
-        <%= f.select :created_period,
-              options_for_select([["ทั้งหมด", "all"], ["7 วันล่าสุด", "7_days"], ["30 วันล่าสุด", "30_days"]], params[:created_period].presence || "all"),
-              {},
-              class: "tournament-form-input" %>
-      </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label">ช่วงวันที่สร้าง</label>
+              <%= f.select :created_period,
+                    options_for_select([["ทั้งหมด", "all"], ["7 วันล่าสุด", "7_days"], ["30 วันล่าสุด", "30_days"]], params[:created_period].presence || "all"),
+                    {},
+                    class: "form-select form-select-sm" %>
+            </div>
 
-      <div class="tournament-form-group" style="flex:0 0 140px;">
-        <label>สถานะรายการ</label>
-        <%= f.select :status,
-              options_for_select([["ทั้งหมด", ""], ["รออนุมัติ", "pending"], ["เปิดให้ค้นหา", "active"]], params[:status]),
-              {},
-              class: "tournament-form-input" %>
-      </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label">สถานะรายการ</label>
+              <%= f.select :status,
+                    options_for_select([["ทั้งหมด", ""], ["รออนุมัติ", "pending"], ["เปิดให้ค้นหา", "active"]], params[:status]),
+                    {},
+                    class: "form-select form-select-sm" %>
+            </div>
 
-      <div class="tournament-form-group" style="flex:0 0 160px;">
-        <label>จังหวัด</label>
-        <% provinces = Tournament.distinct.order(:province).pluck(:province).compact %>
-        <%= f.select :province,
-              options_for_select([["ทั้งหมด", ""]] + provinces.map { |p| [p, p] }, params[:province]),
-              {},
-              class: "tournament-form-input" %>
-      </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label">จังหวัด</label>
+              <% provinces = Tournament.distinct.order(:province).pluck(:province).compact %>
+              <%= f.select :province,
+                    options_for_select([["ทั้งหมด", ""]] + provinces.map { |p| [p, p] }, params[:province]),
+                    {},
+                    class: "form-select form-select-sm" %>
+            </div>
 
-      <div class="tournament-form-group" style="flex:0 0 100px;">
-        <label>&nbsp;</label>
-        <%= f.submit "กรองผล", class: "link-button", style: "width:100%;" %>
+            <div class="col-6 col-md-2 d-flex justify-content-end">
+              <div class="w-100">
+                <label class="form-label">&nbsp;</label>
+                <%= f.submit "กรองผล", class: "btn btn-primary btn-sm w-100" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
-    <% end %>
+    </div>
 
     <% if @tournaments.any? %>
-      <div class="tournament-list">
+      <div class="row g-3">
         <% @tournaments.each do |t| %>
           <% bg_class = begin
                age = t.age_category.to_s
@@ -62,64 +70,66 @@
                end
              end %>
 
-          <div class="tournament-card-compact">
-            <div class="tournament-card-compact-image <%= bg_class %>"></div>
-            <div class="tournament-card-compact-body">
-              <div class="tournament-title">
-                <%= link_to t.title, tournament_path(t), style: "color: inherit; text-decoration: none;" %>
-              </div>
-              <div class="tournament-meta">
-                <div>
-                  <% status_text, status_class = if t.pending?
-                                                  ["รออนุมัติ (ยังไม่แสดงในหน้าค้นหา)", "team-status-badge team-status-badge--applied"]
-                                                elsif t.respond_to?(:expired?) && t.expired?
-                                                  ["หมดอายุ", "team-status-badge"]
-                                                else
-                                                  ["เปิดให้ค้นหา", "team-status-badge team-status-badge--confirmed"]
-                                                end %>
-                  <span class="<%= status_class %>"><%= status_text %></span>
-                  <% if t.competition_date.present? %>
-                    <span style="font-size:11px;color:#78909c;margin-left:6px;">แข่งวันที่ <%= t.competition_date.strftime("%Y-%m-%d") %></span>
+          <div class="col-12 col-md-6">
+            <div class="tournament-card-compact">
+              <div class="tournament-card-compact-image <%= bg_class %>"></div>
+              <div class="tournament-card-compact-body">
+                <div class="tournament-title">
+                  <%= link_to t.title, tournament_path(t), style: "color: inherit; text-decoration: none;" %>
+                </div>
+                <div class="tournament-meta">
+                  <div>
+                    <% status_text, status_class = if t.pending?
+                                                    ["รออนุมัติ (ยังไม่แสดงในหน้าค้นหา)", "team-status-badge team-status-badge--applied"]
+                                                  elsif t.respond_to?(:expired?) && t.expired?
+                                                    ["หมดอายุ", "team-status-badge"]
+                                                  else
+                                                    ["เปิดให้ค้นหา", "team-status-badge team-status-badge--confirmed"]
+                                                  end %>
+                    <span class="<%= status_class %>"><%= status_text %></span>
+                    <% if t.competition_date.present? %>
+                      <span style="font-size:11px;color:#78909c;margin-left:6px;">แข่งวันที่ <%= t.competition_date.strftime("%Y-%m-%d") %></span>
+                    <% end %>
+                  </div>
+                  <div>สนาม: <%= t.location_name %> · <%= t.city %>, <%= t.province %></div>
+                  <div>
+                    ทีมสมัครทั้งหมด: <%= t.team_registrations.count %>
+                    · รอพิจารณา: <%= t.team_registrations.interested.count %>
+                    · สมัครแล้ว: <%= t.team_registrations.applied.count %>
+                    · ยืนยันแล้ว/จ่ายแล้ว: <%= t.team_registrations.confirmed.count + t.team_registrations.paid.count %>
+                  </div>
+                  <div>
+                    อัปเดตล่าสุด: <%= (t.updated_at || t.created_at).strftime("%Y-%m-%d %H:%M") %>
+                  </div>
+                </div>
+                <div class="tournament-card-compact-actions">
+                  <% if can_edit_tournament?(t) %>
+                    <%= link_to "แก้ไข", edit_tournament_path(t), class: "btn btn-sm btn-outline-primary" %>
                   <% end %>
-                </div>
-                <div>สนาม: <%= t.location_name %> · <%= t.city %>, <%= t.province %></div>
-                <div>
-                  ทีมสมัครทั้งหมด: <%= t.team_registrations.count %>
-                  · รอพิจารณา: <%= t.team_registrations.interested.count %>
-                  · สมัครแล้ว: <%= t.team_registrations.applied.count %>
-                  · ยืนยันแล้ว/จ่ายแล้ว: <%= t.team_registrations.confirmed.count + t.team_registrations.paid.count %>
-                </div>
-                <div>
-                  อัปเดตล่าสุด: <%= (t.updated_at || t.created_at).strftime("%Y-%m-%d %H:%M") %>
-                </div>
-              </div>
-              <div class="tournament-card-compact-actions">
-                <% if can_edit_tournament?(t) %>
-                  <%= link_to "แก้ไข", edit_tournament_path(t), class: "btn-pill btn-apply" %>
-                <% end %>
 
-                <% if admin? %>
-                  <% if t.pending? %>
-                    <%= button_to "อนุมัติให้ค้นหาได้",
-                                  approve_tournament_path(t, status: :active),
-                                  method: :patch,
-                                  class: "btn-pill btn-apply",
-                                  form_class: "inline-form" %>
-                  <% else %>
-                    <%= button_to "เปลี่ยนเป็นรออนุมัติ",
-                                  approve_tournament_path(t, status: :pending),
-                                  method: :patch,
-                                  class: "btn-pill btn-cancel",
-                                  form_class: "inline-form" %>
+                  <% if admin? %>
+                    <% if t.pending? %>
+                      <%= button_to "อนุมัติให้ค้นหาได้",
+                                    approve_tournament_path(t, status: :active),
+                                    method: :patch,
+                                    class: "btn btn-sm btn-success",
+                                    form_class: "inline-form" %>
+                    <% else %>
+                      <%= button_to "เปลี่ยนเป็นรออนุมัติ",
+                                    approve_tournament_path(t, status: :pending),
+                                    method: :patch,
+                                    class: "btn btn-sm btn-outline-secondary",
+                                    form_class: "inline-form" %>
+                    <% end %>
                   <% end %>
-                <% end %>
+                </div>
               </div>
             </div>
           </div>
         <% end %>
       </div>
     <% else %>
-      <div class="tournaments-empty">ตอนนี้ยังไม่มีรายการแข่งในแดชบอร์ดของคุณ</div>
+      <div class="alert alert-info" role="alert">ตอนนี้ยังไม่มีรายการแข่งในแดชบอร์ดของคุณ</div>
     <% end %>
   </div>
 </div>

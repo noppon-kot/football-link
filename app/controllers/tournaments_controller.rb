@@ -33,7 +33,7 @@ class TournamentsController < ApplicationController
 
     @current_page = params[:page].to_i
     @current_page = 1 if @current_page < 1
-    per_page = 6
+    per_page = 10
     @total_pages = (@tournaments.count / per_page.to_f).ceil
     @tournaments = @tournaments.offset((@current_page - 1) * per_page).limit(per_page)
   end

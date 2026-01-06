@@ -1,0 +1,108 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-header-title">รายละเอียดข้อความจากผู้ใช้</div>
+  </header>
+
+  <div class="container py-3">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body" style="padding:10px 12px;background:#e3f2fd;border-radius:0.5rem;">
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:#37474f;">
+          <div>
+            <span style="font-weight:bold;">ผู้ใช้:</span>
+            <span style="margin-left:4px;"><%= @admin_message.user&.name %></span>
+          </div>
+
+          <div>
+            <span style="font-weight:bold;">หัวข้อ:</span>
+            <span style="margin-left:4px;"><%= @admin_message.subject %></span>
+          </div>
+
+          <div>
+            <span style="font-weight:bold;">สถานะข้อความ:</span>
+            <% status_text = case @admin_message.status
+               when "new_message" then "ใหม่"
+               when "in_progress" then "กำลังดำเนินการ"
+               else "เสร็จแล้ว"
+               end %>
+            <span style="margin-left:4px;" class="team-status-badge"><%= status_text %></span>
+          </div>
+
+          <div>
+            <div style="font-weight:bold;margin-top:4px;margin-bottom:1px;">รายละเอียดข้อความ</div>
+            <div style="white-space:pre-wrap;color:#455a64;">
+              <%= @admin_message.body %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% if @admin_message.tournament %>
+      <div class="mb-3">
+        <label class="form-label">เกี่ยวกับรายการแข่งขัน</label>
+        <div><%= link_to @admin_message.tournament.title, tournament_path(@admin_message.tournament) %></div>
+      </div>
+    <% end %>
+
+    <div class="mb-3">
+      <label class="form-label">บทสนทนาในหัวข้อนี้</label>
+      <div style="border:1px solid #e0e0e0;border-radius:6px;padding:8px;max-height:320px;overflow-y:auto;background:#fafafa;">
+        <% if @admin_message_comments.present? %>
+          <% @admin_message_comments.each do |c| %>
+            <% is_admin = c.user&.organizer? %>
+            <div style="margin-bottom:8px;text-align:<%= is_admin ? 'right' : 'left' %>;"><span style="display:inline-block;max-width:80%;padding:6px 8px;border-radius:8px;background:<%= is_admin ? '#e3f2fd' : '#ffffff' %>;border:1px solid #e0e0e0;">
+              <div style="font-size:11px;color:#78909c;margin-bottom:2px;">
+                <%= c.user&.name || (is_admin ? 'Admin' : 'ผู้ใช้') %> · <%= c.created_at.strftime("%Y-%m-%d %H:%M") %>
+                <% if is_admin %>
+                  <span style="margin-left:4px;color:#1565c0;">(แอดมิน)</span>
+                <% end %>
+              </div>
+              <div style="white-space:pre-wrap;font-size:13px;"><%= c.body %></div>
+            </span></div>
+          <% end %>
+        <% else %>
+          <div style="font-size:12px;color:#9e9e9e;">ยังไม่มีข้อความตอบกลับในหัวข้อนี้</div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">เพิ่มข้อความใหม่ในหัวข้อนี้</label>
+      <%= form_with model: [@admin_message, AdminMessageComment.new], url: admin_message_admin_message_comments_path(@admin_message), local: true do |f| %>
+        <div class="row g-2 align-items-center">
+          <div class="col-8 col-md-9">
+            <%= f.text_field :body, class: "form-control form-control-sm" %>
+          </div>
+          <div class="col-4 col-md-3 text-end">
+            <%= f.submit "ส่งข้อความ", class: "btn btn-primary btn-sm w-100" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <% if admin? %>
+      <hr style="margin:16px 0;" />
+      <%= form_with model: @admin_message, url: admin_message_path(@admin_message), method: :patch, local: true do |f| %>
+        <div class="mb-3">
+          <label class="form-label">สถานะข้อความ</label>
+          <%= f.select :status,
+                AdminMessage.statuses.keys.map { |k| [
+                  (k == "new_message" ? "ใหม่" : k == "in_progress" ? "กำลังดำเนินการ" : "เสร็จแล้ว"),
+                  k
+                ] },
+                {},
+                class: "form-select" %>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">หมายเหตุภายใน / สรุปผลการดำเนินการ (เห็นเฉพาะแอดมิน)</label>
+          <%= f.text_area :admin_reply, rows: 3, class: "form-control" %>
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <%= f.submit "บันทึกการอัปเดต", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>
