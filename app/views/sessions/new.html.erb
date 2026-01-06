@@ -18,9 +18,43 @@
               class: "tournament-form-input" %>
       </div>
 
+      <div class="tournament-form-group">
+        <label>รหัสผ่าน</label>
+        <%= f.password_field :password, class: "tournament-form-input", autocomplete: "off" %>
+      </div>
+
       <div class="tournament-form-actions">
         <%= f.submit t('sessions.form.submit'), class: "link-button" %>
       </div>
     <% end %>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var userSelect = document.querySelector('select[name="session[user_id]"]');
+    var passwordInput = document.querySelector('input[name="session[password]"]');
+
+    if (!userSelect || !passwordInput) return;
+
+    function updatePassword() {
+      var selectedOption = userSelect.options[userSelect.selectedIndex];
+      if (!selectedOption) {
+        passwordInput.value = "";
+        return;
+      }
+
+      var label = (selectedOption.text || "").toLowerCase();
+
+      if (label.indexOf("admin") !== -1) {
+        passwordInput.value = "";
+      } else if (userSelect.value) {
+        passwordInput.value = "qwer";
+      } else {
+        passwordInput.value = "";
+      }
+    }
+
+    userSelect.addEventListener("change", updatePassword);
+  });
+</script>
