@@ -42,12 +42,9 @@
 
           <div class="collapse navbar-collapse" id="topNav">
             <ul class="navbar-nav me-auto mb-2 mb-md-0" style="font-size:12px;">
-              <li class="nav-item">
-                <%= link_to "หน้าแรก", root_path, class: "nav-link", style: "color:#1565c0;font-weight:bold;" %>
-              </li>
               <% if can_create_tournaments? %>
                 <li class="nav-item">
-                  <%= link_to "แดชบอร์ด", dashboard_path, class: "nav-link", style: "color:#1565c0;" %>
+                  <%= link_to "รายการของฉัน", dashboard_path, class: "nav-link", style: "color:#1565c0;" %>
                 </li>
               <% end %>
             </ul>
