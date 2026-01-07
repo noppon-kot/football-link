@@ -1,6 +1,6 @@
 class TournamentsController < ApplicationController
   before_action :require_login, except: [:index, :show]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :fixture, :table]
   before_action :require_edit_permission, only: [:edit, :update]
   def index
     @age_categories = Tournament.distinct.order(:age_category).pluck(:age_category).compact
@@ -60,6 +60,52 @@ class TournamentsController < ApplicationController
 
   def show
     # @tournament is loaded in before_action :set_tournament
+  end
+
+  def teams
+    # ใช้ @tournament จาก set_tournament และ logic เดิมใน view สำหรับทีมที่สนใจ / สมัคร
+  end
+
+  def fixture
+    # ใช้ @tournament จาก set_tournament และ logic เดิมใน view สำหรับตารางแข่งขัน
+  end
+
+  def table
+    # ใช้ @tournament จาก set_tournament และภายหลังจะเพิ่ม logic คำนวณตารางคะแนน
+  end
+
+  def generate_mock_schedule
+    @tournament = Tournament.find(params[:id])
+
+    unless can_manage_registrations?(@tournament)
+      return redirect_to @tournament, alert: "คุณไม่มีสิทธิ์จัดตารางการแข่งขัน"
+    end
+
+    division = @tournament.tournament_divisions.find_by(id: params[:division_id])
+    group_count = params[:group_count].to_i
+    slots_per_group = params[:slots_per_group].to_i
+
+    if division.nil?
+      return redirect_to @tournament, alert: "ไม่พบรุ่นที่เลือก"
+    end
+
+    if group_count <= 0 || slots_per_group <= 0
+      return redirect_to @tournament, alert: "กรุณากรอกจำนวนสายและจำนวนทีมต่อสายให้ถูกต้อง"
+    end
+
+    service = ::Tournaments::GenerateMockScheduleService.new(
+      division: division,
+      group_count: group_count,
+      slots_per_group: slots_per_group
+    )
+
+    target_path = tournament_path(@tournament, anchor: "panel-schedule")
+
+    if service.call
+      redirect_to target_path, notice: "สร้างโครงตารางแข่งขันสำเร็จแล้ว"
+    else
+      redirect_to target_path, alert: "ไม่สามารถสร้างโครงตารางแข่งขันได้"
+    end
   end
 
   def new

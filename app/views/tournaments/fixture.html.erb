@@ -1,0 +1,142 @@
+<div class="app-shell">
+  <% bg_image = begin
+       age_str = @tournament.age_category.to_s
+       if age_str =~ /U(\d+)/ && $1.to_i < 20
+         "back1.png"
+       else
+         "back2.png"
+       end
+     end %>
+  <div class="tournament-show-header">
+    <div style="position:absolute;inset:0;background-image:url('<%= asset_path(bg_image) %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
+    <div style="position:relative;">
+      <div class="tournament-show-title"><%= @tournament.title %></div>
+      <div class="tournament-show-subtitle">
+        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+      </div>
+    </div>
+  </div>
+
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <%= link_to "ข้อมูลทั่วไป", tournament_path(@tournament), class: "nav-link" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ทีมแข่งขัน", teams_tournament_path(@tournament), class: "nav-link" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ตารางการแข่งขัน", fixture_tournament_path(@tournament), class: "nav-link active" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ตารางคะแนน", table_tournament_path(@tournament), class: "nav-link" %>
+        </li>
+      </ul>
+
+      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ตารางการแข่งขัน</h2>
+      <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
+      <hr>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-bold">ตารางการแข่งขัน (mock)</div>
+        <div class="card-body">
+          <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
+
+          <% if can_manage_registrations?(@tournament) && divisions.any? %>
+            <div class="mb-3" style="font-size:13px;">
+              <div class="fw-bold mb-1">สร้างโครงตารางแข่งขัน (mock slot เช่น A1, A2, B1, B2)</div>
+              <p class="mb-2" style="color:#78909c;">
+                เลือกรุ่น กำหนดจำนวนสาย และจำนวนทีมต่อสาย จากนั้นระบบจะสร้างคู่แข่งขันภายในแต่ละสายให้โดยอัตโนมัติ
+              </p>
+
+              <%= form_with url: generate_mock_schedule_tournament_path(@tournament), method: :post, local: true, class: "row g-2 align-items-end" do |f| %>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" style="font-size:12px;">รุ่น</label>
+                  <select name="division_id" class="form-select form-select-sm">
+                    <% divisions.each do |div| %>
+                      <option value="<%= div.id %>"><%= div.name %></option>
+                    <% end %>
+                  </select>
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label" style="font-size:12px;">จำนวนสาย</label>
+                  <input type="number" name="group_count" min="1" class="form-control form-control-sm" value="2">
+                </div>
+                <div class="col-6 col-md-3">
+                  <label class="form-label" style="font-size:12px;">จำนวนทีมต่อสาย</label>
+                  <input type="number" name="slots_per_group" min="2" class="form-control form-control-sm" value="4">
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                  <button type="submit" class="btn btn-sm btn-primary">สร้างโครงตารางแข่ง</button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if divisions.any? %>
+            <% all_matches = Match.where(tournament_division_id: divisions.map(&:id)).includes(:group).order('groups.name ASC NULLS LAST, matches.id ASC') %>
+
+            <% if all_matches.any? %>
+              <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
+
+              <% divisions.each_with_index do |div, idx| %>
+                <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
+                <% next if div_matches.empty? %>
+
+                <% color_class = color_classes[idx % color_classes.size] %>
+
+                <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
+                  <div class="d-flex align-items-center mb-2" style="gap:8px;">
+                    <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
+                    <div>
+                      <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
+                      <div style="font-size:11px;color:#78909c;">ตารางแข่งขันแบบ mock ตามสายในรุ่นนี้</div>
+                    </div>
+                  </div>
+
+                  <% matches_by_group = div_matches.group_by { |m| m.group&.name || "-" } %>
+                  <% matches_by_group.each do |group_name, matches| %>
+                    <div class="mb-2">
+                      <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group_name %></div>
+                      <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th scope="col">ทีมเหย้า</th>
+                              <th scope="col">ทีมเยือน</th>
+                              <th scope="col" class="text-center">สกอร์</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% matches.each do |match| %>
+                              <tr>
+                                <td><%= match.home_name %></td>
+                                <td><%= match.away_name %></td>
+                                <td class="text-center">
+                                  <% if match.home_score.present? && match.away_score.present? %>
+                                    <%= match.home_score %> - <%= match.away_score %>
+                                  <% else %>
+                                    <span class="text-muted" style="font-size:12px;">ยังไม่ระบุสกอร์</span>
+                                  <% end %>
+                                </td>
+                              </tr>
+                            <% end %>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            <% else %>
+              <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการสร้างตารางการแข่งขันสำหรับรุ่นใดเลย</p>
+            <% end %>
+          <% else %>
+            <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการกำหนดรุ่นการแข่งขันสำหรับรายการนี้</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

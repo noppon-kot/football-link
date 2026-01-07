@@ -12,6 +12,12 @@ Rails.application.routes.draw do
 
   resources :tournaments, only: [:index, :show, :new, :create, :edit, :update] do
     resources :team_registrations, only: [:new, :create, :update, :destroy]
+    post :generate_mock_schedule, on: :member
+    member do
+      get :teams
+      get :fixture
+      get :table
+    end
   end
 
   resources :admin_messages, only: [:index, :show, :new, :create, :update] do

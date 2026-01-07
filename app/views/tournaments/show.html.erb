@@ -48,13 +48,80 @@
         });
       });
     })();
+
+    // explicit tab handler for main tournament tabs เพื่อให้ซ่อน/แสดง pane ถูกต้องเสมอ
+    (function() {
+      function activateTabBySelector(targetSelector) {
+        var tabsContainer = document.getElementById('tournament-main-tabs');
+        var contentContainer = document.getElementById('tournament-main-tabs-content');
+        if (!tabsContainer || !contentContainer) return;
+
+        var tabLink = tabsContainer.querySelector('[data-bs-target="' + targetSelector + '"]');
+        if (!tabLink) return;
+
+        // toggle active on nav links
+        var allLinks = tabsContainer.querySelectorAll('.nav-link');
+        allLinks.forEach(function(link) { link.classList.remove('active'); });
+        tabLink.classList.add('active');
+
+        // toggle panes
+        var allPanes = contentContainer.querySelectorAll('.tab-pane');
+        allPanes.forEach(function(pane) {
+          pane.classList.remove('show', 'active');
+        });
+
+        var targetPane = contentContainer.querySelector(targetSelector);
+        if (targetPane) {
+          targetPane.classList.add('show', 'active');
+        }
+      }
+
+      document.addEventListener('click', function(e) {
+        var tabLink = e.target.closest('#tournament-main-tabs .nav-link');
+        if (!tabLink) return;
+
+        var targetSelector = tabLink.getAttribute('data-bs-target');
+        if (!targetSelector) return;
+
+        activateTabBySelector(targetSelector);
+      });
+
+      // ถ้าเปิดหน้ามาพร้อม hash ของ panel-schedule ให้สลับแท็บให้อัตโนมัติ
+      document.addEventListener('DOMContentLoaded', function() {
+        if (window.location.hash === '#panel-schedule') {
+          activateTabBySelector('#panel-schedule');
+        }
+      });
+    })();
   </script>
 
   <div class="tournament-show-body">
-    <div class="container py-3">
-      <div class="row g-3">
-        <div class="col-12">
-          <div class="tournament-info-card card shadow-sm">
+    <div class="container py-2">
+      <!-- Main navigation between subpages -->
+      <ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <%= link_to "ข้อมูลทั่วไป", tournament_path(@tournament), class: "nav-link active" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ทีมแข่งขัน", teams_tournament_path(@tournament), class: "nav-link" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ตารางการแข่งขัน", fixture_tournament_path(@tournament), class: "nav-link" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ตารางคะแนน", table_tournament_path(@tournament), class: "nav-link" %>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="tournament-main-tabs-content">
+        <div
+          class="tab-pane fade show active"
+          id="panel-general"
+          role="tabpanel"
+          aria-labelledby="tab-general">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="tournament-info-card card shadow-sm">
       <% if @tournament.images.attached? %>
         <div class="mb-3">
           <%= image_tag @tournament.images.first,
@@ -134,144 +201,32 @@
         </div>
       </div>
 
-      <div class="row g-3 mt-3">
-        <div class="col-12">
-          <div class="team-list-card card shadow-sm">
-            <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
-      <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
-      <% regs_without_div = @tournament.team_registrations.where(tournament_division_id: nil).includes(:team).to_a %>
-      <% status_order = { "confirmed" => 0, "paid" => 0, "applied" => 1, "interested" => 1 } %>
+      <!-- team list moved to /tournaments/:id/teams -->
+        </div> <!-- /col-12 general -->
+      </div>   <!-- /row general -->
+        </div> <!-- /tab-pane general -->
 
-      <% if divisions.any? || @tournament.team_registrations.any? %>
-
-        <div class="team-tabs nav nav-pills mb-2" id="team-tabs">
-          <% divisions.each_with_index do |div, idx| %>
-            <% count = div.team_registrations.count %>
-            <button
-              type="button"
-              class="team-tab btn btn-sm btn-outline-primary <%= 'team-tab--active' if idx == 0 %>"
-              data-tab="division-<%= div.id %>">
-              <span><%= div.name %></span>
-              <span class="team-tab-count"><%= count %></span>
-            </button>
-          <% end %>
-          <% if regs_without_div.any? %>
-            <button
-              type="button"
-              class="team-tab btn btn-sm btn-outline-primary <%= 'team-tab--active' if divisions.empty? %>"
-              data-tab="division-unassigned">
-              <span>ไม่ระบุรุ่น</span>
-              <span class="team-tab-count"><%= regs_without_div.size %></span>
-            </button>
-          <% end %>
-        </div>
-
-        <div class="team-tab-panels" id="team-tab-panels">
-          <% divisions.each_with_index do |div, idx| %>
-            <% regs = div.team_registrations.includes(:team).to_a %>
-            <% sorted_regs = regs.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
-            <div
-              class="team-tab-panel"
-              id="division-<%= div.id %>"
-              style="display:<%= idx == 0 ? 'block' : 'none' %>;">
-              <% if sorted_regs.any? %>
-                <% sorted_regs.each do |reg| %>
-                  <% display_state = case reg.status
-                                     when "confirmed", "paid" then :confirmed
-                                     else :applied
-                                     end %>
-
-                  <% badge_class = case display_state
-                                   when :applied   then "team-status-badge team-status-badge--applied"
-                                   when :confirmed then "team-status-badge team-status-badge--confirmed"
-                                   end %>
-
-                  <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
-                  <div class="team-list-row">
-                    <div>
-                      <div><strong><%= reg.team.name %></strong></div>
-                      <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                      <% if can_manage_registrations?(@tournament) %>
-                        <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
-                        <%= button_to label,
-                              tournament_team_registration_path(@tournament, reg),
-                              method: :patch,
-                              params: { team_registration: { status: target_status } },
-                              class: "team-status-badge #{badge_class}",
-                              form_class: "inline-form" %>
-                        <%= button_to "ลบ",
-                              tournament_team_registration_path(@tournament, reg),
-                              method: :delete,
-                              data: { confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
-                              class: "btn-pill btn-secondary",
-                              form_class: "inline-form" %>
-                      <% else %>
-                        <div class="<%= badge_class %>"><%= label %></div>
-                      <% end %>
-                    </div>
-                  </div>
-                <% end %>
-              <% else %>
-                <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัครในรุ่นนี้</div>
-              <% end %>
+        <div
+          class="tab-pane fade"
+          id="panel-schedule"
+          role="tabpanel"
+          aria-labelledby="tab-schedule">
+          <div class="card shadow-sm">
+            <div class="card-body" style="font-size:13px;">
+              <p class="mb-1 fw-bold">ตารางการแข่งขัน</p>
+              <p class="mb-2 text-muted">กรุณาดูหรือจัดการตารางแข่งขันจากหน้าต่างหาก:</p>
+              <%= link_to "ไปที่หน้าตารางการแข่งขัน", fixture_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary" %>
             </div>
-          <% end %>
-
-          <% if regs_without_div.any? %>
-            <div
-              class="team-tab-panel"
-              id="division-unassigned"
-              style="display:<%= divisions.empty? ? 'block' : 'none' %>;">
-              <% sorted_regs = regs_without_div.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
-              <% sorted_regs.each do |reg| %>
-                <% display_state = case reg.status
-                                   when "confirmed", "paid" then :confirmed
-                                   else :applied
-                                   end %>
-
-                <% badge_class = case display_state
-                                 when :applied   then "team-status-badge team-status-badge--applied"
-                                 when :confirmed then "team-status-badge team-status-badge--confirmed"
-                                 end %>
-
-                <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
-                <div class="team-list-row">
-                  <div>
-                    <div><strong><%= reg.team.name %></strong></div>
-                    <div style="font-size:11px;color:#78909c;">โทร: <%= reg.team.contact_phone %></div>
-                  </div>
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <% if can_manage_registrations?(@tournament) %>
-                      <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
-                      <%= button_to label,
-                            tournament_team_registration_path(@tournament, reg),
-                            method: :patch,
-                            params: { team_registration: { status: target_status } },
-                            class: "team-status-badge #{badge_class}",
-                            form_class: "inline-form" %>
-                      <%= button_to "ลบ",
-                            tournament_team_registration_path(@tournament, reg),
-                            method: :delete,
-                            data: { confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
-                            class: "btn btn-sm btn-outline-danger",
-                            form_class: "inline-form" %>
-                    <% else %>
-                      <div class="<%= badge_class %>"><%= label %></div>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
+          </div>
+          <div class="card shadow-sm mt-3">
+            <div class="card-body" style="font-size:13px;">
+              <p class="mb-1 fw-bold">ตารางคะแนน</p>
+              <p class="mb-2 text-muted">กรุณาดูตารางคะแนนจากหน้าต่างหาก:</p>
+              <%= link_to "ไปที่หน้าตารางคะแนน", table_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary" %>
             </div>
-          <% end %>
-        </div>
-      <% else %>
-        <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัคร</div>
-      <% end %>
           </div>
         </div>
-      </div>
+      </div> <!-- /tab-content main -->
     </div>
   </div>
 

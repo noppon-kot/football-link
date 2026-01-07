@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_07_033402) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_07_041000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -82,6 +82,32 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_07_033402) do
     t.index ["user_id"], name: "index_fields_on_user_id"
   end
 
+  create_table "groups", force: :cascade do |t|
+    t.bigint "tournament_division_id", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tournament_division_id"], name: "index_groups_on_tournament_division_id"
+  end
+
+  create_table "matches", force: :cascade do |t|
+    t.bigint "tournament_division_id", null: false
+    t.bigint "group_id"
+    t.bigint "home_team_id"
+    t.bigint "away_team_id"
+    t.integer "home_score"
+    t.integer "away_score"
+    t.integer "status", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.string "home_slot_label", default: "", null: false
+    t.string "away_slot_label", default: "", null: false
+    t.index ["away_team_id"], name: "index_matches_on_away_team_id"
+    t.index ["group_id"], name: "index_matches_on_group_id"
+    t.index ["home_team_id"], name: "index_matches_on_home_team_id"
+    t.index ["tournament_division_id"], name: "index_matches_on_tournament_division_id"
+  end
+
   create_table "team_registrations", force: :cascade do |t|
     t.integer "status"
     t.text "notes"
@@ -114,6 +140,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_07_033402) do
     t.datetime "updated_at", null: false
     t.integer "entry_fee"
     t.integer "prize_amount"
+    t.integer "points_win", default: 3, null: false
+    t.integer "points_draw", default: 1, null: false
+    t.integer "points_loss", default: 0, null: false
     t.index ["tournament_id"], name: "index_tournament_divisions_on_tournament_id"
   end
 
@@ -159,6 +188,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_07_033402) do
   add_foreign_key "admin_messages", "tournaments"
   add_foreign_key "admin_messages", "users"
   add_foreign_key "fields", "users"
+  add_foreign_key "groups", "tournament_divisions"
+  add_foreign_key "matches", "groups"
+  add_foreign_key "matches", "teams", column: "away_team_id"
+  add_foreign_key "matches", "teams", column: "home_team_id"
+  add_foreign_key "matches", "tournament_divisions"
   add_foreign_key "team_registrations", "teams"
   add_foreign_key "team_registrations", "tournament_divisions"
   add_foreign_key "tournament_divisions", "tournaments"

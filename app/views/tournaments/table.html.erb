@@ -1,0 +1,98 @@
+<div class="app-shell">
+  <% bg_image = begin
+       age_str = @tournament.age_category.to_s
+       if age_str =~ /U(\d+)/ && $1.to_i < 20
+         "back1.png"
+       else
+         "back2.png"
+       end
+     end %>
+  <div class="tournament-show-header">
+    <div style="position:absolute;inset:0;background-image:url('<%= asset_path(bg_image) %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
+    <div style="position:relative;">
+      <div class="tournament-show-title"><%= @tournament.title %></div>
+      <div class="tournament-show-subtitle">
+        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+      </div>
+    </div>
+  </div>
+
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <%= link_to "ข้อมูลทั่วไป", tournament_path(@tournament), class: "nav-link" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ทีมแข่งขัน", teams_tournament_path(@tournament), class: "nav-link" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ตารางการแข่งขัน", fixture_tournament_path(@tournament), class: "nav-link" %>
+        </li>
+        <li class="nav-item" role="presentation">
+          <%= link_to "ตารางคะแนน", table_tournament_path(@tournament), class: "nav-link active" %>
+        </li>
+      </ul>
+
+      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ตารางคะแนน</h2>
+      <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
+      <hr>
+
+      <div class="card shadow-sm">
+        <div class="card-header fw-bold">ตารางคะแนน</div>
+        <div class="card-body">
+          <p class="mb-2" style="font-size:13px;color:#78909c;">
+            ระบบจะคำนวณคะแนนอัตโนมัติจากผลการแข่งขันของแต่ละสาย เมื่อมีการบันทึกสกอร์แล้ว ด้านล่างจะแสดงตารางคะแนนแยกตามรุ่น
+          </p>
+
+          <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
+
+          <% if divisions.any? %>
+            <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
+
+            <% divisions.each_with_index do |div, idx| %>
+              <% color_class = color_classes[idx % color_classes.size] %>
+
+              <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f9fafb;">
+                <div class="d-flex align-items-center mb-2" style="gap:8px;">
+                  <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
+                  <div>
+                    <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
+                    <div style="font-size:11px;color:#78909c;">ตารางคะแนนของรุ่นนี้ (จะคำนวณจากผลการแข่งขันอัตโนมัติ)</div>
+                  </div>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th scope="col">ทีม</th>
+                        <th scope="col" class="text-center">แข่ง</th>
+                        <th scope="col" class="text-center">ชนะ</th>
+                        <th scope="col" class="text-center">เสมอ</th>
+                        <th scope="col" class="text-center">แพ้</th>
+                        <th scope="col" class="text-center">ได้</th>
+                        <th scope="col" class="text-center">เสีย</th>
+                        <th scope="col" class="text-center">ผลต่าง</th>
+                        <th scope="col" class="text-center">คะแนน</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td colspan="9" class="text-center text-muted" style="font-size:13px;">
+                          ยังไม่มีข้อมูลตารางคะแนนสำหรับรุ่นนี้
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการกำหนดรุ่นการแข่งขันสำหรับรายการนี้</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
