@@ -2,6 +2,8 @@ class Tournament < ApplicationRecord
   belongs_to :organizer, class_name: "User"
   belongs_to :field
 
+  has_many_attached :images
+
   # status: 0 = pending (รออนุมัติ), 1 = active (แสดงในหน้าค้นหา)
   enum status: { pending: 0, active: 1 }
 

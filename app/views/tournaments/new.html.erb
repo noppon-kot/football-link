@@ -24,6 +24,14 @@
       <% end %>
 
       <div class="tournament-form-group">
+        <label>รูปภาพรายการแข่ง (ใส่ได้ 1 รูปก่อน)</label>
+        <%= f.file_field :images,
+              multiple: true,
+              accept: "image/*",
+              class: "form-control" %>
+      </div>
+
+      <div class="tournament-form-group">
         <label><%= t('tournaments.form.fields.title') %></label>
         <%= f.text_field :title,
               class: "tournament-form-input",

@@ -123,6 +123,7 @@ class TournamentsController < ApplicationController
       :team_size,
       :organizer_id,
       :field_id,
+      images: [],
       tournament_divisions_attributes: [
         :id,
         :name,

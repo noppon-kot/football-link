@@ -123,9 +123,23 @@
             </div>
           <% end %>
         </div>
-      </div>
+        </div>
 
         <div class="col-12 col-lg-7">
+      <% if @tournament.images.attached? %>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <%= image_tag @tournament.images.first,
+                          class: "img-fluid rounded",
+                          style: "width:100%;height:auto;" %>
+          </div>
+        </div>
+      <% end %>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-3">
+        <div class="col-12">
           <div class="team-list-card card shadow-sm">
             <div class="team-list-header">ทีมที่สนใจ / สมัคร</div>
       <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>

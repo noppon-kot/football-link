@@ -7,68 +7,71 @@
     </div>
     <div class="app-header-title"><%= t('team_registrations.form.header.title_full') %></div>
   </header>
+  <div class="container py-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <% if flash[:alert].present? %>
+          <div class="alert alert-danger" role="alert">
+            <div>กรุณาตรวจสอบข้อมูลการสมัครทีม</div>
+            <ul class="mb-0 ps-3">
+              <li><%= flash[:alert] %></li>
+            </ul>
+          </div>
+        <% end %>
 
-  <div class="tournament-form">
-    <% if flash[:alert].present? %>
-      <div class="tournament-form-errors">
-        <div>กรุณาตรวจสอบข้อมูลการสมัครทีม</div>
-        <ul>
-          <li><%= flash[:alert] %></li>
-        </ul>
+        <%= form_with url: tournament_team_registrations_path(@tournament), scope: :registration, local: true do |f| %>
+          <div class="mb-3">
+            <label class="form-label"><%= t('team_registrations.form.fields.tournament') %></label>
+            <div class="form-control-plaintext"><%= @tournament.title %></div>
+          </div>
+
+          <% if @divisions.size > 1 %>
+            <div class="mb-3">
+              <label class="form-label"><%= t('team_registrations.form.fields.division') %></label>
+              <%= f.select :tournament_division_id,
+                    options_from_collection_for_select(@divisions, :id, :name),
+                    { include_blank: t('team_registrations.form.placeholders.division') },
+                    class: "form-select" %>
+            </div>
+          <% elsif @divisions.size == 1 %>
+            <div class="mb-3">
+              <label class="form-label"><%= t('team_registrations.form.fields.division') %></label>
+              <div class="form-control-plaintext"><%= @divisions.first.name %></div>
+              <%= f.hidden_field :tournament_division_id, value: @divisions.first.id %>
+            </div>
+          <% end %>
+
+          <div class="mb-3">
+            <label class="form-label"><%= t('team_registrations.form.fields.team_name') %></label>
+            <%= f.text_field :team_name,
+                  class: "form-control",
+                  placeholder: t('team_registrations.form.placeholders.team_name') %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><%= t('team_registrations.form.fields.contact_name') %></label>
+            <%= f.text_field :contact_name,
+                  class: "form-control",
+                  placeholder: t('team_registrations.form.placeholders.contact_name') %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label"><%= t('team_registrations.form.fields.contact_phone') %></label>
+            <%= f.telephone_field :contact_phone,
+                  class: "form-control",
+                  placeholder: t('team_registrations.form.placeholders.contact_phone') %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">LINE ID ผู้ติดต่อทีม (ไม่บังคับ)</label>
+            <%= f.text_field :line_id, class: "form-control" %>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <%= f.submit t('team_registrations.form.submit'), class: "btn btn-primary" %>
+          </div>
+        <% end %>
       </div>
-    <% end %>
-
-    <%= form_with url: tournament_team_registrations_path(@tournament), scope: :registration, local: true do |f| %>
-      <div class="tournament-form-group">
-        <label><%= t('team_registrations.form.fields.tournament') %></label>
-        <div class="tournament-description-label"><%= @tournament.title %></div>
-      </div>
-
-      <% if @divisions.size > 1 %>
-        <div class="tournament-form-group">
-          <label><%= t('team_registrations.form.fields.division') %></label>
-          <%= f.select :tournament_division_id,
-                options_from_collection_for_select(@divisions, :id, :name),
-                { include_blank: t('team_registrations.form.placeholders.division') },
-                class: "tournament-form-input" %>
-        </div>
-      <% elsif @divisions.size == 1 %>
-        <div class="tournament-form-group">
-          <label><%= t('team_registrations.form.fields.division') %></label>
-          <div class="tournament-description-label"><%= @divisions.first.name %></div>
-          <%= f.hidden_field :tournament_division_id, value: @divisions.first.id %>
-        </div>
-      <% end %>
-
-      <div class="tournament-form-group">
-        <label><%= t('team_registrations.form.fields.team_name') %></label>
-        <%= f.text_field :team_name,
-              class: "tournament-form-input",
-              placeholder: t('team_registrations.form.placeholders.team_name') %>
-      </div>
-
-      <div class="tournament-form-group">
-        <label><%= t('team_registrations.form.fields.contact_name') %></label>
-        <%= f.text_field :contact_name,
-              class: "tournament-form-input",
-              placeholder: t('team_registrations.form.placeholders.contact_name') %>
-      </div>
-
-      <div class="tournament-form-group">
-        <label><%= t('team_registrations.form.fields.contact_phone') %></label>
-        <%= f.telephone_field :contact_phone,
-              class: "tournament-form-input",
-              placeholder: t('team_registrations.form.placeholders.contact_phone') %>
-      </div>
-
-      <div class="tournament-form-group">
-        <label>LINE ID ผู้ติดต่อทีม (ไม่บังคับ)</label>
-        <%= f.text_field :line_id, class: "tournament-form-input" %>
-      </div>
-
-      <div class="tournament-form-actions">
-        <%= f.submit t('team_registrations.form.submit'), class: "link-button" %>
-      </div>
-    <% end %>
+    </div>
   </div>
 </div>
