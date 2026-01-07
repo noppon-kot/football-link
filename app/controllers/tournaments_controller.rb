@@ -87,7 +87,17 @@ class TournamentsController < ApplicationController
 
   def update
     @tournament = Tournament.find(params[:id])
-    service = ::Tournaments::UpdateService.new(@tournament, tournament_params)
+    permitted = tournament_params.to_h
+
+    # ถ้าไม่ได้เลือกไฟล์รูปใหม่ อย่าไปแตะ images เดิม
+    if permitted.key?("images")
+      images_val = permitted["images"]
+      if images_val.blank? || (images_val.is_a?(Array) && images_val.all?(&:blank?))
+        permitted.delete("images")
+      end
+    end
+
+    service = ::Tournaments::UpdateService.new(@tournament, permitted)
 
     if service.call
       redirect_to @tournament, notice: I18n.t("tournaments.flash.update_success")
