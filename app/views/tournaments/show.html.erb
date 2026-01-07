@@ -53,8 +53,16 @@
   <div class="tournament-show-body">
     <div class="container py-3">
       <div class="row g-3">
-        <div class="col-12 col-lg-5">
+        <div class="col-12">
           <div class="tournament-info-card card shadow-sm">
+      <% if @tournament.images.attached? %>
+        <div class="mb-3">
+          <%= image_tag @tournament.images.first,
+                        class: "img-fluid rounded",
+                        style: "width:100%;height:auto;" %>
+        </div>
+      <% end %>
+
       <% if @tournament.description.present? %>
         <div class="mb-3">
           <div class="fw-bold mb-1">รายละเอียด</div>
@@ -62,18 +70,18 @@
         </div>
       <% end %>
 
-      <div class="mb-2 small">
+      <div class="mb-2">
         <span class="fw-bold">จำนวนผู้เล่น:</span>
         <span class="ms-1"><%= @tournament.team_size %> คน</span>
       </div>
 
-      <div class="mb-2 small">
+      <div class="mb-2">
         <div><span class="fw-bold">วันเปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_open_on&.strftime("%Y-%m-%d") %></span></div>
         <div><span class="fw-bold">วันปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_close_on&.strftime("%Y-%m-%d") %></span></div>
         <div><span class="fw-bold">วันแข่งขัน:</span> <span class="ms-1"><%= @tournament.competition_date&.strftime("%Y-%m-%d") %></span></div>
       </div>
 
-      <div class="mb-3 small">
+      <div class="mb-3">
         <span class="fw-bold">สถานะรายการ:</span>
         <% status_label = if @tournament.pending?
                             "รออนุมัติจากแอดมิน"
@@ -91,7 +99,7 @@
           <div class="fw-bold mb-1">รุ่นที่เปิดแข่ง</div>
           <div class="list-group list-group-flush">
             <% divisions.each do |div| %>
-              <div class="list-group-item px-0 py-2 small">
+              <div class="list-group-item px-0 py-2">
                 <div><span class="fw-bold">ช่วงอายุ:</span> <span class="ms-1"><%= div.name %></span></div>
                 <% if div.entry_fee.present? %>
                   <div><span class="fw-bold">ค่าสมัครรุ่นนี้:</span> <span class="ms-1"><%= number_to_currency(div.entry_fee, unit: "฿", precision: 0) %></span></div>
@@ -104,14 +112,14 @@
           </div>
         </div>
       <% else %>
-        <div class="mb-1 small"><span class="fw-bold">ช่วงอายุ (หลัก):</span> <span class="ms-1"><%= @tournament.age_category %></span></div>
-        <div class="mb-1 small"><span class="fw-bold">ค่าสมัคร:</span> <span class="ms-1"><%= number_to_currency(@tournament.entry_fee, unit: "฿", precision: 0) %></span></div>
-        <div class="mb-3 small"><span class="fw-bold">รางวัล:</span> <span class="ms-1"><%= number_to_currency(@tournament.prize_amount, unit: "฿", precision: 0) %></span></div>
+        <div class="mb-1"><span class="fw-bold">ช่วงอายุ (หลัก):</span> <span class="ms-1"><%= @tournament.age_category %></span></div>
+        <div class="mb-1"><span class="fw-bold">ค่าสมัคร:</span> <span class="ms-1"><%= number_to_currency(@tournament.entry_fee, unit: "฿", precision: 0) %></span></div>
+        <div class="mb-3"><span class="fw-bold">รางวัล:</span> <span class="ms-1"><%= number_to_currency(@tournament.prize_amount, unit: "฿", precision: 0) %></span></div>
       <% end %>
 
-      <div class="mb-1 small"><span class="fw-bold">ผู้จัด:</span> <span class="ms-1"><%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</span></div>
+      <div class="mb-1"><span class="fw-bold">ผู้จัด:</span> <span class="ms-1"><%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</span></div>
       <% if @tournament.contact_phone.present? %>
-        <div class="mb-2 small"><span class="fw-bold">เบอร์โทรผู้ติดต่อรายการแข่ง:</span> <span class="ms-1"><%= @tournament.contact_phone %></span></div>
+        <div class="mb-2"><span class="fw-bold">เบอร์โทรผู้ติดต่อรายการแข่ง:</span> <span class="ms-1"><%= @tournament.contact_phone %></span></div>
       <% end %>
           <% if @tournament.line_id.present? %>
             <div style="margin-top:8px;">
@@ -123,18 +131,6 @@
             </div>
           <% end %>
         </div>
-        </div>
-
-        <div class="col-12 col-lg-7">
-      <% if @tournament.images.attached? %>
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <%= image_tag @tournament.images.first,
-                          class: "img-fluid rounded",
-                          style: "width:100%;height:auto;" %>
-          </div>
-        </div>
-      <% end %>
         </div>
       </div>
 
