@@ -1,5 +1,8 @@
 puts "Clearing existing data..."
 
+AdminMessageComment.delete_all if defined?(AdminMessageComment)
+AdminMessage.delete_all        if defined?(AdminMessage)
+
 TeamRegistration.delete_all
 Team.delete_all
 TournamentDivision.delete_all
