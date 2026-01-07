@@ -10,6 +10,8 @@ Rails.application.routes.draw do
 
   get "dashboard" => "dashboards#show"
 
+  resources :matches, only: [:update]
+
   resources :tournaments, only: [:index, :show, :new, :create, :edit, :update] do
     resources :team_registrations, only: [:new, :create, :update, :destroy]
     post :generate_mock_schedule, on: :member
@@ -17,6 +19,10 @@ Rails.application.routes.draw do
       get :teams
       get :fixture
       get :table
+      post :generate_mock_schedule
+      post :assign_slot_teams
+      patch :update_points
+      patch :update_scores
     end
   end
 

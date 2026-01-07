@@ -1,60 +1,32 @@
 class TournamentsController < ApplicationController
   before_action :require_login, except: [:index, :show]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :fixture, :table]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :fixture, :table, :assign_slot_teams, :update_points, :update_scores]
   before_action :require_edit_permission, only: [:edit, :update]
   def index
-    @age_categories = Tournament.distinct.order(:age_category).pluck(:age_category).compact
-    @provinces      = Tournament.distinct.order(:province).pluck(:province).compact
+    result = ::Tournaments::IndexService.new(
+      params: params,
+      current_user: current_user,
+      admin: admin?
+    ).call
 
-    base_scope = if admin?
-                   Tournament.all
-                 else
-                   Tournament.active_for_search
-                 end
-
-    @tournaments = base_scope
-                     .includes(:field, :organizer, :team_registrations)
-                     .order(created_at: :desc)
-
-    if params[:q].present?
-      q = "%#{params[:q].strip}%"
-      @tournaments = @tournaments.where(
-        "title ILIKE :q OR location_name ILIKE :q OR city ILIKE :q OR province ILIKE :q",
-        q: q
-      )
-    end
-    if params[:age_category].present?
-      @tournaments = @tournaments.where(age_category: params[:age_category])
-    end
-
-    if params[:province].present?
-      @tournaments = @tournaments.where(province: params[:province])
-    end
-
-    @current_page = params[:page].to_i
-    @current_page = 1 if @current_page < 1
-    per_page = 10
-    @total_pages = (@tournaments.count / per_page.to_f).ceil
-    @tournaments = @tournaments.offset((@current_page - 1) * per_page).limit(per_page)
+    @age_categories = result.age_categories
+    @provinces      = result.provinces
+    @tournaments    = result.tournaments
+    @current_page   = result.current_page
+    @total_pages    = result.total_pages
   end
 
   def approve
-    unless admin?
-      return redirect_to dashboard_path, alert: "คุณไม่มีสิทธิ์อนุมัติรายการแข่ง"
-    end
+    result = ::Tournaments::ApproveService.new(
+      tournament: @tournament,
+      current_user: current_user,
+      params: params
+    ).call
 
-    target_status = params[:status]
-
-    if target_status.present? && Tournament.statuses.key?(target_status)
-      @tournament.update(status: target_status)
-      message = target_status == "active" ? "อนุมัติรายการแข่งเรียบร้อยแล้ว" : "เปลี่ยนสถานะเป็นรออนุมัติเรียบร้อยแล้ว"
-      redirect_to dashboard_path, notice: message
-    elsif @tournament.pending?
-      # fallback เดิม: ถ้าไม่ส่ง status มาและยัง pending ให้อนุมัติเป็น active
-      @tournament.update(status: :active)
-      redirect_to dashboard_path, notice: "อนุมัติรายการแข่งเรียบร้อยแล้ว"
+    if result.success?
+      redirect_to dashboard_path, notice: result.message
     else
-      redirect_to dashboard_path, alert: "ไม่สามารถเปลี่ยนสถานะรายการแข่งได้"
+      redirect_to dashboard_path, alert: result.message
     end
   end
 
@@ -77,35 +49,80 @@ class TournamentsController < ApplicationController
   def generate_mock_schedule
     @tournament = Tournament.find(params[:id])
 
-    unless can_manage_registrations?(@tournament)
-      return redirect_to @tournament, alert: "คุณไม่มีสิทธิ์จัดตารางการแข่งขัน"
-    end
+    result = ::Tournaments::GenerateMockScheduleHandler.new(
+      tournament: @tournament,
+      params: params,
+      can_manage: can_manage_registrations?(@tournament)
+    ).call
 
-    division = @tournament.tournament_divisions.find_by(id: params[:division_id])
-    group_count = params[:group_count].to_i
-    slots_per_group = params[:slots_per_group].to_i
+    target_path = teams_tournament_path(@tournament)
 
-    if division.nil?
-      return redirect_to @tournament, alert: "ไม่พบรุ่นที่เลือก"
-    end
-
-    if group_count <= 0 || slots_per_group <= 0
-      return redirect_to @tournament, alert: "กรุณากรอกจำนวนสายและจำนวนทีมต่อสายให้ถูกต้อง"
-    end
-
-    service = ::Tournaments::GenerateMockScheduleService.new(
-      division: division,
-      group_count: group_count,
-      slots_per_group: slots_per_group
-    )
-
-    target_path = tournament_path(@tournament, anchor: "panel-schedule")
-
-    if service.call
-      redirect_to target_path, notice: "สร้างโครงตารางแข่งขันสำเร็จแล้ว"
+    if result.success?
+      redirect_to target_path, notice: result.message
     else
-      redirect_to target_path, alert: "ไม่สามารถสร้างโครงตารางแข่งขันได้"
+      redirect_to target_path, alert: result.message
     end
+  end
+
+  def assign_slot_teams
+    division = @tournament.tournament_divisions.find(params[:division_id])
+
+    result = ::Tournaments::AssignTeamsToSlotsService.new(
+      division: division,
+      slot_assignments: params[:slot_assignments]
+    ).call
+
+    if result.success?
+      redirect_to teams_tournament_path(@tournament), notice: "บันทึกการจัดทีมลงสายเรียบร้อยแล้ว"
+    else
+      redirect_to teams_tournament_path(@tournament), alert: result.errors.join(", ")
+    end
+  end
+
+  def update_points
+    division = @tournament.tournament_divisions.find(params[:division_id])
+
+    unless can_manage_registrations?(@tournament)
+      return redirect_to table_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    attrs = params.require(:division).permit(:points_win, :points_draw, :points_loss)
+
+    if division.update(attrs)
+      redirect_to table_tournament_path(@tournament), notice: "อัปเดตกติกาคะแนนเรียบร้อยแล้ว"
+    else
+      redirect_to table_tournament_path(@tournament), alert: division.errors.full_messages.join(", ")
+    end
+  end
+
+  def update_scores
+    unless can_manage_registrations?(@tournament)
+      return redirect_to fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    matches_params = params[:matches] || {}
+
+    Match.transaction do
+      matches_params.each do |match_id, attrs|
+        match = Match.find_by(id: match_id)
+        next unless match
+
+        # attrs เป็น ActionController::Parameters อยู่แล้ว ใช้ permit ตรง ๆ ได้เลย
+        permitted = attrs.permit(:home_score, :away_score)
+
+        # อัปเดตเฉพาะคู่ที่เลือกสกอร์ครบทั้งสองฝั่ง
+        next if permitted[:home_score].blank? && permitted[:away_score].blank?
+
+        # ถ้ากรอกฝั่งใดฝั่งหนึ่งไม่ครบ ให้ข้าม ไม่บันทึกครึ่งเดียว
+        next if permitted[:home_score].blank? || permitted[:away_score].blank?
+
+        match.update!(permitted)
+      end
+    end
+
+    redirect_to fixture_tournament_path(@tournament), notice: "บันทึกสกอร์เรียบร้อยแล้ว"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
   end
 
   def new
@@ -185,6 +202,7 @@ class TournamentsController < ApplicationController
         :name,
         :entry_fee,
         :prize_amount,
+        :match_format,
         :_destroy
       ]
     )

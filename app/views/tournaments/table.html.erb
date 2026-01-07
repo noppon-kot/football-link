@@ -24,10 +24,10 @@
           <%= link_to "ข้อมูลทั่วไป", tournament_path(@tournament), class: "nav-link" %>
         </li>
         <li class="nav-item" role="presentation">
-          <%= link_to "ทีมแข่งขัน", teams_tournament_path(@tournament), class: "nav-link" %>
+          <%= link_to "ทีม", teams_tournament_path(@tournament), class: "nav-link" %>
         </li>
         <li class="nav-item" role="presentation">
-          <%= link_to "ตารางการแข่งขัน", fixture_tournament_path(@tournament), class: "nav-link" %>
+          <%= link_to "โปรแกรม", fixture_tournament_path(@tournament), class: "nav-link" %>
         </li>
         <li class="nav-item" role="presentation">
           <%= link_to "ตารางคะแนน", table_tournament_path(@tournament), class: "nav-link active" %>
@@ -46,46 +46,165 @@
           </p>
 
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
+          <% all_matches = Match.where(tournament_division_id: divisions.map(&:id)).includes(:group, :home_team, :away_team) %>
 
           <% if divisions.any? %>
             <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
 
             <% divisions.each_with_index do |div, idx| %>
               <% color_class = color_classes[idx % color_classes.size] %>
+              <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
+              <% win_pts  = div.respond_to?(:points_win)  ? div.points_win  : 3 %>
+              <% draw_pts = div.respond_to?(:points_draw) ? div.points_draw : 1 %>
+              <% loss_pts = div.respond_to?(:points_loss) ? div.points_loss : 0 %>
 
               <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f9fafb;">
                 <div class="d-flex align-items-center mb-2" style="gap:8px;">
                   <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
                   <div>
                     <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
-                    <div style="font-size:11px;color:#78909c;">ตารางคะแนนของรุ่นนี้ (จะคำนวณจากผลการแข่งขันอัตโนมัติ)</div>
+                    <div style="font-size:11px;color:#78909c;">ตารางคะแนนของรุ่นนี้ (จะแยกตามสาย และจะคำนวณจากผลการแข่งขันอัตโนมัติ)</div>
                   </div>
                 </div>
 
-                <div class="table-responsive">
-                  <table class="table table-sm align-middle mb-0">
-                    <thead class="table-light">
-                      <tr>
-                        <th scope="col">ทีม</th>
-                        <th scope="col" class="text-center">แข่ง</th>
-                        <th scope="col" class="text-center">ชนะ</th>
-                        <th scope="col" class="text-center">เสมอ</th>
-                        <th scope="col" class="text-center">แพ้</th>
-                        <th scope="col" class="text-center">ได้</th>
-                        <th scope="col" class="text-center">เสีย</th>
-                        <th scope="col" class="text-center">ผลต่าง</th>
-                        <th scope="col" class="text-center">คะแนน</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td colspan="9" class="text-center text-muted" style="font-size:13px;">
-                          ยังไม่มีข้อมูลตารางคะแนนสำหรับรุ่นนี้
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                <% if can_manage_registrations?(@tournament) %>
+                  <div class="mb-2 p-2 rounded" style="background-color:#ffffff;border:1px dashed #cfd8dc;">
+                    <div class="d-flex align-items-center justify-content-between" style="gap:8px;flex-wrap:wrap;">
+                      <div style="font-size:12px;font-weight:bold;">กำหนดคะแนน ชนะ/เสมอ/แพ้</div>
+                      <%= form_with url: update_points_tournament_path(@tournament), method: :patch, local: true, class: "d-flex align-items-end" do |f| %>
+                        <%= hidden_field_tag :division_id, div.id %>
+                        <div class="me-2" style="font-size:12px;">
+                          <label class="form-label mb-0" style="font-size:11px;">ชนะ</label>
+                          <input type="number" name="division[points_win]" min="0" max="10" class="form-control form-control-sm" value="<%= win_pts %>">
+                        </div>
+                        <div class="me-2" style="font-size:12px;">
+                          <label class="form-label mb-0" style="font-size:11px;">เสมอ</label>
+                          <input type="number" name="division[points_draw]" min="0" max="10" class="form-control form-control-sm" value="<%= draw_pts %>">
+                        </div>
+                        <div class="me-2" style="font-size:12px;">
+                          <label class="form-label mb-0" style="font-size:11px;">แพ้</label>
+                          <input type="number" name="division[points_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= loss_pts %>">
+                        </div>
+                        <div>
+                          <button type="submit" class="btn btn-sm btn-outline-primary">บันทึก</button>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+
+                <% groups = div.groups.order(:name) %>
+
+                <% if groups.any? %>
+                  <% groups.each do |group| %>
+                    <% group_matches = div_matches.select { |m| m.group_id == group.id } %>
+                    <% team_ids = (group_matches.map(&:home_team_id) + group_matches.map(&:away_team_id)).compact.uniq %>
+
+                    <div class="mb-2">
+                      <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
+                      <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th scope="col">ทีม</th>
+                              <th scope="col" class="text-center">แข่ง</th>
+                              <th scope="col" class="text-center">ชนะ</th>
+                              <th scope="col" class="text-center">เสมอ</th>
+                              <th scope="col" class="text-center">แพ้</th>
+                              <th scope="col" class="text-center">ได้</th>
+                              <th scope="col" class="text-center">เสีย</th>
+                              <th scope="col" class="text-center">ผลต่าง</th>
+                              <th scope="col" class="text-center">คะแนน</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% if team_ids.any? %>
+                              <% stats = {} %>
+                              <% team_ids.each do |tid| %>
+                                <% stats[tid] = { played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0, pts: 0 } %>
+                              <% end %>
+
+                              <% group_matches.each do |match| %>
+                                <% next if match.home_team_id.blank? || match.away_team_id.blank? %>
+                                <% next unless match.home_score.present? && match.away_score.present? %>
+
+                                <% h_id = match.home_team_id %>
+                                <% a_id = match.away_team_id %>
+                                <% hs  = match.home_score.to_i %>
+                                <% as  = match.away_score.to_i %>
+
+                                <% stats[h_id][:played] += 1 %>
+                                <% stats[a_id][:played] += 1 %>
+                                <% stats[h_id][:gf] += hs; stats[h_id][:ga] += as %>
+                                <% stats[a_id][:gf] += as; stats[a_id][:ga] += hs %>
+
+                                <% if hs > as %>
+                                  <% stats[h_id][:won]  += 1; stats[h_id][:pts] += win_pts %>
+                                  <% stats[a_id][:lost] += 1; stats[a_id][:pts] += loss_pts %>
+                                <% elsif hs < as %>
+                                  <% stats[a_id][:won]  += 1; stats[a_id][:pts] += win_pts %>
+                                  <% stats[h_id][:lost] += 1; stats[h_id][:pts] += loss_pts %>
+                                <% else %>
+                                  <% stats[h_id][:draw] += 1; stats[h_id][:pts] += draw_pts %>
+                                  <% stats[a_id][:draw] += 1; stats[a_id][:pts] += draw_pts %>
+                                <% end %>
+                              <% end %>
+
+                              <% sorted = team_ids.map { |tid| [tid, stats[tid]] }.sort_by { |tid, s| [-s[:pts], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
+
+                              <% sorted.each do |tid, s| %>
+                                <% team = Team.find(tid) %>
+                                <% gd = s[:gf] - s[:ga] %>
+                                <tr>
+                                  <td><%= team.name %></td>
+                                  <td class="text-center"><%= s[:played] %></td>
+                                  <td class="text-center"><%= s[:won] %></td>
+                                  <td class="text-center"><%= s[:draw] %></td>
+                                  <td class="text-center"><%= s[:lost] %></td>
+                                  <td class="text-center"><%= s[:gf] %></td>
+                                  <td class="text-center"><%= s[:ga] %></td>
+                                  <td class="text-center"><%= gd %></td>
+                                  <td class="text-center"><%= s[:pts] %></td>
+                                </tr>
+                              <% end %>
+                            <% else %>
+                              <tr>
+                                <td colspan="9" class="text-center text-muted" style="font-size:13px;">
+                                  ยังไม่มีทีมในสายนี้ (หรือยังไม่ได้จัดทีมลงสาย)
+                                </td>
+                              </tr>
+                            <% end %>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th scope="col">ทีม</th>
+                          <th scope="col" class="text-center">แข่ง</th>
+                          <th scope="col" class="text-center">ชนะ</th>
+                          <th scope="col" class="text-center">เสมอ</th>
+                          <th scope="col" class="text-center">แพ้</th>
+                          <th scope="col" class="text-center">ได้</th>
+                          <th scope="col" class="text-center">เสีย</th>
+                          <th scope="col" class="text-center">ผลต่าง</th>
+                          <th scope="col" class="text-center">คะแนน</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td colspan="9" class="text-center text-muted" style="font-size:13px;">
+                            ยังไม่มีการแบ่งสายสำหรับรุ่นนี้
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                <% end %>
               </div>
             <% end %>
           <% else %>

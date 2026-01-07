@@ -11,50 +11,50 @@ class TeamRegistrationsController < ApplicationController
   def create
     @divisions = @tournament.tournament_divisions.order(:position, :id)
 
-    division_id = if @divisions.size == 1
-                    @divisions.first.id
-                  else
-                    params.dig(:registration, :tournament_division_id)
-                  end
+    result = ::TeamRegistrations::CreateService.new(
+      tournament: @tournament,
+      params: params
+    ).call
 
-    team_params = params.require(:registration).permit(:team_name, :contact_name, :contact_phone, :line_id)
-
-    ActiveRecord::Base.transaction do
-      team = Team.create!(
-        name:          team_params[:team_name],
-        contact_name:  team_params[:contact_name],
-        contact_phone: team_params[:contact_phone],
-        city:          @tournament.city,
-        province:      @tournament.province,
-        line_id:       team_params[:line_id]
-      )
-
-      TeamRegistration.create!(
-        team:                team,
-        tournament:          @tournament,
-        tournament_division_id: division_id.presence,
-        status:              :interested,
-        notes:               "สมัครผ่านฟอร์มสนใจสมัคร"
-      )
+    if result.success?
+      redirect_to teams_tournament_path(@tournament), notice: I18n.t("team_registrations.flash.create_success")
+    else
+      flash.now[:alert] = "กรุณากรอกข้อมูลทีมและข้อมูลผู้ติดต่อให้ครบถ้วน"
+      render :new, status: :unprocessable_entity
     end
-
-    redirect_to @tournament, notice: I18n.t("team_registrations.flash.create_success")
-  rescue ActiveRecord::RecordInvalid
-    flash.now[:alert] = "กรุณากรอกข้อมูลทีมและข้อมูลผู้ติดต่อให้ครบถ้วน"
-    render :new, status: :unprocessable_entity
   end
 
   def update
-    if @registration.update(team_registration_params)
-      redirect_to @tournament, notice: I18n.t("team_registrations.flash.update_success", default: "อัปเดตสถานะทีมเรียบร้อยแล้ว")
+    if locked_registration?(@registration)
+      return redirect_to teams_tournament_path(@tournament), alert: "ไม่สามารถแก้ไขทีมหลังจากมีการแบ่งสายการแข่งขันแล้ว"
+    end
+
+    result = ::TeamRegistrations::UpdateStatusService.new(
+      registration: @registration,
+      params: params
+    ).call
+
+    if result.success?
+      redirect_to teams_tournament_path(@tournament), notice: I18n.t("team_registrations.flash.update_success", default: "อัปเดตสถานะทีมเรียบร้อยแล้ว")
     else
-      redirect_to @tournament, alert: @registration.errors.full_messages.join(", ")
+      redirect_to teams_tournament_path(@tournament), alert: result.errors.join(", ")
     end
   end
 
   def destroy
-    @registration.destroy
-    redirect_to @tournament, notice: I18n.t("team_registrations.flash.destroy_success", default: "ลบทีมออกจากรายการแข่งแล้ว")
+    if locked_registration?(@registration)
+      return redirect_to teams_tournament_path(@tournament), alert: "ไม่สามารถลบทีมหลังจากมีการแบ่งสายการแข่งขันแล้ว"
+    end
+
+    result = ::TeamRegistrations::DestroyService.new(
+      registration: @registration
+    ).call
+
+    if result.success?
+      redirect_to teams_tournament_path(@tournament), notice: I18n.t("team_registrations.flash.destroy_success", default: "ลบทีมออกจากรายการแข่งแล้ว")
+    else
+      redirect_to teams_tournament_path(@tournament), alert: result.errors.join(", ")
+    end
   end
 
   private
@@ -75,5 +75,12 @@ class TeamRegistrationsController < ApplicationController
 
   def team_registration_params
     params.require(:team_registration).permit(:status)
+  end
+
+  def locked_registration?(registration)
+    division = registration.tournament_division
+    return false unless division
+
+    division.groups.exists? || division.matches.exists?
   end
 end

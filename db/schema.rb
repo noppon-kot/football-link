@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_07_041000) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_08_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -143,6 +143,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_07_041000) do
     t.integer "points_win", default: 3, null: false
     t.integer "points_draw", default: 1, null: false
     t.integer "points_loss", default: 0, null: false
+    t.string "match_format", default: "single_leg", null: false
     t.index ["tournament_id"], name: "index_tournament_divisions_on_tournament_id"
   end
 

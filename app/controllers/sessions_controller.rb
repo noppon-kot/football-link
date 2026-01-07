@@ -4,15 +4,10 @@ class SessionsController < ApplicationController
   end
 
   def create
-    user = User.find_by(id: params.dig(:session, :user_id))
-    if user
-      if user.respond_to?(:organizer?) && user.organizer? && params.dig(:session, :password) != "1234"
-        flash.now[:alert] = I18n.t("sessions.flash.login_failed")
-        @users = User.order(:id)
-        return render :new, status: :unprocessable_entity
-      end
+    result = ::Sessions::CreateService.new(params: params).call
 
-      session[:user_id] = user.id
+    if result.success?
+      session[:user_id] = result.user.id
       return_to = session.delete(:return_to)
       redirect_to(return_to.presence || root_path, notice: I18n.t("sessions.flash.login_success"))
     else
