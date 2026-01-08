@@ -7,9 +7,16 @@
       <div class="tournament-show-subtitle">
         7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
       </div>
-      <div class="tournament-show-actions" style="margin-top:6px;">
+      <div class="tournament-show-actions" style="margin-top:6px;display:flex;gap:6px;">
         <% if can_edit_tournament?(@tournament) %>
           <%= link_to "แก้ไข", edit_tournament_path(@tournament), class: "btn btn-sm btn-light" %>
+        <% end %>
+        <% if admin? %>
+          <%= button_to "ลบรายการแข่ง",
+                        tournament_path(@tournament),
+                        method: :delete,
+                        data: { turbo_confirm: "ยืนยันลบรายการแข่งนี้? ข้อมูลทั้งหมดที่เกี่ยวข้องจะถูกลบด้วย" },
+                        class: "btn btn-sm btn-danger" %>
         <% end %>
       </div>
     </div>

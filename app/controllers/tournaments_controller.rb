@@ -1,7 +1,7 @@
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :fixture, :table]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :fixture, :table, :assign_slot_teams, :update_points, :update_scores]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :fixture, :table, :assign_slot_teams, :update_points, :update_scores, :destroy]
   before_action :require_edit_permission, only: [:edit, :update]
   def index
     result = ::Tournaments::IndexService.new(
@@ -195,6 +195,15 @@ class TournamentsController < ApplicationController
     else
       render :edit, status: :unprocessable_entity
     end
+  end
+
+  def destroy
+    unless admin?
+      return redirect_to @tournament, alert: I18n.t("sessions.flash.login_required")
+    end
+
+    @tournament.destroy
+    redirect_to tournaments_path, notice: "ลบรายการแข่งขันเรียบร้อยแล้ว"
   end
 
   private

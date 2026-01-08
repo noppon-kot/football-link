@@ -12,7 +12,7 @@ Rails.application.routes.draw do
 
   resources :matches, only: [:update]
 
-  resources :tournaments, only: [:index, :show, :new, :create, :edit, :update] do
+  resources :tournaments, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
     resources :team_registrations, only: [:new, :create, :update, :destroy]
     post :generate_mock_schedule, on: :member
     member do
