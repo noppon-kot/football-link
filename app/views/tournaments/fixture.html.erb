@@ -75,6 +75,7 @@
                             <table class="table table-sm align-middle mb-0">
                               <thead class="table-light">
                                 <tr>
+                                  <th scope="col" class="text-center" style="width:60px;">คู่ที่</th>
                                   <th scope="col" style="width:160px;">วันเวลา</th>
                                   <th scope="col">ทีมเหย้า</th>
                                   <th scope="col">ทีมเยือน</th>
@@ -82,8 +83,10 @@
                                 </tr>
                               </thead>
                               <tbody>
-                                <% matches.each do |match| %>
+                                <% matches.each_with_index do |match, idx| %>
+                                  <% played = match.home_score.present? && match.away_score.present? %>
                                   <tr>
+                                    <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= idx + 1 %></td>
                                     <td>
                                       <%= datetime_field_tag "matches[#{match.id}][kickoff_at]",
                                             (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
@@ -134,6 +137,7 @@
                           <table class="table table-sm align-middle mb-0">
                             <thead class="table-light">
                               <tr>
+                                <th scope="col" class="text-center" style="width:60px;">คู่ที่</th>
                                 <th scope="col" style="width:160px;">วันเวลา</th>
                                 <th scope="col">ทีมเหย้า</th>
                                 <th scope="col">ทีมเยือน</th>
@@ -141,8 +145,10 @@
                               </tr>
                             </thead>
                             <tbody>
-                              <% matches.each do |match| %>
+                              <% matches.each_with_index do |match, idx| %>
+                                <% played = match.home_score.present? && match.away_score.present? %>
                                 <tr>
+                                  <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= idx + 1 %></td>
                                   <td>
                                     <% if match.kickoff_at.present? %>
                                       <%= match.kickoff_at.strftime("%d/%m/%Y %H:%M") %>

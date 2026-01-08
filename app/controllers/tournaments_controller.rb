@@ -51,7 +51,7 @@ class TournamentsController < ApplicationController
     @tournament = Tournament.find(params[:id])
 
     unless can_manage_registrations?(@tournament)
-      return redirect_to teams_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+      return redirect_to fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
     end
 
     result = ::Tournaments::GenerateMockScheduleHandler.new(
@@ -60,7 +60,7 @@ class TournamentsController < ApplicationController
       can_manage: can_manage_registrations?(@tournament)
     ).call
 
-    target_path = teams_tournament_path(@tournament)
+    target_path = fixture_tournament_path(@tournament)
 
     if result.success?
       redirect_to target_path, notice: result.message

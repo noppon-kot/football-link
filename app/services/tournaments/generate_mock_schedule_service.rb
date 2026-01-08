@@ -38,33 +38,76 @@ module Tournaments
         next if group_size <= 0
 
         slot_labels = (1..group_size).map { |n| "#{group.name}#{n}" }
-        # all pair combinations within the group
-        if @match_format == "home_away"
-          slot_labels.combination(2).each do |a, b|
-            @division.matches.create!(
-              group: group,
-              home_slot_label: a,
-              away_slot_label: b,
-              status: :scheduled
-            )
-            @division.matches.create!(
-              group: group,
-              home_slot_label: b,
-              away_slot_label: a,
-              status: :scheduled
-            )
-          end
-        else
-          slot_labels.combination(2).each do |home_label, away_label|
-            @division.matches.create!(
-              group: group,
-              home_slot_label: home_label,
-              away_slot_label: away_label,
-              status: :scheduled
-            )
+
+        # ใช้การจัดตารางแบบ round-robin เพื่อไม่ให้ทีมในตำแหน่งแรก ๆ เตะติดกันหลายแมตช์
+        rounds = round_robin_pairs(slot_labels)
+
+        rounds.each do |pairs|
+          pairs.each do |home_label, away_label|
+            if @match_format == "home_away"
+              @division.matches.create!(
+                group: group,
+                home_slot_label: home_label,
+                away_slot_label: away_label,
+                status: :scheduled
+              )
+              @division.matches.create!(
+                group: group,
+                home_slot_label: away_label,
+                away_slot_label: home_label,
+                status: :scheduled
+              )
+            else
+              @division.matches.create!(
+                group: group,
+                home_slot_label: home_label,
+                away_slot_label: away_label,
+                status: :scheduled
+              )
+            end
           end
         end
       end
+    end
+
+    # สร้างคู่แข่งแบบ round-robin จากรายชื่อ slot_labels
+    # ตัวอย่าง 4 ทีม: ได้รอบเป็น [[A1,A2],[A3,A4]], [[A1,A3],[A2,A4]], [[A1,A4],[A2,A3]]
+    def round_robin_pairs(slot_labels)
+      teams = slot_labels.dup
+
+      # ถ้าจำนวนทีมเป็นเลขคี่ ให้ใส่ bye (nil) เพื่อให้หมุนรอบได้ครบ
+      if teams.size.odd?
+        teams << nil
+      end
+
+      n = teams.size
+      rounds_count = n - 1
+      half = n / 2
+      schedule = []
+
+      rounds_count.times do
+        pairs = []
+
+        (0...half).each do |i|
+          t1 = teams[i]
+          t2 = teams[n - 1 - i]
+
+          # ข้ามคู่ที่มี bye
+          next if t1.nil? || t2.nil?
+
+          pairs << [t1, t2]
+        end
+
+        schedule << pairs
+
+        # หมุนลำดับทีมแบบ circle method: ตำแหน่งแรกอยู่ที่เดิม ตัวอื่นหมุน
+        fixed = teams.first
+        rotating = teams[1..-1]
+        rotating.rotate!(-1)
+        teams = [fixed] + rotating
+      end
+
+      schedule
     end
 
     def calculate_group_sizes

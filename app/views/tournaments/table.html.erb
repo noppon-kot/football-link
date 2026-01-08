@@ -129,7 +129,8 @@
                         <table class="table table-sm align-middle mb-0">
                           <thead class="table-light">
                             <tr>
-                              <th scope="col" style="width:40%;">ทีม</th>
+                              <th scope="col" class="text-center" style="width:5%;">ลำดับ</th>
+                              <th scope="col" style="width:35%;">ทีม</th>
                               <th scope="col" class="text-center" style="width:7%;">แข่ง</th>
                               <th scope="col" class="text-center" style="width:7%;">ชนะ</th>
                               <th scope="col" class="text-center" style="width:7%;">เสมอ</th>
@@ -186,10 +187,11 @@
 
                               <% sorted = team_ids.map { |tid| [tid, stats[tid]] }.sort_by { |tid, s| [-s[:pts], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
 
-                              <% sorted.each do |tid, s| %>
+                              <% sorted.each_with_index do |(tid, s), idx| %>
                                 <% team = Team.find(tid) %>
                                 <% gd = s[:gf] - s[:ga] %>
                                 <tr>
+                                  <td class="text-center"><%= idx + 1 %></td>
                                   <td><%= team.name %></td>
                                   <td class="text-center"><%= s[:played] %></td>
                                   <td class="text-center"><%= s[:won] %></td>
