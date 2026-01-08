@@ -120,15 +120,23 @@
                   กำหนดจำนวนสาย และจำนวนทีมต่อสาย จากนั้นระบบจะสร้างคู่แข่งขันแบบพบกันหมดในแต่ละสายให้โดยอัตโนมัติ
                 </p>
 
+                <% existing_group_count = div.groups.count if div.groups.loaded? ? div.groups.any? : div.groups.exists? %>
+                <% existing_slots_per_group = nil %>
+                <% if div.groups.any? && div.matches.any? %>
+                  <% sample_group = div.groups.order(:name).first %>
+                  <% group_slots = (div.matches.where(group: sample_group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq) %>
+                  <% existing_slots_per_group = group_slots.size if group_slots.any? %>
+                <% end %>
+
                 <%= form_with url: generate_mock_schedule_tournament_path(@tournament), method: :post, local: true, class: "row g-2 align-items-end" do |f| %>
                   <%= hidden_field_tag :division_id, div.id %>
                   <div class="col-6 col-md-3">
                     <label class="form-label" style="font-size:12px;">จำนวนสาย</label>
-                    <input type="number" name="group_count" min="1" class="form-control form-control-sm" value="2">
+                    <input type="number" name="group_count" min="1" class="form-control form-control-sm" value="<%= existing_group_count %>">
                   </div>
                   <div class="col-6 col-md-3">
                     <label class="form-label" style="font-size:12px;">จำนวนทีมต่อสาย</label>
-                    <input type="number" name="slots_per_group" min="2" class="form-control form-control-sm" value="4">
+                    <input type="number" name="slots_per_group" min="2" class="form-control form-control-sm" value="<%= existing_slots_per_group %>">
                   </div>
                   <div class="col-12 col-md-3">
                     <label class="form-label" style="font-size:12px;">รูปแบบแข่ง</label>
@@ -144,15 +152,15 @@
               </div>
 
               <% if div.groups.any? && div.matches.any? %>
-                <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;" data-total-teams="<%= regs.count %>">
-                  <div class="fw-bold mb-2" style="font-size:13px;">จัดทีมลงตำแหน่ง A1, A2, ... ของรุ่นนี้</div>
-                  <p class="mb-2" style="font-size:12px;color:#78909c;">
-                    เลือกทีมให้แต่ละตำแหน่งในสาย ทีมหนึ่งสามารถอยู่ได้เพียงตำแหน่งเดียวในรุ่นนี้</p>
+                <% has_played_matches = div.matches.where.not(home_score: nil, away_score: nil).exists? %>
 
-                  <%= form_with url: assign_slot_teams_tournament_path(@tournament), method: :post, local: true do |f| %>
-                    <%= hidden_field_tag :division_id, div.id %>
+                <% if has_played_matches %>
+                  <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
+                    <div class="fw-bold mb-1" style="font-size:13px;">ทีมที่ลงตำแหน่ง A1, A2, ... ของรุ่นนี้</div>
+                    <p class="mb-2" style="font-size:12px;color:#e53935;">
+                      มีการแข่งขันบางนัดแล้ว ไม่สามารถแก้ไขสายได้อีก สามารถดูตำแหน่งทีมในสายได้จากตารางด้านล่าง
+                    </p>
 
-                    <% # เตรียมข้อมูล assignment ปัจจุบัน: slot_label -> team_id %>
                     <% current_assignments = {} %>
                     <% div.matches.each do |m| %>
                       <% if m.home_slot_label.present? && m.home_team_id.present? %>
@@ -163,51 +171,156 @@
                       <% end %>
                     <% end %>
 
+                    <div class="row g-2">
+                      <% div.groups.order(:name).each do |group| %>
+                        <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                        <% next if group_slots.empty? %>
+
+                        <div class="col-12 col-md-6">
+                          <div class="mb-2 p-2 rounded" style="background-color:#ffffff;border:1px solid #eceff1;">
+                            <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
+                            <div class="table-responsive">
+                              <table class="table table-sm align-middle mb-2">
+                                <thead class="table-light">
+                                  <tr>
+                                    <th scope="col" style="width:80px;">ตำแหน่ง</th>
+                                    <th scope="col">ทีม</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <% group_slots.each do |slot_label| %>
+                                    <% assigned_team_id = current_assignments[slot_label] %>
+                                    <% team_name = regs.find { |r| r.team_id == assigned_team_id }&.team&.name %>
+                                    <tr>
+                                      <td><strong><%= slot_label %></strong></td>
+                                      <td><%= team_name.presence || "-" %></td>
+                                    </tr>
+                                  <% end %>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% else %>
+                  <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;" data-total-teams="<%= regs.count %>">
+                    <div class="fw-bold mb-2" style="font-size:13px;">จัดทีมลงตำแหน่ง A1, A2, ... ของรุ่นนี้</div>
+                    <p class="mb-2" style="font-size:12px;color:#78909c;">
+                      เลือกทีมให้แต่ละตำแหน่งในสาย ทีมหนึ่งสามารถอยู่ได้เพียงตำแหน่งเดียวในรุ่นนี้</p>
+
+                    <%= form_with url: assign_slot_teams_tournament_path(@tournament), method: :post, local: true do |f| %>
+                      <%= hidden_field_tag :division_id, div.id %>
+
+                      <% current_assignments = {} %>
+                      <% div.matches.each do |m| %>
+                        <% if m.home_slot_label.present? && m.home_team_id.present? %>
+                          <% current_assignments[m.home_slot_label] ||= m.home_team_id %>
+                        <% end %>
+                        <% if m.away_slot_label.present? && m.away_team_id.present? %>
+                          <% current_assignments[m.away_slot_label] ||= m.away_team_id %>
+                        <% end %>
+                      <% end %>
+
+                      <div class="row g-2">
+                        <% div.groups.order(:name).each do |group| %>
+                          <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                          <% next if group_slots.empty? %>
+
+                          <div class="col-12 col-md-6">
+                            <div class="mb-2 p-2 rounded" style="background-color:#ffffff;border:1px solid #eceff1;">
+                              <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
+                              <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-2">
+                                  <thead class="table-light">
+                                    <tr>
+                                      <th scope="col" style="width:80px;">ตำแหน่ง</th>
+                                      <th scope="col">ทีม</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <% group_slots.each do |slot_label| %>
+                                      <% assigned_team_id = current_assignments[slot_label] %>
+                                      <% team_name = regs.find { |r| r.team_id == assigned_team_id }&.team&.name %>
+                                      <tr>
+                                        <td><strong><%= slot_label %></strong></td>
+                                        <td>
+                                          <select name="slot_assignments[<%= slot_label %>]" class="form-select form-select-sm">
+                                            <option value="">
+                                              <%= assigned_team_id ? "ไม่เลือกทีม" : "เลือกทีม" %>
+                                            </option>
+                                            <% regs.each do |reg| %>
+                                              <option value="<%= reg.team_id %>" <%= 'selected' if reg.team_id == assigned_team_id %>>
+                                                <%= reg.team.name %>
+                                              </option>
+                                            <% end %>
+                                          </select>
+                                        </td>
+                                        <td class="text-end"></td>
+                                      </tr>
+                                    <% end %>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
+
+                      <div class="mb-2 mt-2 text-end">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกการจัดทีมลงสายของรุ่นนี้</button>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              <% end %>
+            <% else %>
+              <% if div.groups.any? && div.matches.any? %>
+                <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
+                  <div class="fw-bold mb-2" style="font-size:13px;">ทีมที่ลงตำแหน่ง A1, A2, ... ของรุ่นนี้</div>
+                  <% current_assignments = {} %>
+                  <% div.matches.each do |m| %>
+                    <% if m.home_slot_label.present? && m.home_team_id.present? %>
+                      <% current_assignments[m.home_slot_label] ||= m.home_team_id %>
+                    <% end %>
+                    <% if m.away_slot_label.present? && m.away_team_id.present? %>
+                      <% current_assignments[m.away_slot_label] ||= m.away_team_id %>
+                    <% end %>
+                  <% end %>
+
+                  <div class="row g-2">
                     <% div.groups.order(:name).each do |group| %>
                       <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
                       <% next if group_slots.empty? %>
 
-                      <div class="mb-2">
-                        <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
-                        <div class="table-responsive">
-                          <table class="table table-sm align-middle mb-2">
-                            <thead class="table-light">
-                              <tr>
-                                <th scope="col" style="width:80px;">ตำแหน่ง</th>
-                                <th scope="col">ทีม</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <% group_slots.each_with_index do |slot_label, idx| %>
-                                <% assigned_team_id = current_assignments[slot_label] %>
-                                <% available_teams = regs %>
+                      <div class="col-12 col-md-6">
+                        <div class="mb-2 p-2 rounded" style="background-color:#ffffff;border:1px solid #eceff1;">
+                          <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
+                          <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-2">
+                              <thead class="table-light">
                                 <tr>
-                                  <td><strong><%= slot_label %></strong></td>
-                                  <td>
-                                    <select name="slot_assignments[<%= slot_label %>]" class="form-select form-select-sm">
-                                      <option value="">
-                                        <%= assigned_team_id ? "ไม่เลือกทีม" : "เลือกทีม" %>
-                                      </option>
-                                      <% available_teams.each do |reg| %>
-                                        <option value="<%= reg.team_id %>" <%= 'selected' if reg.team_id == assigned_team_id %>>
-                                          <%= reg.team.name %>
-                                        </option>
-                                      <% end %>
-                                    </select>
-                                  </td>
-                                  <td class="text-end"></td>
+                                  <th scope="col" style="width:80px;">ตำแหน่ง</th>
+                                  <th scope="col">ทีม</th>
                                 </tr>
-                              <% end %>
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                <% group_slots.each do |slot_label| %>
+                                  <% assigned_team_id = current_assignments[slot_label] %>
+                                  <% team_name = regs.find { |r| r.team_id == assigned_team_id }&.team&.name %>
+                                  <tr>
+                                    <td><strong><%= slot_label %></strong></td>
+                                    <td><%= team_name.presence || "-" %></td>
+                                  </tr>
+                                <% end %>
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
                     <% end %>
-
-                    <div class="mb-2 mt-2 text-end">
-                      <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกการจัดทีมลงสายของรุ่นนี้</button>
-                    </div>
-                  <% end %>
+                  </div>
                 </div>
               <% end %>
             <% end %>
