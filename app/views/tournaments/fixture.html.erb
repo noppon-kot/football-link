@@ -154,7 +154,16 @@
                                   <td><%= match.away_name %></td>
                                   <td class="text-end">
                                     <% if match.home_score.present? && match.away_score.present? %>
-                                      <%= match.home_score %> - <%= match.away_score %>
+                                      <% hs = match.home_score; as = match.away_score %>
+                                      <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
+                                        <% if match.penalty_winner_side == "home" %>
+                                          *<%= hs %> - <%= as %>
+                                        <% else %>
+                                          <%= hs %> - *<%= as %>
+                                        <% end %>
+                                      <% else %>
+                                        <%= hs %> - <%= as %>
+                                      <% end %>
                                     <% else %>
                                       <span class="text-muted" style="font-size:12px;">ยังไม่ระบุสกอร์</span>
                                     <% end %>
