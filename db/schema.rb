@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_08_060000) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_08_060003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -102,6 +102,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_08_060000) do
     t.datetime "updated_at", null: false
     t.string "home_slot_label", default: "", null: false
     t.string "away_slot_label", default: "", null: false
+    t.datetime "kickoff_at"
+    t.integer "position"
+    t.boolean "decided_by_penalty", default: false, null: false
+    t.string "penalty_winner_side"
     t.index ["away_team_id"], name: "index_matches_on_away_team_id"
     t.index ["group_id"], name: "index_matches_on_group_id"
     t.index ["home_team_id"], name: "index_matches_on_home_team_id"
@@ -144,6 +148,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_08_060000) do
     t.integer "points_draw", default: 1, null: false
     t.integer "points_loss", default: 0, null: false
     t.string "match_format", default: "single_leg", null: false
+    t.string "draw_mode", default: "normal", null: false
+    t.integer "points_pk_win"
+    t.integer "points_pk_loss"
     t.index ["tournament_id"], name: "index_tournament_divisions_on_tournament_id"
   end
 

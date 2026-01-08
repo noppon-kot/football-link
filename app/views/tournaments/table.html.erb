@@ -57,6 +57,9 @@
               <% win_pts  = div.respond_to?(:points_win)  ? div.points_win  : 3 %>
               <% draw_pts = div.respond_to?(:points_draw) ? div.points_draw : 1 %>
               <% loss_pts = div.respond_to?(:points_loss) ? div.points_loss : 0 %>
+              <% draw_mode = div.respond_to?(:draw_mode) ? (div.draw_mode.presence || "normal") : "normal" %>
+              <% pk_win_pts  = div.respond_to?(:points_pk_win)  && div.points_pk_win.present?  ? div.points_pk_win  : draw_pts %>
+              <% pk_loss_pts = div.respond_to?(:points_pk_loss) && div.points_pk_loss.present? ? div.points_pk_loss : draw_pts %>
 
               <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f9fafb;">
                 <div class="d-flex align-items-center mb-2" style="gap:8px;">
@@ -69,26 +72,46 @@
 
                 <% if can_manage_registrations?(@tournament) %>
                   <div class="mb-2 p-2 rounded" style="background-color:#ffffff;border:1px dashed #cfd8dc;">
-                    <div class="d-flex align-items-center justify-content-between" style="gap:8px;flex-wrap:wrap;">
-                      <div style="font-size:12px;font-weight:bold;">กำหนดคะแนน ชนะ/เสมอ/แพ้</div>
-                      <%= form_with url: update_points_tournament_path(@tournament), method: :patch, local: true, class: "d-flex align-items-end" do |f| %>
-                        <%= hidden_field_tag :division_id, div.id %>
-                        <div class="me-2" style="font-size:12px;">
-                          <label class="form-label mb-0" style="font-size:11px;">ชนะ</label>
-                          <input type="number" name="division[points_win]" min="0" max="10" class="form-control form-control-sm" value="<%= win_pts %>">
-                        </div>
-                        <div class="me-2" style="font-size:12px;">
-                          <label class="form-label mb-0" style="font-size:11px;">เสมอ</label>
-                          <input type="number" name="division[points_draw]" min="0" max="10" class="form-control form-control-sm" value="<%= draw_pts %>">
-                        </div>
-                        <div class="me-2" style="font-size:12px;">
-                          <label class="form-label mb-0" style="font-size:11px;">แพ้</label>
-                          <input type="number" name="division[points_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= loss_pts %>">
-                        </div>
-                        <div>
-                          <button type="submit" class="btn btn-sm btn-outline-primary">บันทึก</button>
-                        </div>
-                      <% end %>
+                    <div class="d-flex flex-column" style="gap:4px;">
+                      <div class="d-flex align-items-center justify-content-between" style="gap:8px;flex-wrap:wrap;">
+                        <div style="font-size:12px;font-weight:bold;">กำหนดคะแนน ชนะ/เสมอ/แพ้ และกติกาเสมอ</div>
+                        <%= form_with url: update_points_tournament_path(@tournament), method: :patch, local: true, class: "d-flex align-items-end flex-wrap" do |f| %>
+                          <%= hidden_field_tag :division_id, div.id %>
+                          <div class="me-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">ชนะ</label>
+                            <input type="number" name="division[points_win]" min="0" max="10" class="form-control form-control-sm" value="<%= win_pts %>">
+                          </div>
+                          <div class="me-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">เสมอ</label>
+                            <input type="number" name="division[points_draw]" min="0" max="10" class="form-control form-control-sm" value="<%= draw_pts %>">
+                          </div>
+                          <div class="me-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">แพ้</label>
+                            <input type="number" name="division[points_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= loss_pts %>">
+                          </div>
+                          <div class="me-2" style="font-size:12px;min-width:160px;">
+                            <label class="form-label mb-0" style="font-size:11px;">กติกากรณีเสมอ</label>
+                            <select name="division[draw_mode]" class="form-select form-select-sm">
+                              <option value="normal" <%= "selected" if draw_mode == "normal" %>>เสมอธรรมดา (ทีมละ <%= draw_pts %> แต้ม)</option>
+                              <option value="pk" <%= "selected" if draw_mode == "pk" %>>เสมอแล้วยิงจุดโทษ</option>
+                            </select>
+                          </div>
+                          <div class="me-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">แต้มชนะจุดโทษ</label>
+                            <input type="number" name="division[points_pk_win]" min="0" max="10" class="form-control form-control-sm" value="<%= pk_win_pts %>">
+                          </div>
+                          <div class="me-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">แต้มแพ้จุดโทษ</label>
+                            <input type="number" name="division[points_pk_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= pk_loss_pts %>">
+                          </div>
+                          <div>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">บันทึก</button>
+                          </div>
+                        <% end %>
+                      </div>
+                      <div style="font-size:11px;color:#90a4ae;">
+                        ถ้าเลือก "เสมอแล้วยิงจุดโทษ" ให้ไปเลือกทีมที่ชนะจุดโทษในหน้าตารางแข่งขันของแต่ละนัดด้วย
+                      </div>
                     </div>
                   </div>
                 <% end %>
@@ -106,15 +129,15 @@
                         <table class="table table-sm align-middle mb-0">
                           <thead class="table-light">
                             <tr>
-                              <th scope="col">ทีม</th>
-                              <th scope="col" class="text-center">แข่ง</th>
-                              <th scope="col" class="text-center">ชนะ</th>
-                              <th scope="col" class="text-center">เสมอ</th>
-                              <th scope="col" class="text-center">แพ้</th>
-                              <th scope="col" class="text-center">ได้</th>
-                              <th scope="col" class="text-center">เสีย</th>
-                              <th scope="col" class="text-center">ผลต่าง</th>
-                              <th scope="col" class="text-center">คะแนน</th>
+                              <th scope="col" style="width:40%;">ทีม</th>
+                              <th scope="col" class="text-center" style="width:7%;">แข่ง</th>
+                              <th scope="col" class="text-center" style="width:7%;">ชนะ</th>
+                              <th scope="col" class="text-center" style="width:7%;">เสมอ</th>
+                              <th scope="col" class="text-center" style="width:7%;">แพ้</th>
+                              <th scope="col" class="text-center" style="width:7%;">ได้</th>
+                              <th scope="col" class="text-center" style="width:7%;">เสีย</th>
+                              <th scope="col" class="text-center" style="width:8%;">ประตู</th>
+                              <th scope="col" class="text-center" style="width:10%;">คะแนน</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -145,8 +168,19 @@
                                   <% stats[a_id][:won]  += 1; stats[a_id][:pts] += win_pts %>
                                   <% stats[h_id][:lost] += 1; stats[h_id][:pts] += loss_pts %>
                                 <% else %>
-                                  <% stats[h_id][:draw] += 1; stats[h_id][:pts] += draw_pts %>
-                                  <% stats[a_id][:draw] += 1; stats[a_id][:pts] += draw_pts %>
+                                  <% if draw_mode == "pk" && match.decided_by_penalty && match.penalty_winner_side.present? %>
+                                    <% if match.penalty_winner_side == "home" %>
+                                      <% winner_id = h_id; loser_id = a_id %>
+                                    <% else %>
+                                      <% winner_id = a_id; loser_id = h_id %>
+                                    <% end %>
+
+                                    <% stats[winner_id][:draw] += 1; stats[winner_id][:pts] += pk_win_pts %>
+                                    <% stats[loser_id][:draw]  += 1; stats[loser_id][:pts]  += pk_loss_pts %>
+                                  <% else %>
+                                    <% stats[h_id][:draw] += 1; stats[h_id][:pts] += draw_pts %>
+                                    <% stats[a_id][:draw] += 1; stats[a_id][:pts] += draw_pts %>
+                                  <% end %>
                                 <% end %>
                               <% end %>
 

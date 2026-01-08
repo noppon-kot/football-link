@@ -75,18 +75,25 @@
                             <table class="table table-sm align-middle mb-0">
                               <thead class="table-light">
                                 <tr>
+                                  <th scope="col" style="width:160px;">วันเวลา</th>
                                   <th scope="col">ทีมเหย้า</th>
                                   <th scope="col">ทีมเยือน</th>
-                                  <th scope="col" class="text-center">สกอร์</th>
+                                  <th scope="col" class="text-end">สกอร์</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 <% matches.each do |match| %>
                                   <tr>
+                                    <td>
+                                      <%= datetime_field_tag "matches[#{match.id}][kickoff_at]",
+                                            (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
+                                            class: "form-control form-control-sm",
+                                            placeholder: "ยังไม่ได้กำหนด" %>
+                                    </td>
                                     <td><%= match.home_name %></td>
                                     <td><%= match.away_name %></td>
-                                    <td class="text-center">
-                                      <div class="d-flex justify-content-center align-items-center" style="gap:4px;">
+                                    <td class="text-end">
+                                      <div class="d-flex justify-content-end align-items-center" style="gap:4px;">
                                         <%= select_tag "matches[#{match.id}][home_score]",
                                               options_for_select((0..15).to_a, match.home_score),
                                               include_blank: "-",
@@ -99,6 +106,19 @@
                                               class: "form-select form-select-sm",
                                               style: "width:auto;display:inline-block;" %>
                                       </div>
+
+                                      <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
+                                        <div class="mt-1 text-end" style="font-size:11px;">
+                                          <%= select_tag "matches[#{match.id}][penalty_winner_side]",
+                                                options_for_select([
+                                                  ["ไม่มียิงจุดโทษ", ""],
+                                                  ["เหย้าชนะจุดโทษ", "home"],
+                                                  ["เยือนชนะจุดโทษ", "away"]
+                                                ], match.penalty_winner_side),
+                                                class: "form-select form-select-sm d-inline-block",
+                                                style: "max-width:180px;" %>
+                                        </div>
+                                      <% end %>
                                     </td>
                                   </tr>
                                 <% end %>
@@ -114,17 +134,25 @@
                           <table class="table table-sm align-middle mb-0">
                             <thead class="table-light">
                               <tr>
+                                <th scope="col" style="width:160px;">วันเวลา</th>
                                 <th scope="col">ทีมเหย้า</th>
                                 <th scope="col">ทีมเยือน</th>
-                                <th scope="col" class="text-center">สกอร์</th>
+                                <th scope="col" class="text-end">สกอร์</th>
                               </tr>
                             </thead>
                             <tbody>
                               <% matches.each do |match| %>
                                 <tr>
+                                  <td>
+                                    <% if match.kickoff_at.present? %>
+                                      <%= match.kickoff_at.strftime("%d/%m/%Y %H:%M") %>
+                                    <% else %>
+                                      <span class="text-muted" style="font-size:12px;">ยังไม่ได้กำหนด</span>
+                                    <% end %>
+                                  </td>
                                   <td><%= match.home_name %></td>
                                   <td><%= match.away_name %></td>
-                                  <td class="text-center">
+                                  <td class="text-end">
                                     <% if match.home_score.present? && match.away_score.present? %>
                                       <%= match.home_score %> - <%= match.away_score %>
                                     <% else %>

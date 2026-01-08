@@ -95,7 +95,7 @@ class TournamentsController < ApplicationController
       return redirect_to table_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
     end
 
-    attrs = params.require(:division).permit(:points_win, :points_draw, :points_loss)
+    attrs = params.require(:division).permit(:points_win, :points_draw, :points_loss, :draw_mode, :points_pk_win, :points_pk_loss)
 
     if division.update(attrs)
       redirect_to table_tournament_path(@tournament), notice: "อัปเดตกติกาคะแนนเรียบร้อยแล้ว"
@@ -116,16 +116,35 @@ class TournamentsController < ApplicationController
         match = Match.find_by(id: match_id)
         next unless match
 
-        # attrs เป็น ActionController::Parameters อยู่แล้ว ใช้ permit ตรง ๆ ได้เลย
-        permitted = attrs.permit(:home_score, :away_score)
+        permitted = attrs.permit(:home_score, :away_score, :kickoff_at, :penalty_winner_side)
 
-        # อัปเดตเฉพาะคู่ที่เลือกสกอร์ครบทั้งสองฝั่ง
-        next if permitted[:home_score].blank? && permitted[:away_score].blank?
+        update_attrs = {}
 
-        # ถ้ากรอกฝั่งใดฝั่งหนึ่งไม่ครบ ให้ข้าม ไม่บันทึกครึ่งเดียว
-        next if permitted[:home_score].blank? || permitted[:away_score].blank?
+        # วันเวลาแข่ง
+        update_attrs[:kickoff_at] = permitted[:kickoff_at] if permitted[:kickoff_at].present?
 
-        match.update!(permitted)
+        # สกอร์: ต้องกรอกทั้งสองฝั่งถึงจะบันทึก
+        home_score = permitted[:home_score]
+        away_score = permitted[:away_score]
+        scores_changed = false
+
+        if home_score.present? || away_score.present?
+          next if home_score.blank? || away_score.blank?
+
+          update_attrs[:home_score] = home_score
+          update_attrs[:away_score] = away_score
+          scores_changed = true
+        end
+
+        # จุดโทษ: เชื่อค่าจาก dropdown โดยตรง
+        winner_side_param = permitted[:penalty_winner_side]
+        unless winner_side_param.nil?
+          winner_side = winner_side_param.presence
+          update_attrs[:decided_by_penalty]    = winner_side.present?
+          update_attrs[:penalty_winner_side]   = winner_side
+        end
+
+        match.update!(update_attrs) if update_attrs.any?
       end
     end
 
