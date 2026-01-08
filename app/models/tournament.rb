@@ -29,6 +29,8 @@ class Tournament < ApplicationRecord
 
   validate :must_have_at_least_one_division
 
+  validate :images_must_be_valid
+
   scope :active_for_search, -> {
     where(status: :active)
       .where("competition_date >= ?", Date.current)
@@ -59,6 +61,24 @@ class Tournament < ApplicationRecord
     valid_divisions = tournament_divisions.reject(&:marked_for_destruction?).select { |d| d.name.present? }
     if valid_divisions.empty?
       errors.add(:tournament_divisions, "กรุณาเพิ่มอย่างน้อยหนึ่งรุ่นอายุของการแข่งขัน")
+    end
+  end
+
+  def images_must_be_valid
+    return unless images.attached?
+
+    if images.attachments.size > 1
+      errors.add(:images, "สามารถอัปโหลดได้ไม่เกิน 1 รูป")
+    end
+
+    images.each do |image|
+      if image.blob.byte_size > 10.megabytes
+        errors.add(:images, "ขนาดไฟล์ต้องไม่เกิน 10MB")
+      end
+
+      unless image.blob.content_type&.start_with?("image/")
+        errors.add(:images, "ต้องเป็นไฟล์รูปภาพเท่านั้น")
+      end
     end
   end
 
