@@ -191,11 +191,11 @@
 }
 
 .tournament-card--bg1::before {
-  background-image: url("back1.png");
+  background-image: url("banner2.png");
 }
 
 .tournament-card--bg2::before {
-  background-image: url("back2.png");
+  background-image: url("banner2.png");
 }
 
 .tournament-card-body,
@@ -225,11 +225,11 @@
 }
 
 .tournament-card-compact-image.tournament-card--bg1 {
-  background-image: url("back1.png");
+  background-image: url("banner2.png");
 }
 
 .tournament-card-compact-image.tournament-card--bg2 {
-  background-image: url("back2.png");
+  background-image: url("banner2.png");
 }
 
 .tournament-card-compact-body {

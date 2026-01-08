@@ -1,12 +1,5 @@
 <div class="app-shell">
-  <% bg_image = begin
-       age_str = @tournament.age_category.to_s
-       if age_str =~ /U(\d+)/ && $1.to_i < 20
-         "back1.png"
-       else
-         "back2.png"
-       end
-     end %>
+  <% bg_image = "banner2.png" %>
   <div class="tournament-show-header">
     <div style="position:absolute;inset:0;background-image:url('<%= asset_path(bg_image) %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
     <div style="position:relative;">
