@@ -1,5 +1,6 @@
 class TournamentsController < ApplicationController
-  before_action :require_login, except: [:index, :show]
+  # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
+  before_action :require_login, except: [:index, :show, :teams, :fixture, :table]
   before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :fixture, :table, :assign_slot_teams, :update_points, :update_scores]
   before_action :require_edit_permission, only: [:edit, :update]
   def index
@@ -49,6 +50,10 @@ class TournamentsController < ApplicationController
   def generate_mock_schedule
     @tournament = Tournament.find(params[:id])
 
+    unless can_manage_registrations?(@tournament)
+      return redirect_to teams_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
     result = ::Tournaments::GenerateMockScheduleHandler.new(
       tournament: @tournament,
       params: params,
@@ -65,6 +70,10 @@ class TournamentsController < ApplicationController
   end
 
   def assign_slot_teams
+    unless can_manage_registrations?(@tournament)
+      return redirect_to teams_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
     division = @tournament.tournament_divisions.find(params[:division_id])
 
     result = ::Tournaments::AssignTeamsToSlotsService.new(

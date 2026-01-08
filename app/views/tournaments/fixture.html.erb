@@ -68,7 +68,48 @@
                   <% matches_by_group.each do |group_name, matches| %>
                     <div class="mb-2">
                       <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group_name %></div>
-                      <%= form_with url: update_scores_tournament_path(@tournament), method: :patch, local: true do |f| %>
+
+                      <% if can_manage_registrations?(@tournament) %>
+                        <%= form_with url: update_scores_tournament_path(@tournament), method: :patch, local: true do |f| %>
+                          <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                              <thead class="table-light">
+                                <tr>
+                                  <th scope="col">ทีมเหย้า</th>
+                                  <th scope="col">ทีมเยือน</th>
+                                  <th scope="col" class="text-center">สกอร์</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <% matches.each do |match| %>
+                                  <tr>
+                                    <td><%= match.home_name %></td>
+                                    <td><%= match.away_name %></td>
+                                    <td class="text-center">
+                                      <div class="d-flex justify-content-center align-items-center" style="gap:4px;">
+                                        <%= select_tag "matches[#{match.id}][home_score]",
+                                              options_for_select((0..15).to_a, match.home_score),
+                                              include_blank: "-",
+                                              class: "form-select form-select-sm",
+                                              style: "width:auto;display:inline-block;" %>
+                                        <span>-</span>
+                                        <%= select_tag "matches[#{match.id}][away_score]",
+                                              options_for_select((0..15).to_a, match.away_score),
+                                              include_blank: "-",
+                                              class: "form-select form-select-sm",
+                                              style: "width:auto;display:inline-block;" %>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                <% end %>
+                              </tbody>
+                            </table>
+                          </div>
+                          <div class="mt-2 text-end">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกสกอร์สาย <%= group_name %></button>
+                          </div>
+                        <% end %>
+                      <% else %>
                         <div class="table-responsive">
                           <table class="table table-sm align-middle mb-0">
                             <thead class="table-light">
@@ -84,27 +125,16 @@
                                   <td><%= match.home_name %></td>
                                   <td><%= match.away_name %></td>
                                   <td class="text-center">
-                                    <div class="d-flex justify-content-center align-items-center" style="gap:4px;">
-                                      <%= select_tag "matches[#{match.id}][home_score]",
-                                            options_for_select((0..15).to_a, match.home_score),
-                                            include_blank: "-",
-                                            class: "form-select form-select-sm",
-                                            style: "width:auto;display:inline-block;" %>
-                                      <span>-</span>
-                                      <%= select_tag "matches[#{match.id}][away_score]",
-                                            options_for_select((0..15).to_a, match.away_score),
-                                            include_blank: "-",
-                                            class: "form-select form-select-sm",
-                                            style: "width:auto;display:inline-block;" %>
-                                    </div>
+                                    <% if match.home_score.present? && match.away_score.present? %>
+                                      <%= match.home_score %> - <%= match.away_score %>
+                                    <% else %>
+                                      <span class="text-muted" style="font-size:12px;">ยังไม่ระบุสกอร์</span>
+                                    <% end %>
                                   </td>
                                 </tr>
                               <% end %>
                             </tbody>
                           </table>
-                        </div>
-                        <div class="mt-2 text-end">
-                          <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกสกอร์สาย <%= group_name %></button>
                         </div>
                       <% end %>
                     </div>
