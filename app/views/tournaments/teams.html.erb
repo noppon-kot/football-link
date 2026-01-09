@@ -12,20 +12,7 @@
 
   <div class="tournament-show-body">
     <div class="container py-2">
-      <ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <%= link_to "ข้อมูลทั่วไป", tournament_path(@tournament), class: "nav-link" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "ทีม", teams_tournament_path(@tournament), class: "nav-link active" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "โปรแกรม", fixture_tournament_path(@tournament), class: "nav-link" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "ตารางคะแนน", table_tournament_path(@tournament), class: "nav-link" %>
-        </li>
-      </ul>
+      <%= render "tournaments/nav_tabs", active: :teams %>
 
       <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ทีมที่สนใจ / สมัคร</h2>
       <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
@@ -106,43 +93,43 @@
               <% end %>
             </div>
 
-            <% if can_manage_registrations?(@tournament) %>
+              <% if can_manage_registrations?(@tournament) %>
               <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#ffffff;border:1px dashed #cfd8dc;">
                 <div class="fw-bold mb-1" style="font-size:13px;">สร้างสายการแข่งขันสำหรับรุ่นนี้</div>
                 <p class="mb-2" style="font-size:12px;color:#78909c;">
-                  กำหนดจำนวนสาย และจำนวนทีมต่อสาย จากนั้นระบบจะสร้างคู่แข่งขันแบบพบกันหมดในแต่ละสายให้โดยอัตโนมัติ
-                </p>
+                    กำหนดจำนวนสาย และจำนวนทีมต่อสาย จากนั้นระบบจะสร้างคู่แข่งขันแบบพบกันหมดในแต่ละสายให้โดยอัตโนมัติ
+                  </p>
 
-                <% existing_group_count = div.groups.count if div.groups.loaded? ? div.groups.any? : div.groups.exists? %>
-                <% existing_slots_per_group = nil %>
-                <% if div.groups.any? && div.matches.any? %>
-                  <% sample_group = div.groups.order(:name).first %>
-                  <% group_slots = (div.matches.where(group: sample_group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq) %>
-                  <% existing_slots_per_group = group_slots.size if group_slots.any? %>
-                <% end %>
+                  <% existing_group_count = div.groups.count if div.groups.loaded? ? div.groups.any? : div.groups.exists? %>
+                  <% existing_slots_per_group = nil %>
+                  <% if div.groups.any? && div.matches.any? %>
+                    <% sample_group = div.groups.order(:name).first %>
+                    <% group_slots = (div.matches.where(group: sample_group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq) %>
+                    <% existing_slots_per_group = group_slots.size if group_slots.any? %>
+                  <% end %>
 
-                <%= form_with url: generate_mock_schedule_tournament_path(@tournament), method: :post, local: true, class: "row g-2 align-items-end" do |f| %>
-                  <%= hidden_field_tag :division_id, div.id %>
-                  <div class="col-6 col-md-3">
-                    <label class="form-label" style="font-size:12px;">จำนวนสาย</label>
-                    <input type="number" name="group_count" min="1" class="form-control form-control-sm" value="<%= existing_group_count %>">
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <label class="form-label" style="font-size:12px;">จำนวนทีมต่อสาย</label>
-                    <input type="number" name="slots_per_group" min="2" class="form-control form-control-sm" value="<%= existing_slots_per_group %>">
-                  </div>
-                  <div class="col-12 col-md-3">
-                    <label class="form-label" style="font-size:12px;">รูปแบบแข่ง</label>
-                    <select name="match_format" class="form-select form-select-sm">
-                      <option value="single_leg">นัดเดียว</option>
-                      <option value="home_away">เหย้า-เยือน</option>
-                    </select>
-                  </div>
-                  <div class="col-12 col-md-3 d-grid">
-                    <button type="submit" class="btn btn-sm btn-primary">สร้างสายการแข่งขัน</button>
-                  </div>
-                <% end %>
-              </div>
+                  <%= form_with url: generate_mock_schedule_tournament_path(@tournament), method: :post, local: true, class: "row g-2 align-items-end" do |f| %>
+                    <%= hidden_field_tag :division_id, div.id %>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label" style="font-size:12px;">จำนวนสาย</label>
+                      <input type="number" name="group_count" min="1" class="form-control form-control-sm" value="<%= existing_group_count %>">
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label" style="font-size:12px;">จำนวนทีมต่อสาย</label>
+                      <input type="number" name="slots_per_group" min="2" class="form-control form-control-sm" value="<%= existing_slots_per_group %>">
+                    </div>
+                    <div class="col-12 col-md-3">
+                      <label class="form-label" style="font-size:12px;">รูปแบบแข่ง</label>
+                      <select name="match_format" class="form-select form-select-sm">
+                        <option value="single_leg">นัดเดียว</option>
+                        <option value="home_away">เหย้า-เยือน</option>
+                      </select>
+                    </div>
+                    <div class="col-12 col-md-3 d-grid">
+                      <button type="submit" class="btn btn-sm btn-primary">สร้างสายการแข่งขัน</button>
+                    </div>
+                  <% end %>
+                </div>
 
               <% if div.groups.any? && div.matches.any? %>
                 <% has_played_matches = div.matches.where.not(home_score: nil, away_score: nil).exists? %>

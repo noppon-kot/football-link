@@ -12,20 +12,7 @@
 
   <div class="tournament-show-body">
     <div class="container py-2">
-      <ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <%= link_to "ข้อมูลทั่วไป", tournament_path(@tournament), class: "nav-link" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "ทีม", teams_tournament_path(@tournament), class: "nav-link" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "โปรแกรม", fixture_tournament_path(@tournament), class: "nav-link active" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "ตารางคะแนน", table_tournament_path(@tournament), class: "nav-link" %>
-        </li>
-      </ul>
+      <%= render "tournaments/nav_tabs", active: :fixture %>
 
       <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ตารางการแข่งขัน</h2>
       <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>

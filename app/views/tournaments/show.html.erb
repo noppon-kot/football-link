@@ -98,20 +98,7 @@
   <div class="tournament-show-body">
     <div class="container py-2">
       <!-- Main navigation between subpages -->
-      <ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
-        <li class="nav-item" role="presentation">
-          <%= link_to "ข้อมูลทั่วไป", tournament_path(@tournament), class: "nav-link active" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "ทีม", teams_tournament_path(@tournament), class: "nav-link" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "โปรแกรม", fixture_tournament_path(@tournament), class: "nav-link" %>
-        </li>
-        <li class="nav-item" role="presentation">
-          <%= link_to "ตารางคะแนน", table_tournament_path(@tournament), class: "nav-link" %>
-        </li>
-      </ul>
+      <%= render "tournaments/nav_tabs", active: :show %>
 
       <div class="tab-content" id="tournament-main-tabs-content">
         <div

@@ -89,18 +89,28 @@ class TournamentsController < ApplicationController
   end
 
   def update_points
-    division = @tournament.tournament_divisions.find(params[:division_id])
-
     unless can_manage_registrations?(@tournament)
       return redirect_to table_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
     end
 
     attrs = params.require(:division).permit(:points_win, :points_draw, :points_loss, :draw_mode, :points_pk_win, :points_pk_loss)
 
-    if division.update(attrs)
-      redirect_to table_tournament_path(@tournament), notice: "อัปเดตกติกาคะแนนเรียบร้อยแล้ว"
+    divisions = @tournament.tournament_divisions
+    errors = []
+
+    ActiveRecord::Base.transaction do
+      divisions.each do |division|
+        unless division.update(attrs)
+          errors = division.errors.full_messages
+          raise ActiveRecord::Rollback
+        end
+      end
+    end
+
+    if errors.empty?
+      redirect_to table_tournament_path(@tournament), notice: "อัปเดตกติกาคะแนนเรียบร้อยแล้ว (ใช้กับทุกรุ่น)"
     else
-      redirect_to table_tournament_path(@tournament), alert: division.errors.full_messages.join(", ")
+      redirect_to table_tournament_path(@tournament), alert: errors.join(", ")
     end
   end
 
