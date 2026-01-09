@@ -217,12 +217,9 @@
     </div>
   </div>
 
-  <% has_schedule = Match.where(tournament_division_id: @tournament.tournament_divisions.select(:id)).exists? %>
-  <% unless has_schedule %>
-    <div class="tournament-show-bottom-bar">
-      <div style="display:flex;gap:8px;">
-        <%= link_to "สมัครแข่งขัน", new_tournament_team_registration_path(@tournament), class: "btn btn-danger w-100" %>
-      </div>
+  <div class="tournament-show-bottom-bar">
+    <div style="display:flex;gap:8px;">
+      <%= link_to "สนใจสมัคร", new_tournament_team_registration_path(@tournament), class: "btn btn-success w-100" %>
     </div>
-  <% end %>
+  </div>
 </div>

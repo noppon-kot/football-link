@@ -53,7 +53,7 @@
       <div class="col text-end">
         <% if can_create_tournaments? %>
           <%= link_to "รายการของฉัน", dashboard_path, class: "btn btn-sm", style: "background:#e3f2fd;color:#1565c0;border-color:#90caf9;" %>
-          <%= link_to "+เพิ่มรายการแข่งขัน", new_tournament_path, class: "btn btn-sm", style: "background:#4caf50;color:#ffffff;border-color:#43a047;" %>
+          <%= link_to "เพิ่มรายการแข่งขัน", new_tournament_path, class: "btn btn-sm", style: "background:#4caf50;color:#ffffff;border-color:#43a047;" %>
         <% end %>
       </div>
     </div>
@@ -67,7 +67,6 @@
                 <tr>
                   <th scope="col" style="width:4rem;">ลำดับ</th>
                   <th scope="col">ชื่อการแข่งขัน</th>
-                  <th scope="col">วันที่จัด</th>
                   <th scope="col">รุ่นอายุ</th>
                   <th scope="col" class="text-end d-none d-md-table-cell">&nbsp;</th>
                 </tr>
@@ -81,14 +80,14 @@
                         <%= link_to tournament.title, tournament_path(tournament), style: "color: inherit; text-decoration: none;" %>
                       </div>
                       <div class="small text-muted">
+                        วันที่แข่งขัน: <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
+                      </div>
+                      <div class="small text-muted">
                         <%= tournament.location_name %> · <%= tournament.city %>, <%= tournament.province %>
                       </div>
                       <div class="mt-1 d-md-none">
                         <%= link_to "รายละเอียด", tournament_path(tournament), class: "text-primary small" %>
                       </div>
-                    </td>
-                    <td class="small">
-                      <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
                     </td>
                     <td class="small">
                       <% division_names = tournament.tournament_divisions.order(:position, :id).pluck(:name) %>

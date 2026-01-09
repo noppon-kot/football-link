@@ -1,4 +1,6 @@
 class SessionsController < ApplicationController
+  skip_before_action :require_login, only: [:new, :create, :line_login, :line_callback]
+
   def new
     @users = User.organizer.order(:id)
   end
@@ -8,6 +10,7 @@ class SessionsController < ApplicationController
 
     if result.success?
       session[:user_id] = result.user.id
+      result.user.increment!(:login_count) if result.user.respond_to?(:login_count)
       return_to = session.delete(:return_to)
       redirect_to(return_to.presence || root_path, notice: I18n.t("sessions.flash.login_success"))
     else
@@ -32,6 +35,7 @@ class SessionsController < ApplicationController
 
     if user
       session[:user_id] = user.id
+      user.increment!(:login_count) if user.respond_to?(:login_count)
       return_to = session.delete(:return_to)
       redirect_to(return_to.presence || root_path, notice: I18n.t("sessions.flash.login_success"))
     else
