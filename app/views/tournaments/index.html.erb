@@ -51,7 +51,10 @@
         <span class="badge bg-secondary">ผลลัพธ์การค้นหา</span>
       </div>
       <div class="col text-end">
-        <%= link_to "เพิ่มรายการแข่งขัน", new_tournament_path, class: "btn btn-danger btn-sm" %>
+        <% if can_create_tournaments? %>
+          <%= link_to "รายการของฉัน", dashboard_path, class: "btn btn-sm", style: "background:#e3f2fd;color:#1565c0;border-color:#90caf9;" %>
+          <%= link_to "+เพิ่มรายการแข่งขัน", new_tournament_path, class: "btn btn-sm", style: "background:#4caf50;color:#ffffff;border-color:#43a047;" %>
+        <% end %>
       </div>
     </div>
 

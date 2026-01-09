@@ -165,6 +165,10 @@ class TournamentsController < ApplicationController
 
   def new
     @tournament = Tournament.new
+    if current_user
+      @tournament.contact_phone ||= current_user.phone
+      @tournament.line_id       ||= current_user.line_id
+    end
     @tournament.tournament_divisions.build
   end
 
@@ -180,6 +184,12 @@ class TournamentsController < ApplicationController
     @tournament = service.tournament
 
     if service.call
+      if current_user
+        update_attrs = {}
+        update_attrs[:phone]   = @tournament.contact_phone if @tournament.contact_phone.present?
+        update_attrs[:line_id] = @tournament.line_id       if @tournament.line_id.present?
+        current_user.update(update_attrs) if update_attrs.any?
+      end
       redirect_to @tournament, notice: I18n.t("tournaments.flash.create_success")
     else
       render :new, status: :unprocessable_entity

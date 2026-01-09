@@ -62,3 +62,9 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+
+gem "bcrypt", "~> 3.1"          # ไว้ใช้ has_secure_password (เผื่ออนาคต)
+gem "omniauth"
+gem "omniauth-line"
+
+gem "dotenv-rails", groups: [:development, :test]

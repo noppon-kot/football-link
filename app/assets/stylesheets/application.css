@@ -714,3 +714,12 @@
 .tournament-form-actions {
   margin-top: 16px;
 }
+
+/* ทำให้ placeholder ดูจาง ไม่เหมือนข้อความที่กรอกแล้ว */
+input::placeholder,
+textarea::placeholder,
+.form-control::placeholder,
+.tournament-form-input::placeholder {
+  color: #b0bec5;
+  opacity: 1; /* บาง browser ต้องตั้ง opacity ให้เห็นผลเต็มที่ */
+}

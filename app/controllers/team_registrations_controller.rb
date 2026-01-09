@@ -17,6 +17,9 @@ class TeamRegistrationsController < ApplicationController
     ).call
 
     if result.success?
+      if current_user && params.dig(:registration, :line_id).present?
+        current_user.update(line_id: params.dig(:registration, :line_id))
+      end
       redirect_to teams_tournament_path(@tournament), notice: I18n.t("team_registrations.flash.create_success")
     else
       flash.now[:alert] = "กรุณากรอกข้อมูลทีมและข้อมูลผู้ติดต่อให้ครบถ้วน"

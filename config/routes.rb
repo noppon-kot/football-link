@@ -8,6 +8,9 @@ Rails.application.routes.draw do
   post "login"  => "sessions#create"
   delete "logout" => "sessions#destroy"
 
+  get "/login/line", to: "sessions#line_login", as: :line_login
+  get "/auth/:provider/callback", to: "sessions#line_callback"
+
   get "dashboard" => "dashboards#show"
 
   resources :matches, only: [:update]

@@ -36,7 +36,7 @@
         <div class="container-fluid" style="padding:4px 12px;">
           <%= link_to root_path, class: "navbar-brand", style: "font-size:13px;color:#1565c0;font-weight:bold;display:flex;align-items:center;gap:4px;" do %>
             <%= image_tag "logo.png", size: "32x42", alt: "Ball Dernsai", style: "border-radius:4px;" %>
-            <span>Ball Dernsai Match</span>
+            <span>Dernsai Match</span>
           <% end %>
 
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,9 +46,6 @@
           <div class="collapse navbar-collapse" id="topNav">
             <ul class="navbar-nav me-auto mb-2 mb-md-0" style="font-size:12px;">
               <% if can_create_tournaments? %>
-                <li class="nav-item">
-                  <%= link_to "รายการของฉัน", dashboard_path, class: "nav-link", style: "color:#1565c0;" %>
-                </li>
               <% end %>
             </ul>
 
@@ -57,24 +54,20 @@
                 <li class="nav-item">
                   <span class="nav-link" style="color:#455a64;font-weight:bold;padding-right:4px;"> <%= current_user.name %> </span>
                 </li>
-                <% if admin? %>
-                  <li class="nav-item">
-                    <%= link_to "ข้อความจากผู้ใช้", admin_messages_path, class: "nav-link", style: "color:#1565c0;" %>
-                  </li>
-                <% else %>
-                  <li class="nav-item">
-                    <%= link_to "ข้อความของฉัน", admin_messages_path, class: "nav-link", style: "color:#1565c0;" %>
-                  </li>
-                  <li class="nav-item">
-                    <%= link_to "ติดต่อแอดมิน", new_admin_message_path, class: "nav-link", style: "color:#1565c0;" %>
-                  </li>
-                <% end %>
                 <li class="nav-item">
-                  <%= button_to "ออกจากระบบ", logout_path, method: :delete, form: { style: "margin:0;display:inline;" }, class: "btn btn-sm btn-primary", params: {} %>
+                  <%= button_to "ออกจากระบบ", logout_path,
+                        method: :delete,
+                        form: { style: "margin:0;display:inline;" },
+                        class: "btn btn-sm",
+                        params: {},
+                        style: "background:#e3f2fd;color:#1565c0;border-color:#90caf9;" %>
                 </li>
               <% else %>
                 <li class="nav-item">
                   <%= link_to "เข้าสู่ระบบ", login_path, class: "btn btn-sm btn-outline-primary" %>
+                </li>
+                <li class="nav-item">
+                  <%= link_to "เข้าสู่ระบบด้วย LINE", line_login_path, class: "btn btn-sm btn-success" %>
                 </li>
               <% end %>
             </ul>

@@ -52,7 +52,8 @@
             <label class="form-label"><%= t('team_registrations.form.fields.contact_name') %></label>
             <%= f.text_field :contact_name,
                   class: "form-control",
-                  placeholder: t('team_registrations.form.placeholders.contact_name') %>
+                  placeholder: t('team_registrations.form.placeholders.contact_name'),
+                  value: (params.dig(:registration, :contact_name) || current_user&.name) %>
           </div>
 
           <div class="mb-3">
@@ -64,7 +65,9 @@
 
           <div class="mb-3">
             <label class="form-label">LINE ID ผู้ติดต่อทีม (ไม่บังคับ)</label>
-            <%= f.text_field :line_id, class: "form-control" %>
+            <%= f.text_field :line_id,
+                  class: "form-control",
+                  value: (params.dig(:registration, :line_id) || current_user&.line_id) %>
           </div>
 
           <div class="d-flex justify-content-end">
