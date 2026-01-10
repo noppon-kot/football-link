@@ -64,6 +64,11 @@
           </div>
 
           <div class="mb-3">
+            <label class="form-label">โลโก้ทีม (อัปโหลดรูป)</label>
+            <%= f.file_field :logo, class: "form-control" %>
+          </div>
+
+          <div class="mb-3">
             <label class="form-label">LINE ID ผู้ติดต่อทีม (ไม่บังคับ)</label>
             <%= f.text_field :line_id,
                   class: "form-control",

@@ -1,7 +1,7 @@
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
-  before_action :require_login, except: [:index, :show, :teams, :fixture, :table]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :fixture, :table, :assign_slot_teams, :update_points, :update_scores, :destroy]
+  before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :table, :assign_slot_teams, :update_points, :update_scores, :destroy]
   before_action :require_edit_permission, only: [:edit, :update]
   def index
     result = ::Tournaments::IndexService.new(
@@ -25,9 +25,9 @@ class TournamentsController < ApplicationController
     ).call
 
     if result.success?
-      redirect_to dashboard_path, notice: result.message
+      redirect_to mytournaments_path, notice: result.message
     else
-      redirect_to dashboard_path, alert: result.message
+      redirect_to mytournaments_path, alert: result.message
     end
   end
 
@@ -39,6 +39,10 @@ class TournamentsController < ApplicationController
     # ใช้ @tournament จาก set_tournament และ logic เดิมใน view สำหรับทีมที่สนใจ / สมัคร
   end
 
+  def groups
+    # ใช้ @tournament จาก set_tournament และ logic แบ่งสาย/จัดทีมลงสายใน view ใหม่
+  end
+
   def fixture
     # ใช้ @tournament จาก set_tournament และ logic เดิมใน view สำหรับตารางแข่งขัน
   end
@@ -48,10 +52,8 @@ class TournamentsController < ApplicationController
   end
 
   def generate_mock_schedule
-    @tournament = Tournament.find(params[:id])
-
     unless can_manage_registrations?(@tournament)
-      return redirect_to fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+      return redirect_to groups_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
     end
 
     result = ::Tournaments::GenerateMockScheduleHandler.new(
@@ -60,7 +62,7 @@ class TournamentsController < ApplicationController
       can_manage: can_manage_registrations?(@tournament)
     ).call
 
-    target_path = fixture_tournament_path(@tournament)
+    target_path = groups_tournament_path(@tournament)
 
     if result.success?
       redirect_to target_path, notice: result.message
@@ -71,7 +73,7 @@ class TournamentsController < ApplicationController
 
   def assign_slot_teams
     unless can_manage_registrations?(@tournament)
-      return redirect_to teams_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+      return redirect_to groups_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
     end
 
     division = @tournament.tournament_divisions.find(params[:division_id])
@@ -82,9 +84,9 @@ class TournamentsController < ApplicationController
     ).call
 
     if result.success?
-      redirect_to teams_tournament_path(@tournament), notice: "บันทึกการจัดทีมลงสายเรียบร้อยแล้ว"
+      redirect_to groups_tournament_path(@tournament), notice: "บันทึกการจัดทีมลงสายเรียบร้อยแล้ว"
     else
-      redirect_to teams_tournament_path(@tournament), alert: result.errors.join(", ")
+      redirect_to groups_tournament_path(@tournament), alert: result.errors.join(", ")
     end
   end
 
@@ -246,6 +248,7 @@ class TournamentsController < ApplicationController
       :city,
       :province,
       :line_id,
+      :google_maps_url,
       :competition_date,
       :registration_open_on,
       :registration_close_on,

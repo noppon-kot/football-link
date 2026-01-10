@@ -84,6 +84,13 @@
         <% end %>
       </div>
 
+      <div class="tournament-form-group">
+        <label>ลิงก์ Google Maps ของสนาม (ไม่บังคับ)</label>
+        <%= f.text_field :google_maps_url,
+              class: "tournament-form-input",
+              placeholder: "วางลิงก์แชร์จาก Google Maps เช่น https://www.google.com/maps/embed?..." %>
+      </div>
+
       <div class="tournament-form-inline">
         <div class="tournament-form-group">
           <label>วันเปิดรับสมัคร</label>
@@ -194,16 +201,6 @@
                       max: 99999999,
                       step: 1 %>
               </div>
-              <div class="tournament-form-group" style="flex: 1;">
-                <label>รูปแบบแข่ง</label>
-                <%= df.select :match_format,
-                      options_for_select([
-                        ["นัดเดียว", "single_leg"],
-                        ["เหย้า-เยือน", "home_away"]
-                      ], df.object.match_format),
-                      {},
-                      class: "tournament-form-input" %>
-              </div>
               <div class="tournament-form-group" style="align-self:flex-end;flex:0;">
                 <%= df.hidden_field :id if df.object.persisted? %>
                 <%= df.hidden_field :_destroy, class: "division-destroy-flag" %>
@@ -310,14 +307,6 @@
           '<input class="tournament-form-input" ' +
                  'type="number" min="0" max="99999999" step="1" ' +
                  'name="tournament[tournament_divisions_attributes][' + index + '][prize_amount]" />' +
-        '</div>' +
-        '<div class="tournament-form-group" style="flex: 1;">' +
-          '<label>รูปแบบแข่ง</label>' +
-          '<select class="tournament-form-input" ' +
-                  'name="tournament[tournament_divisions_attributes][' + index + '][match_format]">' +
-            '<option value="single_leg">นัดเดียว</option>' +
-            '<option value="home_away">เหย้า-เยือน</option>' +
-          '</select>' +
         '</div>' +
         '<div class="tournament-form-group" style="align-self:flex-end;flex:0;">' +
           '<input type="hidden" class="division-destroy-flag" ' +

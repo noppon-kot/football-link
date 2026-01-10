@@ -438,7 +438,16 @@
 }
 
 .tournament-show-body {
-  padding: 12px 12px 80px;
+  padding: 12px 12px 48px;
+}
+
+/* main tabs on tournament pages stay visible while scrolling */
+#tournament-main-tabs {
+  position: sticky;
+  top: 72px;
+  z-index: 20;
+  background: #e9f0ff;
+  padding-top: 4px;
 }
 
 .tournament-info-card {

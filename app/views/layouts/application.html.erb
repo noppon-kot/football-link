@@ -47,7 +47,7 @@
             <ul class="navbar-nav me-2 mb-2 mb-md-0" style="font-size:12px;">
               <% if can_create_tournaments? %>
                 <li class="nav-item">
-                  <%= link_to "รายการของฉัน", dashboard_path, class: "nav-link" %>
+                  <%= link_to "รายการของฉัน", mytournaments_path, class: "nav-link" %>
                 </li>
               <% end %>
 
@@ -90,17 +90,61 @@
         </div>
       </nav>
 
-      <% flash.each do |key, message| %>
-        <% next if message.blank? %>
-        <% bs_class = key.to_s == "notice" ? "alert-success" : "alert-danger" %>
-        <div class="container mt-2">
-          <div class="alert <%= bs_class %> py-2 px-3 mb-2" role="alert" style="font-size:13px;">
-            <%= message %>
-          </div>
+      <% if flash.present? %>
+        <div id="flash-toast-container" style="position:fixed;left:50%;transform:translateX(-50%);bottom:72px;max-width:90%;z-index:1100;pointer-events:none;">
+          <% flash.each do |key, message| %>
+            <% next if message.blank? %>
+            <% bs_class = key.to_s == "notice" ? "alert-success" : "alert-danger" %>
+            <div class="alert <%= bs_class %> py-2 px-3 mb-2 js-flash-auto-hide" role="alert" style="font-size:13px;pointer-events:auto;box-shadow:0 2px 6px rgba(0,0,0,0.25);">
+              <%= message %>
+            </div>
+          <% end %>
         </div>
       <% end %>
 
       <%= yield %>
+
+      <!-- Back to top button -->
+      <button
+        id="back-to-top-btn"
+        type="button"
+        style="position:fixed;right:16px;bottom:16px;width:40px;height:40px;border-radius:50%;border:none;background:#1976d2;color:#ffffff;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);z-index:1050;font-size:18px;"
+        aria-label="กลับขึ้นด้านบน">
+        ↑
+      </button>
+
+      <script>
+        (function() {
+          var btn = document.getElementById('back-to-top-btn');
+          if (btn) {
+            window.addEventListener('scroll', function() {
+              if (window.scrollY > 200) {
+                btn.style.display = 'flex';
+              } else {
+                btn.style.display = 'none';
+              }
+            });
+
+            btn.addEventListener('click', function() {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+          }
+
+          // auto hide flash messages after a short delay
+          var flashes = document.querySelectorAll('.js-flash-auto-hide');
+          flashes.forEach(function(el) {
+            setTimeout(function() {
+              el.style.transition = 'opacity 0.3s ease';
+              el.style.opacity = '0';
+              setTimeout(function() {
+                if (el && el.parentNode) {
+                  el.parentNode.removeChild(el);
+                }
+              }, 350);
+            }, 3000);
+          });
+        })();
+      </script>
     </div>
   </body>
 </html>

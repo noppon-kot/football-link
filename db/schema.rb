@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_09_153000) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_10_080001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -174,6 +174,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_09_153000) do
     t.date "competition_date"
     t.date "registration_open_on"
     t.date "registration_close_on"
+    t.integer "plan", default: 0, null: false
+    t.string "google_maps_url"
     t.index ["field_id"], name: "index_tournaments_on_field_id"
     t.index ["organizer_id"], name: "index_tournaments_on_organizer_id"
   end

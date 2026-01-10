@@ -24,7 +24,7 @@
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
 
           <% if divisions.any? %>
-            <% all_matches = Match.where(tournament_division_id: divisions.map(&:id)).includes(:group).order('groups.name ASC NULLS LAST, matches.id ASC') %>
+            <% all_matches = Match.where(tournament_division_id: divisions.map(&:id)).includes(:group, :home_team, :away_team).order('groups.name ASC NULLS LAST, matches.id ASC') %>
 
             <% if all_matches.any? %>
               <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
@@ -40,7 +40,9 @@
                     <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
                     <div>
                       <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
-                      <div style="font-size:11px;color:#78909c;">ตารางแข่งขันแบบ mock ตามสายในรุ่นนี้</div>
+                      <% if can_manage_registrations?(@tournament) %>
+                        <div style="font-size:11px;color:#78909c;">ตารางแข่งขันแบบ mock ตามสายในรุ่นนี้</div>
+                      <% end %>
                     </div>
                   </div>
 
@@ -73,8 +75,26 @@
                                             class: "form-control form-control-sm",
                                             placeholder: "ยังไม่ได้กำหนด" %>
                                     </td>
-                                    <td><%= match.home_name %></td>
-                                    <td><%= match.away_name %></td>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.home_team&.logo&.attached? %>
+                                          <%= image_tag match.home_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <span><%= match.home_name %></span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.away_team&.logo&.attached? %>
+                                          <%= image_tag match.away_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <span><%= match.away_name %></span>
+                                      </div>
+                                    </td>
                                     <td class="text-end">
                                       <div class="d-flex justify-content-end align-items-center" style="gap:4px;">
                                         <%= select_tag "matches[#{match.id}][home_score]",
@@ -136,8 +156,26 @@
                                       <span class="text-muted" style="font-size:12px;">ยังไม่ได้กำหนด</span>
                                     <% end %>
                                   </td>
-                                  <td><%= match.home_name %></td>
-                                  <td><%= match.away_name %></td>
+                                  <td>
+                                    <div class="d-flex align-items-center" style="gap:6px;">
+                                      <% if match.home_team&.logo&.attached? %>
+                                        <%= image_tag match.home_team.logo,
+                                                      class: "rounded-circle",
+                                                      style: "width:24px;height:24px;object-fit:cover;" %>
+                                      <% end %>
+                                      <span><%= match.home_name %></span>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div class="d-flex align-items-center" style="gap:6px;">
+                                      <% if match.away_team&.logo&.attached? %>
+                                        <%= image_tag match.away_team.logo,
+                                                      class: "rounded-circle",
+                                                      style: "width:24px;height:24px;object-fit:cover;" %>
+                                      <% end %>
+                                      <span><%= match.away_name %></span>
+                                    </div>
+                                  </td>
                                   <td class="text-end">
                                     <% if match.home_score.present? && match.away_score.present? %>
                                       <% hs = match.home_score; as = match.away_score %>

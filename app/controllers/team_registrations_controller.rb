@@ -1,11 +1,31 @@
 class TeamRegistrationsController < ApplicationController
   before_action :require_login
   before_action :set_tournament
-  before_action :set_registration, only: [:update, :destroy]
-  before_action :require_manage_permission, only: [:update, :destroy]
+  before_action :set_registration, only: [:update, :destroy, :edit_team, :update_team]
+  before_action :require_manage_permission, only: [:update, :destroy, :edit_team, :update_team]
 
   def new
     @divisions = @tournament.tournament_divisions.order(:position, :id)
+  end
+
+  def edit_team
+    @team = @registration.team
+  end
+
+  def update_team
+    @team = @registration.team
+    permitted = params.require(:team).permit(:name, :contact_name, :contact_phone, :line_id, :logo)
+
+    if permitted[:logo].present?
+      @team.replace_logo!(permitted[:logo])
+    end
+
+    if @team.update(permitted.except(:logo))
+      redirect_to teams_tournament_path(@tournament), notice: "บันทึกข้อมูลทีมเรียบร้อยแล้ว"
+    else
+      flash.now[:alert] = @team.errors.full_messages.to_sentence
+      render :edit_team, status: :unprocessable_entity
+    end
   end
 
   def create

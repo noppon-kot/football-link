@@ -2,22 +2,27 @@
 
 <ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
   <li class="nav-item" role="presentation">
-    <%= link_to "Info",
+    <%= link_to "ℹ️ รายละเอียด",
                 tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :show}" %>
   </li>
   <li class="nav-item" role="presentation">
-    <%= link_to "Team",
+    <%= link_to "👥 ทีม",
                 teams_tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :teams}" %>
   </li>
   <li class="nav-item" role="presentation">
-    <%= link_to "Fixtures",
+    <%= link_to "🧩 สายการแข่งขัน",
+                groups_tournament_path(@tournament),
+                class: "nav-link #{'active' if active == :groups}" %>
+  </li>
+  <li class="nav-item" role="presentation">
+    <%= link_to "📅 โปรแกรม/ผล",
                 fixture_tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :fixture}" %>
   </li>
   <li class="nav-item" role="presentation">
-    <%= link_to "Table",
+    <%= link_to "📊 คะแนน",
                 table_tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :table}" %>
   </li>

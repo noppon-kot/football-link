@@ -6,6 +6,8 @@ class Tournament < ApplicationRecord
 
   # status: 0 = pending (รออนุมัติ), 1 = active (แสดงในหน้าค้นหา)
   enum status: { pending: 0, active: 1 }
+  # plan: 0 = free (โพสต์รายละเอียด + ช่องทางติดต่ออย่างเดียว), 1 = pro (ใช้ระบบสมัครทีม/จัดสาย/ตารางแข่งขันได้)
+  enum plan: { free: 0, pro: 1 }
 
   has_many :team_registrations, dependent: :destroy
   has_many :teams, through: :team_registrations

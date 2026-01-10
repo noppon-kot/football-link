@@ -29,7 +29,8 @@ module Tournaments
     private
 
     def admin?
-      @current_user&.admin?
+      # ในระบบนี้ถือว่า user ที่มี role เป็น organizer คือผู้ดูแลที่มีสิทธิ์อนุมัติรายการแข่ง
+      @current_user&.organizer?
     end
   end
 end

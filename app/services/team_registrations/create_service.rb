@@ -16,7 +16,7 @@ module TeamRegistrations
                       @params.dig(:registration, :tournament_division_id)
                     end
 
-      team_params = @params.require(:registration).permit(:team_name, :contact_name, :contact_phone, :line_id)
+      team_params = @params.require(:registration).permit(:team_name, :contact_name, :contact_phone, :line_id, :logo)
 
       registration = nil
 
@@ -29,6 +29,10 @@ module TeamRegistrations
           province:      @tournament.province,
           line_id:       team_params[:line_id]
         )
+
+        if team_params[:logo].present?
+          team.replace_logo!(team_params[:logo])
+        end
 
         registration = TeamRegistration.create!(
           team:                   team,

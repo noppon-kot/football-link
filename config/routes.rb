@@ -11,15 +11,21 @@ Rails.application.routes.draw do
   get "/login/line", to: "sessions#line_login", as: :line_login
   get "/auth/:provider/callback", to: "sessions#line_callback"
 
-  get "dashboard" => "dashboards#show"
+  get "mytournaments" => "dashboards#show", as: :mytournaments
 
   resources :matches, only: [:update]
 
   resources :tournaments, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
-    resources :team_registrations, only: [:new, :create, :update, :destroy]
+    resources :team_registrations, only: [:new, :create, :update, :destroy] do
+      member do
+        get :edit_team
+        patch :update_team
+      end
+    end
     post :generate_mock_schedule, on: :member
     member do
       get :teams
+      get :groups
       get :fixture
       get :table
       post :generate_mock_schedule

@@ -21,9 +21,11 @@
       <div class="card shadow-sm">
         <div class="card-header fw-bold">ตารางคะแนน</div>
         <div class="card-body">
-          <p class="mb-2" style="font-size:13px;color:#78909c;">
-            ระบบจะคำนวณคะแนนอัตโนมัติจากผลการแข่งขันของแต่ละสาย เมื่อมีการบันทึกสกอร์แล้ว ด้านล่างจะแสดงตารางคะแนนแยกตามรุ่น
-          </p>
+          <% if can_manage_registrations?(@tournament) %>
+            <p class="mb-2" style="font-size:13px;color:#78909c;">
+              ระบบจะคำนวณคะแนนอัตโนมัติจากผลการแข่งขันของแต่ละสาย เมื่อมีการบันทึกสกอร์แล้ว ด้านล่างจะแสดงตารางคะแนนแยกตามรุ่น
+            </p>
+          <% end %>
 
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
           <% all_matches = Match.where(tournament_division_id: divisions.map(&:id)).includes(:group, :home_team, :away_team) %>
@@ -171,9 +173,19 @@
                               <% sorted.each_with_index do |(tid, s), idx| %>
                                 <% team = Team.find(tid) %>
                                 <% gd = s[:gf] - s[:ga] %>
-                                <tr>
+                                <% leader_row = (idx == 0) %>
+                                <tr<%= ' style="background-color:#fffde7;"' if leader_row %>>
                                   <td class="text-center"><%= idx + 1 %></td>
-                                  <td><%= team.name %></td>
+                                  <td>
+                                    <div class="d-flex align-items-center" style="gap:6px;">
+                                      <% if team.logo.attached? %>
+                                        <%= image_tag team.logo,
+                                                      class: "rounded-circle",
+                                                      style: "width:24px;height:24px;object-fit:cover;" %>
+                                      <% end %>
+                                      <span><%= team.name %></span>
+                                    </div>
+                                  </td>
                                   <td class="text-center"><%= s[:played] %></td>
                                   <td class="text-center"><%= s[:won] %></td>
                                   <td class="text-center"><%= s[:draw] %></td>
