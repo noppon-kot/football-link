@@ -55,6 +55,14 @@
                 <%= form_with url: generate_mock_schedule_tournament_path(@tournament), method: :post, local: true, class: "row g-2 align-items-end" do |f| %>
                   <%= hidden_field_tag :division_id, div.id %>
                   <div class="col-6 col-md-3">
+                    <label class="form-label" style="font-size:12px;">รูปแบบการแข่งขัน</label>
+                    <select name="competition_mode" class="form-select form-select-sm">
+                      <option value="group_with_knockout">ระบบแบ่งกลุ่ม</option>
+                      <option value="knockout_only">ระบบน็อคเอาท์</option>
+                      <option value="league_only">ระบบลีก</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-3">
                     <label class="form-label" style="font-size:12px;">จำนวนสาย</label>
                     <input type="number" name="group_count" min="1" class="form-control form-control-sm" value="<%= existing_group_count %>">
                   </div>
@@ -62,21 +70,43 @@
                     <label class="form-label" style="font-size:12px;">จำนวนทีมต่อสาย</label>
                     <input type="number" name="slots_per_group" min="2" class="form-control form-control-sm" value="<%= existing_slots_per_group %>">
                   </div>
-                  <div class="col-12 col-md-3">
+                  <div class="col-6 col-md-3">
                     <label class="form-label" style="font-size:12px;">รูปแบบแข่ง</label>
                     <select name="match_format" class="form-select form-select-sm">
                       <option value="single_leg">นัดเดียว</option>
                       <option value="home_away">เหย้า-เยือน</option>
                     </select>
                   </div>
-                  <div class="col-12 col-md-3 d-grid">
-                    <button type="submit" class="btn btn-sm btn-primary">แบ่งสายการแข่งขัน</button>
+
+                  <% total_teams_in_division = regs.count %>
+
+                  <div class="col-6 col-md-3">
+                    <label class="form-label" style="font-size:12px;">จำนวนทีมในรอบน็อคเอาท์</label>
+                    <select name="knockout_bracket_size" class="form-select form-select-sm">
+                      <option value="4" selected>4 ทีม</option>
+                      <option value="8">8 ทีม</option>
+                      <option value="16">16 ทีม</option>
+                      <option value="32">32 ทีม</option>
+                      <option value="64">64 ทีม</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label" style="font-size:12px;">แมตช์ชิงที่ 3</label>
+                    <select name="include_third_place" class="form-select form-select-sm">
+                      <option value="">ไม่มี</option>
+                      <option value="1">มี</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-3 d-grid ms-auto">
+                    <button type="submit" class="btn btn-sm btn-primary">แบ่งสาย</button>
                   </div>
                 <% end %>
               </div>
 
               <% if div.groups.any? && div.matches.any? %>
                 <% has_played_matches = div.matches.where.not(home_score: nil, away_score: nil).exists? %>
+
+                <% knockout_only_mode = div.matches.knockout.exists? && !div.matches.group_stage.exists? && div.groups.count == 2 %>
 
                 <% if has_played_matches %>
                   <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
@@ -96,7 +126,11 @@
 
                     <div class="row g-2">
                       <% div.groups.order(:name).each do |group| %>
-                        <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                        <% if knockout_only_mode %>
+                          <% group_slots = if group.name == "A"; ["A1", "A2", "A3", "A4"]; elsif group.name == "B"; ["B1", "B2", "B3", "B4"]; else []; end %>
+                        <% else %>
+                          <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                        <% end %>
                         <% next if group_slots.empty? %>
 
                         <div class="col-12 col-md-6">
@@ -140,7 +174,6 @@
                   </div>
                 <% else %>
                   <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;" data-total-teams="<%= regs.count %>">
-                    <div class="fw-bold mb-2" style="font-size:13px;">จัดทีมลงตำแหน่ง A1, A2, ... ของรุ่นนี้</div>
                     <p class="mb-2" style="font-size:12px;color:#78909c;">
                       เลือกทีมให้แต่ละตำแหน่งในสาย ทีมหนึ่งสามารถอยู่ได้เพียงตำแหน่งเดียวในรุ่นนี้
                     </p>
@@ -160,7 +193,11 @@
 
                       <div class="row g-2">
                         <% div.groups.order(:name).each do |group| %>
-                          <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                          <% if knockout_only_mode %>
+                            <% group_slots = if group.name == "A"; ["A1", "A2", "A3", "A4"]; elsif group.name == "B"; ["B1", "B2", "B3", "B4"]; else []; end %>
+                          <% else %>
+                            <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                          <% end %>
                           <% next if group_slots.empty? %>
 
                           <div class="col-12 col-md-6">
@@ -209,6 +246,7 @@
                   </div>
                 <% end %>
               <% end %>
+
             <% else %>
               <% if div.groups.any? && div.matches.any? %>
                 <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_10_080001) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_10_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -106,9 +106,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_10_080001) do
     t.integer "position"
     t.boolean "decided_by_penalty", default: false, null: false
     t.string "penalty_winner_side"
+    t.integer "stage", default: 0, null: false
+    t.integer "round_number"
+    t.string "round_label"
     t.index ["away_team_id"], name: "index_matches_on_away_team_id"
     t.index ["group_id"], name: "index_matches_on_group_id"
     t.index ["home_team_id"], name: "index_matches_on_home_team_id"
+    t.index ["stage"], name: "index_matches_on_stage"
+    t.index ["tournament_division_id", "stage", "round_number"], name: "index_matches_on_division_stage_round"
     t.index ["tournament_division_id"], name: "index_matches_on_tournament_division_id"
   end
 

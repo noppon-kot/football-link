@@ -1,0 +1,186 @@
+<div class="app-shell">
+  <% bg_image = "banner2.png" %>
+  <div class="tournament-show-header">
+    <div style="position:absolute;inset:0;background-image:url('<%= asset_path(bg_image) %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
+    <div style="position:relative;">
+      <div class="tournament-show-title"><%= @tournament.title %></div>
+      <div class="tournament-show-subtitle">
+        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+      </div>
+    </div>
+  </div>
+
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <%= render "tournaments/nav_tabs", active: :knockout %>
+
+      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">รอบน็อคเอาท์</h2>
+      <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
+      <hr>
+
+      <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
+
+      <% if divisions.any? %>
+        <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
+
+        <% divisions.each_with_index do |div, idx| %>
+          <% color_class = color_classes[idx % color_classes.size] %>
+          <% knockout_matches = div.matches.knockout.order(:round_number, :position, :id) %>
+          <% division_teams = div.team_registrations.includes(:team).map(&:team).compact.uniq %>
+
+          <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
+            <div class="d-flex align-items-center mb-2" style="gap:8px;">
+              <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
+              <div>
+                <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
+                <div style="font-size:11px;color:#78909c;">ตารางรอบน็อคเอาท์สำหรับรุ่นนี้</div>
+              </div>
+            </div>
+
+            <% if knockout_matches.any? %>
+              <% grouped = knockout_matches.group_by { |m| [m.round_number, m.round_label] } %>
+
+              <% grouped.keys.sort_by { |(rn, _)| rn || 999 }.each do |(round_number, round_label)| %>
+                <% round_matches = grouped[[round_number, round_label]] %>
+                <div class="mb-2 p-2 rounded" style="background-color:#ffffff;border:1px solid #eceff1;">
+                  <div class="mb-1 d-flex justify-content-between align-items-center" style="font-size:12px;color:#546e7a;">
+                    <div>
+                      รอบ
+                      <% if round_label.present? %>
+                        <strong><%= round_label %></strong>
+                      <% else %>
+                        <strong>R<%= round_number %></strong>
+                      <% end %>
+                    </div>
+                    <% if can_manage_registrations?(@tournament) %>
+                      <div style="font-size:11px;color:#90a4ae;">เลือกทีมสำหรับแต่ละคู่ แล้วกดบันทึก</div>
+                    <% end %>
+                  </div>
+
+                  <% if can_manage_registrations?(@tournament) %>
+                    <%= form_with url: update_knockout_teams_tournament_path(@tournament), method: :patch, local: true do |f| %>
+                      <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-1">
+                          <thead class="table-light">
+                            <tr>
+                              <th scope="col" class="text-center" style="width:60px;">คู่ที่</th>
+                              <th scope="col">ทีมฝั่งซ้าย</th>
+                              <th scope="col">ทีมฝั่งขวา</th>
+                              <th scope="col" class="text-end" style="width:80px;">สกอร์</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% round_matches.each_with_index do |match, idx| %>
+                              <tr>
+                                <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= idx + 1 %></td>
+                                <td>
+                                  <div class="d-flex align-items-center" style="gap:6px;">
+                                    <% if match.home_team&.logo&.attached? %>
+                                      <%= image_tag match.home_team.logo,
+                                                    class: "rounded-circle",
+                                                    style: "width:24px;height:24px;object-fit:cover;" %>
+                                    <% end %>
+                                    <select name="matches[<%= match.id %>][home_team_id]" class="form-select form-select-sm" style="max-width:220px;">
+                                      <option value="">- เลือกทีมฝั่งซ้าย -</option>
+                                      <% division_teams.each do |team| %>
+                                        <option value="<%= team.id %>" <%= 'selected' if match.home_team_id == team.id %>>
+                                          <%= team.name %>
+                                        </option>
+                                      <% end %>
+                                    </select>
+                                  </div>
+                                </td>
+                                <td>
+                                  <div class="d-flex align-items-center" style="gap:6px;">
+                                    <% if match.away_team&.logo&.attached? %>
+                                      <%= image_tag match.away_team.logo,
+                                                    class: "rounded-circle",
+                                                    style: "width:24px;height:24px;object-fit:cover;" %>
+                                    <% end %>
+                                    <select name="matches[<%= match.id %>][away_team_id]" class="form-select form-select-sm" style="max-width:220px;">
+                                      <option value="">- เลือกทีมฝั่งขวา -</option>
+                                      <% division_teams.each do |team| %>
+                                        <option value="<%= team.id %>" <%= 'selected' if match.away_team_id == team.id %>>
+                                          <%= team.name %>
+                                        </option>
+                                      <% end %>
+                                    </select>
+                                  </div>
+                                </td>
+                                <td class="text-end" style="font-size:13px;">
+                                  <% if match.home_score.present? && match.away_score.present? %>
+                                    <%= match.home_score %> - <%= match.away_score %>
+                                  <% else %>
+                                    <span class="text-muted" style="font-size:12px;">ยังไม่เตะ</span>
+                                  <% end %>
+                                </td>
+                              </tr>
+                            <% end %>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="text-end" style="font-size:12px;">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกทีมในรอบนี้</button>
+                      </div>
+                    <% end %>
+                  <% else %>
+                    <div class="table-responsive">
+                      <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                          <tr>
+                            <th scope="col" class="text-center" style="width:60px;">คู่ที่</th>
+                            <th scope="col">ทีมฝั่งซ้าย</th>
+                            <th scope="col">ทีมฝั่งขวา</th>
+                            <th scope="col" class="text-end" style="width:80px;">สกอร์</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% round_matches.each_with_index do |match, idx| %>
+                            <tr>
+                              <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= idx + 1 %></td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.home_team&.logo&.attached? %>
+                                    <%= image_tag match.home_team.logo,
+                                                  class: "rounded-circle",
+                                                  style: "width:24px;height:24px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.home_name %></span>
+                                </div>
+                              </td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.away_team&.logo&.attached? %>
+                                    <%= image_tag match.away_team.logo,
+                                                  class: "rounded-circle",
+                                                  style: "width:24px;height:24px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.away_name %></span>
+                                </div>
+                              </td>
+                              <td class="text-end" style="font-size:13px;">
+                                <% if match.home_score.present? && match.away_score.present? %>
+                                  <%= match.home_score %> - <%= match.away_score %>
+                                <% else %>
+                                  <span class="text-muted" style="font-size:12px;">ยังไม่เตะ</span>
+                                <% end %>
+                              </td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            <% else %>
+              <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการสร้างรอบน็อคเอาท์สำหรับรุ่นนี้</p>
+            <% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการกำหนดรุ่นการแข่งขันสำหรับรายการนี้</p>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -5,6 +5,7 @@ class Match < ApplicationRecord
   belongs_to :away_team, class_name: "Team", optional: true
 
   enum status: { scheduled: 0, finished: 1 }
+  enum stage: { group_stage: 0, knockout: 1 }
 
   def winner
     return nil unless finished? && home_score.present? && away_score.present?

@@ -46,10 +46,55 @@
                     </div>
                   </div>
 
-                  <% matches_by_group = div_matches.group_by { |m| m.group&.name || "-" } %>
-                  <% matches_by_group.each do |group_name, matches| %>
+                  <% matches_by_group = div_matches.group_by do |m| %>
+                    <% if m.knockout? %>
+                      <% "KO_#{m.round_label}" %>
+                    <% else %>
+                      <% "GROUP_#{m.group&.name || "-"}" %>
+                    <% end %>
+                  <% end %>
+
+                  <% sorted_group_keys = matches_by_group.keys.sort_by do |group_key| %>
+                    <% if group_key.start_with?("KO_") %>
+                      <% round_code = group_key.sub("KO_", "") %>
+                      <% case round_code
+                         when "R64" then 1
+                         when "R32" then 2
+                         when "R16" then 3
+                         when "QF"  then 4
+                         when "SF"  then 5
+                         when "3RD" then 6
+                         when "FINAL" then 7
+                         else 999
+                         end %>
+                    <% else %>
+                      <% 0 %>
+                    <% end %>
+                  <% end %>
+
+                  <% sorted_group_keys.each do |group_key| %>
+                    <% matches = matches_by_group[group_key] %>
+                    <% if group_key.start_with?("KO_") %>
+                      <% round_code = group_key.sub("KO_", "") %>
+                      <% group_title = case round_code
+                                       when "SF" then "รอบ 4 ทีม"
+                                       when "QF" then "รอบ 8 ทีม"
+                                       when "R16" then "รอบ 16 ทีม"
+                                       when "R32" then "รอบ 32 ทีม"
+                                       when "R64" then "รอบ 64 ทีม"
+                                       when "FINAL" then "รอบชิงชนะเลิศ"
+                                       when "3RD" then "ชิงอันดับ 3"
+                                       else "รอบน็อคเอาท์"
+                                       end %>
+                      <% submit_suffix = group_title %>
+                    <% else %>
+                      <% group_name = group_key.sub("GROUP_", "") %>
+                      <% group_title = "สาย #{group_name}" %>
+                      <% submit_suffix = group_title %>
+                    <% end %>
+
                     <div class="mb-2">
-                      <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group_name %></div>
+                      <div class="mb-1" style="font-size:12px;color:#546e7a;"><%= group_title %></div>
 
                       <% if can_manage_registrations?(@tournament) %>
                         <%= form_with url: update_scores_tournament_path(@tournament), method: :patch, local: true do |f| %>
@@ -129,7 +174,7 @@
                             </table>
                           </div>
                           <div class="mt-2 text-end">
-                            <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกสกอร์สาย <%= group_name %></button>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกสกอร์<%= submit_suffix %></button>
                           </div>
                         <% end %>
                       <% else %>

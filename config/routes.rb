@@ -28,8 +28,11 @@ Rails.application.routes.draw do
       get :groups
       get :fixture
       get :table
+      get :knockout
       post :generate_mock_schedule
+      post :generate_knockout
       post :assign_slot_teams
+      patch :update_knockout_teams
       patch :update_points
       patch :update_scores
     end
