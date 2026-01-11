@@ -1,6 +1,11 @@
 document.addEventListener("turbo:load", setupTournamentGroupsModeForm);
+document.addEventListener("DOMContentLoaded", setupTournamentGroupsModeForm);
+
+var __randomSlotDelegationBound = false;
 
 function setupTournamentGroupsModeForm() {
+  setupRandomSlotAssignments();
+
   var forms = document.querySelectorAll(".js-division-form");
   if (!forms.length) return;
 
@@ -102,4 +107,60 @@ function setupTournamentGroupsModeForm() {
     updateVisibility();
     recomputeSlotsPerGroup();
   });
+
+}
+
+function setupRandomSlotAssignments() {
+  if (__randomSlotDelegationBound) return;
+  __randomSlotDelegationBound = true;
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest(".js-random-assign") : null;
+    if (!btn) return;
+
+    var form = btn.closest("form.js-slot-assignment-form");
+    if (!form) return;
+
+    var selects = Array.prototype.slice.call(
+      form.querySelectorAll('select[name^="slot_assignments["]')
+    );
+    if (!selects.length) return;
+
+    // shuffle order of slots to avoid bias
+    shuffleInPlace(selects);
+
+    var used = new Set();
+
+    selects.forEach(function (sel) {
+      // gather candidate team ids available in this select (skip blank)
+      var candidates = [];
+      Array.prototype.forEach.call(sel.options, function (opt) {
+        var v = (opt.value || "").trim();
+        if (!v) return;
+        if (used.has(v)) return;
+        candidates.push(v);
+      });
+
+      if (!candidates.length) {
+        sel.value = "";
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+        return;
+      }
+
+      var chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      used.add(chosen);
+      sel.value = chosen;
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+}
+
+function shuffleInPlace(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
 }

@@ -117,7 +117,7 @@
                     </select>
                   </div>
                   <div class="col-12 col-md-3 d-grid ms-auto">
-                    <button type="submit" class="btn btn-sm btn-primary">แบ่งสาย</button>
+                    <button type="submit" class="btn btn-sm btn-primary">แบ่งสาย+สร้างโปรแกรมแข่งขัน</button>
                   </div>
                 <% end %>
               </div>
@@ -197,7 +197,7 @@
                       เลือกทีมให้แต่ละตำแหน่งในสาย ทีมหนึ่งสามารถอยู่ได้เพียงตำแหน่งเดียวในรุ่นนี้
                     </p>
 
-                    <%= form_with url: assign_slot_teams_tournament_path(@tournament), method: :post, local: true do |f| %>
+                    <%= form_with url: assign_slot_teams_tournament_path(@tournament), method: :post, local: true, class: "js-slot-assignment-form" do |f| %>
                       <%= hidden_field_tag :division_id, div.id %>
 
                       <% current_assignments = {} %>
@@ -259,6 +259,7 @@
                       </div>
 
                       <div class="mb-2 mt-2 text-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 js-random-assign">สุ่มทีมอัตโนมัติ</button>
                         <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกการจัดทีมลงสายของรุ่นนี้</button>
                       </div>
                     <% end %>
@@ -333,3 +334,50 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function() {
+    function shuffleInPlace(arr) {
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+      }
+      return arr;
+    }
+
+    document.addEventListener('click', function(e) {
+      var btn = e.target && e.target.closest ? e.target.closest('.js-random-assign') : null;
+      if (!btn) return;
+
+      var form = btn.closest('form.js-slot-assignment-form');
+      if (!form) return;
+
+      var selects = Array.prototype.slice.call(form.querySelectorAll('select[name^="slot_assignments["]'));
+      if (!selects.length) return;
+
+      shuffleInPlace(selects);
+
+      var used = new Set();
+      selects.forEach(function(sel) {
+        var candidates = [];
+        Array.prototype.forEach.call(sel.options, function(opt) {
+          var v = (opt.value || '').trim();
+          if (!v) return;
+          if (used.has(v)) return;
+          candidates.push(v);
+        });
+
+        if (!candidates.length) {
+          sel.value = '';
+          return;
+        }
+
+        var chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        used.add(chosen);
+        sel.value = chosen;
+      });
+    });
+  })();
+</script>
