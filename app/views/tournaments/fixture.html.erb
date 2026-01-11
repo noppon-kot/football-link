@@ -34,6 +34,7 @@
                 <% next if div_matches.empty? %>
 
                 <% color_class = color_classes[idx % color_classes.size] %>
+                <% division_teams = div.team_registrations.includes(:team).map(&:team).compact.uniq %>
 
                 <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
                   <div class="d-flex align-items-center mb-2" style="gap:8px;">
@@ -201,26 +202,63 @@
                                       <span class="text-muted" style="font-size:12px;">ยังไม่ได้กำหนด</span>
                                     <% end %>
                                   </td>
-                                  <td>
-                                    <div class="d-flex align-items-center" style="gap:6px;">
-                                      <% if match.home_team&.logo&.attached? %>
-                                        <%= image_tag match.home_team.logo,
-                                                      class: "rounded-circle",
-                                                      style: "width:24px;height:24px;object-fit:cover;" %>
-                                      <% end %>
-                                      <span><%= match.home_name %></span>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div class="d-flex align-items-center" style="gap:6px;">
-                                      <% if match.away_team&.logo&.attached? %>
-                                        <%= image_tag match.away_team.logo,
-                                                      class: "rounded-circle",
-                                                      style: "width:24px;height:24px;object-fit:cover;" %>
-                                      <% end %>
-                                      <span><%= match.away_name %></span>
-                                    </div>
-                                  </td>
+                                  <% if match.knockout? %>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.home_team&.logo&.attached? %>
+                                          <%= image_tag match.home_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <select name="matches[<%= match.id %>][home_team_id]" class="form-select form-select-sm" style="max-width:220px;">
+                                          <option value=""><%= match.home_name %></option>
+                                          <% division_teams.each do |team| %>
+                                            <option value="<%= team.id %>" <%= 'selected' if match.home_team_id == team.id %>>
+                                              <%= team.name %>
+                                            </option>
+                                          <% end %>
+                                        </select>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.away_team&.logo&.attached? %>
+                                          <%= image_tag match.away_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <select name="matches[<%= match.id %>][away_team_id]" class="form-select form-select-sm" style="max-width:220px;">
+                                          <option value=""><%= match.away_name %></option>
+                                          <% division_teams.each do |team| %>
+                                            <option value="<%= team.id %>" <%= 'selected' if match.away_team_id == team.id %>>
+                                              <%= team.name %>
+                                            </option>
+                                          <% end %>
+                                        </select>
+                                      </div>
+                                    </td>
+                                  <% else %>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.home_team&.logo&.attached? %>
+                                          <%= image_tag match.home_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <span><%= match.home_name %></span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.away_team&.logo&.attached? %>
+                                          <%= image_tag match.away_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <span><%= match.away_name %></span>
+                                      </div>
+                                    </td>
+                                  <% end %>
                                   <td class="text-end">
                                     <% if match.home_score.present? && match.away_score.present? %>
                                       <% hs = match.home_score; as = match.away_score %>
