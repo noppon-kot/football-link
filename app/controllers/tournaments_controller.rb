@@ -172,6 +172,16 @@ class TournamentsController < ApplicationController
         return redirect_to target_path, alert: "กรุณาเลือกจำนวนทีมที่เข้ารอบน็อคเอาท์"
       end
 
+      # ตรวจจำนวนสายไม่ให้เกินจำนวนทีม (อย่างน้อย 2 ทีมต่อสาย)
+      total_teams = division.team_registrations.distinct.count(:team_id)
+      group_count = params[:group_count].to_i
+      if total_teams > 0 && group_count > 0
+        max_groups = [1, total_teams / 2].max
+        if group_count > max_groups
+          return redirect_to target_path, alert: "รุ่นนี้มีทีมทั้งหมด #{total_teams} ทีม แบ่งได้ไม่เกิน #{max_groups} สาย (อย่างน้อย 2 ทีมต่อสาย)"
+        end
+      end
+
       result = ::Tournaments::GenerateMockScheduleHandler.new(
         tournament: @tournament,
         params: params,
@@ -256,6 +266,22 @@ class TournamentsController < ApplicationController
   def update_scores
     unless can_manage_registrations?(@tournament)
       return redirect_to fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    # รีเซ็ตสกอร์ของแมตช์เดียว (ใช้จากปุ่ม Reset score ในหน้าโปรแกรม/ผล)
+    if params[:reset_match_id].present?
+      match = Match.find_by(id: params[:reset_match_id])
+      if match && match.tournament_division.tournament_id == @tournament.id
+        match.update!(
+          home_score: nil,
+          away_score: nil,
+          decided_by_penalty: false,
+          penalty_winner_side: nil
+        )
+        return redirect_to fixture_tournament_path(@tournament), notice: "รีเซ็ตสกอร์ของแมตช์เรียบร้อยแล้ว"
+      end
+
+      return redirect_to fixture_tournament_path(@tournament), alert: "ไม่พบแมตช์ที่ต้องการรีเซ็ตสกอร์"
     end
 
     matches_params = params[:matches] || {}
