@@ -42,22 +42,31 @@ module Tournaments
         # ใช้การจัดตารางแบบ round-robin เพื่อไม่ให้ทีมในตำแหน่งแรก ๆ เตะติดกันหลายแมตช์
         rounds = round_robin_pairs(slot_labels)
 
-        rounds.each do |pairs|
-          pairs.each do |home_label, away_label|
-            if @match_format == "home_away"
+        if @match_format == "home_away"
+          rounds.each do |pairs|
+            pairs.each do |home_label, away_label|
               @division.matches.create!(
                 group: group,
                 home_slot_label: home_label,
                 away_slot_label: away_label,
                 status: :scheduled
               )
+            end
+          end
+
+          rounds.each do |pairs|
+            pairs.each do |home_label, away_label|
               @division.matches.create!(
                 group: group,
                 home_slot_label: away_label,
                 away_slot_label: home_label,
                 status: :scheduled
               )
-            else
+            end
+          end
+        else
+          rounds.each do |pairs|
+            pairs.each do |home_label, away_label|
               @division.matches.create!(
                 group: group,
                 home_slot_label: home_label,
