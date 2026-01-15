@@ -5,7 +5,7 @@
     <div style="position:relative;">
       <div class="tournament-show-title"><%= @tournament.title %></div>
       <div class="tournament-show-subtitle">
-        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+        <%= tournament_competition_date_label(@tournament) %> · <%= @tournament.location_name %>
       </div>
     </div>
   </div>
@@ -17,6 +17,80 @@
       <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ตารางคะแนน</h2>
       <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
       <hr>
+
+      <style>
+        .standings-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          --rank-col-width: 28px;
+          --team-col-width: 140px;
+        }
+
+        .standings-table {
+          min-width: 560px;
+        }
+
+        @media (max-width: 768px) {
+          .standings-table th,
+          .standings-table td {
+            padding-left: 6px;
+            padding-right: 6px;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .standings-table th,
+          .standings-table td {
+            padding-left: 4px;
+            padding-right: 4px;
+          }
+        }
+
+        .standings-scroll.is-overflowing .standings-sticky-rank {
+          position: sticky;
+          left: 0;
+          z-index: 3;
+          background: #ffffff;
+        }
+
+        .standings-scroll.is-overflowing .standings-sticky-team {
+          position: sticky;
+          left: var(--rank-col-width);
+          z-index: 2;
+          background: #ffffff;
+          box-shadow: 8px 0 10px -10px rgba(0, 0, 0, 0.35);
+        }
+
+        .standings-scroll.is-overflowing thead .standings-sticky-rank,
+        .standings-scroll.is-overflowing thead .standings-sticky-team {
+          z-index: 4;
+          background: #f8f9fa;
+        }
+
+        .standings-sticky-rank {
+          width: var(--rank-col-width);
+          min-width: var(--rank-col-width);
+          max-width: var(--rank-col-width);
+        }
+
+        .standings-sticky-team {
+          width: var(--team-col-width);
+          min-width: var(--team-col-width);
+          max-width: var(--team-col-width);
+        }
+
+        .standings-scroll.is-overflowing .standings-sticky-rank {
+          border-right: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .standings-scroll.is-overflowing .standings-sticky-team {
+          border-right: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .standings-col-pts {
+          font-weight: 900;
+        }
+      </style>
 
       <div class="card shadow-sm">
         <div class="card-header fw-bold">ตารางคะแนน</div>
@@ -230,20 +304,19 @@
                         </div>
                       </div>
 
-                      <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0">
+                      <div class="table-responsive standings-scroll">
+                        <table class="table table-sm align-middle mb-0 standings-table">
                           <thead class="table-light">
                             <tr>
-                              <th scope="col" class="text-center" style="width:5%;">ลำดับ</th>
-                              <th scope="col" style="width:35%;">ทีม</th>
-                              <th scope="col" class="text-center" style="width:7%;">แข่ง</th>
-                              <th scope="col" class="text-center" style="width:7%;">ชนะ</th>
-                              <th scope="col" class="text-center" style="width:7%;">เสมอ</th>
-                              <th scope="col" class="text-center" style="width:7%;">แพ้</th>
-                              <th scope="col" class="text-center" style="width:7%;">ได้</th>
-                              <th scope="col" class="text-center" style="width:7%;">เสีย</th>
-                              <th scope="col" class="text-center" style="width:8%;">ประตู</th>
-                              <th scope="col" class="text-center" style="width:10%;">คะแนน</th>
+                              <th scope="col" class="text-start standings-sticky-rank" style="width:28px;font-size:12px;">#</th>
+                              <th scope="col" class="standings-sticky-team" style="width:140px;">ทีม</th>
+                              <th scope="col" class="text-center standings-col-pts" style="width:56px;">PTS</th>
+                              <th scope="col" class="text-center" style="width:44px;">P</th>
+                              <th scope="col" class="text-center" style="width:44px;">W</th>
+                              <th scope="col" class="text-center" style="width:44px;">D</th>
+                              <th scope="col" class="text-center" style="width:44px;">L</th>
+                              <th scope="col" class="text-center" style="width:74px;">F/A</th>
+                              <th scope="col" class="text-center" style="width:56px;">GD</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -297,25 +370,24 @@
                                 <% gd = s[:gf] - s[:ga] %>
                                 <% leader_row = (idx == 0) %>
                                 <tr<%= ' style="background-color:#fffde7;"' if leader_row %>>
-                                  <td class="text-center"><%= idx + 1 %></td>
-                                  <td>
-                                    <div class="d-flex align-items-center" style="gap:6px;">
+                                  <td class="text-start standings-sticky-rank" style="font-size:12px;"><%= idx + 1 %></td>
+                                  <td class="standings-sticky-team">
+                                    <div class="d-flex align-items-center" style="gap:4px;">
                                       <% if team.logo.attached? %>
                                         <%= image_tag team.logo,
                                                       class: "rounded-circle",
-                                                      style: "width:24px;height:24px;object-fit:cover;" %>
+                                                      style: "width:20px;height:20px;object-fit:cover;" %>
                                       <% end %>
-                                      <span><%= team.name %></span>
+                                      <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></span>
                                     </div>
                                   </td>
+                                  <td class="text-center standings-col-pts"><%= s[:pts] %></td>
                                   <td class="text-center"><%= s[:played] %></td>
                                   <td class="text-center"><%= s[:won] %></td>
                                   <td class="text-center"><%= s[:draw] %></td>
                                   <td class="text-center"><%= s[:lost] %></td>
-                                  <td class="text-center"><%= s[:gf] %></td>
-                                  <td class="text-center"><%= s[:ga] %></td>
+                                  <td class="text-center"><%= s[:gf] %>/<%= s[:ga] %></td>
                                   <td class="text-center"><%= gd %></td>
-                                  <td class="text-center"><%= s[:pts] %></td>
                                 </tr>
                               <% end %>
                             <% else %>
@@ -419,6 +491,22 @@
           btn.innerText = oldText;
         }
       });
+    })();
+  </script>
+
+  <script>
+    (function() {
+      function updateStandingsOverflowState() {
+        var els = document.querySelectorAll('.standings-scroll');
+        els.forEach(function(el) {
+          var isOverflowing = el.scrollWidth > el.clientWidth;
+          el.classList.toggle('is-overflowing', isOverflowing);
+        });
+      }
+
+      window.addEventListener('resize', updateStandingsOverflowState);
+      window.addEventListener('load', updateStandingsOverflowState);
+      document.addEventListener('DOMContentLoaded', updateStandingsOverflowState);
     })();
   </script>
 </div>

@@ -5,7 +5,7 @@
     <div style="position:relative;">
       <div class="tournament-show-title"><%= @tournament.title %></div>
       <div class="tournament-show-subtitle">
-        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+        <%= tournament_competition_date_label(@tournament) %> · <%= @tournament.location_name %>
       </div>
 
       <% day_has_result = @next_day_matches_page.any? { |m| m.home_score.present? && m.away_score.present? } %>
@@ -113,7 +113,7 @@
     <div class="container py-2">
       <%= render "tournaments/nav_tabs", active: :fixture %>
 
-      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ตารางการแข่งขัน</h2>
+      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">โปรแกรมแข่งขัน</h2>
       <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
       <hr>
 
@@ -308,7 +308,7 @@
       </script>
 
       <div class="card shadow-sm mb-3">
-        <div class="card-header fw-bold">ตารางการแข่งขัน</div>
+        <div class="card-header fw-bold">โปรแกรมแข่งขัน</div>
         <div class="card-body">
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
 
@@ -573,7 +573,7 @@
                 </div>
               <% end %>
             <% else %>
-              <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการสร้างตารางการแข่งขันสำหรับรุ่นใดเลย</p>
+              <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการสร้างโปรแกรมแข่งขันสำหรับรุ่นใดเลย</p>
             <% end %>
           <% else %>
             <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการกำหนดรุ่นการแข่งขันสำหรับรายการนี้</p>

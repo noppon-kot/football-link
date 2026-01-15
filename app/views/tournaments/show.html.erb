@@ -5,7 +5,7 @@
     <div style="position:relative;">
       <div class="tournament-show-title"><%= @tournament.title %></div>
       <div class="tournament-show-subtitle">
-        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+        <%= tournament_competition_date_label(@tournament) %> · <%= @tournament.location_name %>
       </div>
       <div class="tournament-show-actions" style="margin-top:6px;display:flex;gap:6px;">
         <% if admin? %>
@@ -131,7 +131,7 @@
       <div class="mb-2">
         <div><span class="fw-bold">วันเปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_open_on&.strftime("%Y-%m-%d") %></span></div>
         <div><span class="fw-bold">วันปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_close_on&.strftime("%Y-%m-%d") %></span></div>
-        <div><span class="fw-bold">วันแข่งขัน:</span> <span class="ms-1"><%= @tournament.competition_date&.strftime("%Y-%m-%d") %></span></div>
+        <div><span class="fw-bold">วันแข่งขัน:</span> <span class="ms-1">เริ่ม <%= tournament_start_date_label(@tournament) %></span></div>
       </div>
 
       <div class="mb-3">
@@ -225,9 +225,9 @@
           aria-labelledby="tab-schedule">
           <div class="card shadow-sm">
             <div class="card-body" style="font-size:13px;">
-              <p class="mb-1 fw-bold">ตารางการแข่งขัน</p>
+              <p class="mb-1 fw-bold">โปรแกรมแข่งขัน</p>
               <p class="mb-2 text-muted">กรุณาดูหรือจัดการตารางแข่งขันจากหน้าต่างหาก:</p>
-              <%= link_to "ไปที่หน้าตารางการแข่งขัน", fixture_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary" %>
+              <%= link_to "ไปที่หน้าโปรแกรมแข่งขัน", fixture_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary" %>
             </div>
           </div>
           <div class="card shadow-sm mt-3">

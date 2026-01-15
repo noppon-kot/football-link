@@ -5,7 +5,7 @@
     <div style="position:relative;">
       <div class="tournament-show-title"><%= @tournament.title %></div>
       <div class="tournament-show-subtitle">
-        7 - 8 ก.พ. 2026 · <%= @tournament.location_name %>
+        <%= tournament_competition_date_label(@tournament) %> · <%= @tournament.location_name %>
       </div>
     </div>
   </div>
