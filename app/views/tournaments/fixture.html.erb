@@ -37,7 +37,7 @@
             </div>
 
             <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
-              <%= image_tag "logox.png", alt: "DERNSAI", style: "width:26px;height:34px;border-radius:6px;object-fit:cover;" %>
+              <%= image_tag "logox.png", alt: "DERNSAI", style: "width:26px;height:34px;border-radius:6px;object-fit:cover;", crossorigin: "anonymous" %>
               <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
             </div>
           </div>
@@ -63,7 +63,7 @@
                         <div style="font-size:15px;font-weight:900;color:<%= label_accent %>;margin-bottom:6px;">ทีมเหย้า</div>
                         <div style="display:flex;align-items:center;gap:10px;">
                           <% if match.home_team&.logo&.attached? %>
-                            <%= image_tag match.home_team.logo, style: "width:48px;height:48px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);" %>
+                            <%= image_tag match.home_team.logo, style: "width:48px;height:48px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
                           <% else %>
                             <div style="width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
                           <% end %>
@@ -90,7 +90,7 @@
                             <%= match.away_name %>
                           </div>
                           <% if match.away_team&.logo&.attached? %>
-                            <%= image_tag match.away_team.logo, style: "width:48px;height:48px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);" %>
+                            <%= image_tag match.away_team.logo, style: "width:48px;height:48px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
                           <% else %>
                             <div style="width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
                           <% end %>
@@ -288,6 +288,7 @@
               a.click();
               document.body.removeChild(a);
             } catch (e) {
+              console.error(e);
               alert('สร้างรูปไม่สำเร็จ');
             } finally {
               buttonEl.disabled = false;
