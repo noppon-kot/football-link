@@ -21,6 +21,24 @@
       <div class="card shadow-sm mb-3">
         <div class="card-header fw-bold">Match ต่อไป</div>
         <div class="card-body">
+          <div class="mb-2">
+            <%= form_with url: fixture_tournament_path(@tournament), method: :get, local: true, class: "d-flex align-items-end", style: "gap:8px;flex-wrap:wrap;" do %>
+              <div>
+                <label class="form-label" style="font-size:12px;margin-bottom:2px;">เลือกวันที่</label>
+                <%= date_field_tag :day,
+                      (@selected_day&.strftime("%Y-%m-%d")),
+                      class: "form-control form-control-sm",
+                      style: "max-width:180px;" %>
+              </div>
+              <div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">ดูวันที่เลือก</button>
+                <%= link_to "Next match",
+                            fixture_tournament_path(@tournament),
+                            class: "btn btn-sm btn-outline-secondary" %>
+              </div>
+            <% end %>
+          </div>
+
           <% if @next_match_day.present? && @next_day_matches.any? %>
             <div class="mb-2" style="font-size:13px;font-weight:bold;">
               <%= @next_match_day.strftime("%d/%m/%Y") %>
@@ -30,17 +48,52 @@
               <table class="table table-sm align-middle mb-0">
                 <thead class="table-light">
                   <tr>
+                    <th scope="col" class="text-center" style="width:60px;">คู่ที่</th>
                     <th scope="col" style="width:80px;">เวลา</th>
-                    <th scope="col">ทีมเหย้า</th>
-                    <th scope="col">ทีมเยือน</th>
+                    <th scope="col" style="width:120px;">รุ่น</th>
+                    <th scope="col" class="text-start" style="width:90px;">สาย/รอบ</th>
+                    <th scope="col" style="min-width:220px;">ทีมเหย้า</th>
+                    <th scope="col" style="min-width:220px;">ทีมเยือน</th>
                     <th scope="col" class="text-end" style="width:120px;">สกอร์</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <% @next_day_matches.each do |match| %>
+                  <% @next_day_matches.each_with_index do |match, idx| %>
                     <tr>
+                      <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= idx + 1 %></td>
                       <td style="font-size:12px;white-space:nowrap;">
                         <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
+                      </td>
+                      <td style="font-size:12px;white-space:nowrap;">
+                        <%= match.tournament_division&.name || "-" %>
+                      </td>
+                      <td class="text-start" style="font-size:12px;white-space:nowrap;">
+                        <% group_name = match.group&.name.to_s.presence %>
+                        <% if group_name.blank? && !match.knockout? %>
+                          <% slot = match.home_slot_label.to_s.presence || match.away_slot_label.to_s.presence || "" %>
+                          <% inferred = if slot.match?(/\A\d+[A-Za-z]\z/)
+                                         slot[-1]
+                                       elsif slot.match?(/\A[A-Za-z]\d+\z/)
+                                         slot[0]
+                                       end %>
+                          <% group_name = inferred.to_s.upcase.presence %>
+                        <% end %>
+                        <% round_code = match.round_label.to_s.presence %>
+                        <% round_title = if round_code.present? && match.knockout?
+                                           case round_code
+                                           when "SF" then "รอบ 4 ทีม"
+                                           when "QF" then "รอบ 8 ทีม"
+                                           when "R16" then "รอบ 16 ทีม"
+                                           when "R32" then "รอบ 32 ทีม"
+                                           when "R64" then "รอบ 64 ทีม"
+                                           when "FINAL" then "รอบชิงชนะเลิศ"
+                                           when "3RD" then "ชิงอันดับ 3"
+                                           else "รอบน็อคเอาท์"
+                                           end
+                                         else
+                                           round_code
+                                         end %>
+                        <%= group_name.presence || round_title.presence || "-" %>
                       </td>
                       <td>
                         <div class="d-flex align-items-center" style="gap:6px;">
@@ -49,7 +102,7 @@
                                           class: "rounded-circle",
                                           style: "width:24px;height:24px;object-fit:cover;" %>
                           <% end %>
-                          <span><%= match.home_name %></span>
+                          <span style="font-weight:600;"><%= match.home_name %></span>
                         </div>
                       </td>
                       <td>
@@ -59,7 +112,7 @@
                                           class: "rounded-circle",
                                           style: "width:24px;height:24px;object-fit:cover;" %>
                           <% end %>
-                          <span><%= match.away_name %></span>
+                          <span style="font-weight:600;"><%= match.away_name %></span>
                         </div>
                       </td>
                       <td class="text-end" style="font-size:12px;white-space:nowrap;">
@@ -146,7 +199,32 @@
                   <% sorted_group_keys.each do |group_key| %>
                     <% matches = matches_by_group[group_key] %>
                     <% dated_matches, undated_matches = matches.partition { |m| m.kickoff_at.present? } %>
-                    <% matches = dated_matches.sort_by(&:kickoff_at) + undated_matches %>
+                    <% dated_matches = dated_matches.sort_by(&:kickoff_at) %>
+                    <% played_undated, unplayed_undated = undated_matches.partition { |m| m.home_score.present? || m.away_score.present? } %>
+
+                    <% match_team_keys = lambda do |m|
+                         home_key = m.home_team_id.presence || m.home_slot_label.presence || "H#{m.id}"
+                         away_key = m.away_team_id.presence || m.away_slot_label.presence || "A#{m.id}"
+                         [home_key.to_s, away_key.to_s]
+                       end %>
+
+                    <% reordered_unplayed = [] %>
+                    <% remaining = unplayed_undated.dup %>
+                    <% last_teams = [] %>
+
+                    <% while remaining.any? %>
+                      <% pick = remaining.find do |m|
+                           teams = match_team_keys.call(m)
+                           (teams & last_teams).empty?
+                         end %>
+
+                      <% pick ||= remaining.first %>
+                      <% reordered_unplayed << pick %>
+                      <% last_teams = match_team_keys.call(pick) %>
+                      <% remaining.delete(pick) %>
+                    <% end %>
+
+                    <% matches = dated_matches + played_undated + reordered_unplayed %>
                     <% if group_key.start_with?("KO_") %>
                       <% round_code = group_key.sub("KO_", "") %>
                       <% group_title = case round_code
