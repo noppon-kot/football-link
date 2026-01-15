@@ -76,26 +76,57 @@ class TournamentsController < ApplicationController
     divisions = @tournament.tournament_divisions.select(:id)
     today_start = Time.zone.today.beginning_of_day
 
-    @selected_day = nil
+    requested_day = nil
     if params[:day].present?
       begin
-        @selected_day = Date.parse(params[:day].to_s)
+        requested_day = Date.parse(params[:day].to_s)
       rescue ArgumentError
-        @selected_day = nil
+        requested_day = nil
       end
     end
 
-    upcoming = Match.where(tournament_division_id: divisions)
-                    .where("kickoff_at >= ?", today_start)
-                    .where.not(kickoff_at: nil)
-                    .order(:kickoff_at, :id)
+    all_dated = Match.where(tournament_division_id: divisions)
+                     .where.not(kickoff_at: nil)
+
+    available_days = all_dated
+                      .distinct
+                      .order(Arel.sql("DATE(matches.kickoff_at) ASC"))
+                      .pluck(Arel.sql("DATE(matches.kickoff_at)"))
+                      .map { |d| d.is_a?(Date) ? d : d.to_date }
+
+    upcoming = all_dated
+                .where("kickoff_at >= ?", today_start)
+                .order(:kickoff_at, :id)
 
     @next_match = upcoming.includes(:home_team, :away_team, :group).first
-    @next_match_day = @selected_day.presence || @next_match&.kickoff_at&.to_date
 
-    @next_day_matches = if @next_match_day.present?
+    resolved_day = nil
+    if requested_day.present?
+      if available_days.include?(requested_day)
+        resolved_day = requested_day
+      else
+        resolved_day = available_days.find { |d| d >= requested_day } || available_days.reverse.find { |d| d <= requested_day }
+      end
+    else
+      today = Time.zone.today
+      resolved_day = available_days.find { |d| d >= today } || available_days.last
+    end
+
+    @selected_day = resolved_day
+    @next_match_day = resolved_day
+
+    if resolved_day.present?
+      idx = available_days.index(resolved_day)
+      @prev_match_day = idx && idx > 0 ? available_days[idx - 1] : nil
+      @next_match_day_nav = idx && idx < (available_days.length - 1) ? available_days[idx + 1] : nil
+    else
+      @prev_match_day = nil
+      @next_match_day_nav = nil
+    end
+
+    @next_day_matches = if resolved_day.present?
                           Match.where(tournament_division_id: divisions)
-                              .where(kickoff_at: @next_match_day.beginning_of_day..@next_match_day.end_of_day)
+                              .where(kickoff_at: resolved_day.beginning_of_day..resolved_day.end_of_day)
                               .includes(:home_team, :away_team, :group, :tournament_division)
                               .order(:kickoff_at, :id)
                         else

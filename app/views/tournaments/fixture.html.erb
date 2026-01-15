@@ -32,9 +32,17 @@
               </div>
               <div>
                 <button type="submit" class="btn btn-sm btn-outline-primary">ดูวันที่เลือก</button>
-                <%= link_to "Next match",
-                            fixture_tournament_path(@tournament),
-                            class: "btn btn-sm btn-outline-secondary" %>
+                <% if @prev_match_day.present? %>
+                  <%= link_to "<<",
+                              fixture_tournament_path(@tournament, day: @prev_match_day.strftime("%Y-%m-%d")),
+                              class: "btn btn-sm btn-outline-secondary" %>
+                <% end %>
+
+                <% if @next_match_day_nav.present? %>
+                  <%= link_to ">>",
+                              fixture_tournament_path(@tournament, day: @next_match_day_nav.strftime("%Y-%m-%d")),
+                              class: "btn btn-sm btn-outline-secondary" %>
+                <% end %>
               </div>
             <% end %>
           </div>
