@@ -58,7 +58,7 @@ function setupTournamentGroupsModeForm() {
 
     function recomputeSlotsPerGroup() {
       if (!slotsInput || !groupCountInput) return;
-      var mode = modeSelect.value;
+      var mode = currentMode();
       if (mode !== "group_with_knockout") return;
 
       var groups = parseInt(groupCountInput.value || "0", 10);

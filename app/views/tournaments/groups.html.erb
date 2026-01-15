@@ -25,7 +25,7 @@
         <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
 
         <% divisions.each_with_index do |div, idx| %>
-          <% regs = div.team_registrations.includes(:team).to_a %>
+          <% regs = div.team_registrations.confirmed_for_competition.includes(:team).to_a %>
           <% color_class = color_classes[idx % color_classes.size] %>
 
           <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
@@ -70,13 +70,13 @@
                   <div class="col-12 mb-1">
                     <label class="form-label d-block" style="font-size:12px;">รูปแบบการแข่งขัน</label>
                     <div class="btn-group btn-group-sm js-competition-mode-group" role="group" aria-label="รูปแบบการแข่งขัน">
-                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode" id="mode_group_with_knockout_<%= div.id %>" value="group_with_knockout" autocomplete="off" <%= "checked" if default_mode == "group_with_knockout" %>>
+                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_group_with_knockout_<%= div.id %>" value="group_with_knockout" autocomplete="off" <%= "checked" if default_mode == "group_with_knockout" %>>
                       <label class="btn btn-outline-primary" for="mode_group_with_knockout_<%= div.id %>">ระบบแบ่งกลุ่ม</label>
 
-                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode" id="mode_knockout_only_<%= div.id %>" value="knockout_only" autocomplete="off" <%= "checked" if default_mode == "knockout_only" %>>
+                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_knockout_only_<%= div.id %>" value="knockout_only" autocomplete="off" <%= "checked" if default_mode == "knockout_only" %>>
                       <label class="btn btn-outline-primary" for="mode_knockout_only_<%= div.id %>">ระบบน็อคเอาท์</label>
 
-                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode" id="mode_league_only_<%= div.id %>" value="league_only" autocomplete="off" <%= "checked" if default_mode == "league_only" %>>
+                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_league_only_<%= div.id %>" value="league_only" autocomplete="off" <%= "checked" if default_mode == "league_only" %>>
                       <label class="btn btn-outline-primary" for="mode_league_only_<%= div.id %>">ระบบลีก</label>
                     </div>
                   </div>
@@ -126,6 +126,13 @@
                 <% has_played_matches = div.matches.where.not(home_score: nil, away_score: nil).exists? %>
 
                 <% knockout_only_mode = div.matches.knockout.exists? && !div.matches.group_stage.exists? && div.groups.count == 2 %>
+                <% knockout_only_bracket_size = nil %>
+                <% knockout_only_side_size = nil %>
+                <% if knockout_only_mode %>
+                  <% first_round_count = div.matches.knockout.where(round_number: 1).count %>
+                  <% knockout_only_bracket_size = first_round_count * 2 if first_round_count.positive? %>
+                  <% knockout_only_side_size = (knockout_only_bracket_size / 2) if knockout_only_bracket_size.to_i > 0 %>
+                <% end %>
 
                 <% if has_played_matches %>
                   <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
@@ -146,7 +153,10 @@
                     <div class="row g-2">
                       <% div.groups.order(:name).each do |group| %>
                         <% if knockout_only_mode %>
-                          <% group_slots = if group.name == "A"; ["A1", "A2", "A3", "A4"]; elsif group.name == "B"; ["B1", "B2", "B3", "B4"]; else []; end %>
+                          <% side = group.name.to_s.presence || "A" %>
+                          <% ko_first_round_slots = div.matches.knockout.where(round_number: 1).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq %>
+                          <% group_slots = ko_first_round_slots.select { |s| s.to_s.start_with?(side) || s.to_s.end_with?(side) } %>
+                          <% group_slots = group_slots.sort_by { |s| s.to_s.scan(/\d+/).first.to_i } %>
                         <% else %>
                           <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
                         <% end %>
@@ -213,7 +223,10 @@
                       <div class="row g-2">
                         <% div.groups.order(:name).each do |group| %>
                           <% if knockout_only_mode %>
-                            <% group_slots = if group.name == "A"; ["A1", "A2", "A3", "A4"]; elsif group.name == "B"; ["B1", "B2", "B3", "B4"]; else []; end %>
+                            <% side = group.name.to_s.presence || "A" %>
+                            <% ko_first_round_slots = div.matches.knockout.where(round_number: 1).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq %>
+                            <% group_slots = ko_first_round_slots.select { |s| s.to_s.start_with?(side) || s.to_s.end_with?(side) } %>
+                            <% group_slots = group_slots.sort_by { |s| s.to_s.scan(/\d+/).first.to_i } %>
                           <% else %>
                             <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
                           <% end %>

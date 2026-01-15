@@ -88,14 +88,12 @@
                         <%= link_to "แก้ไขทีม",
                               edit_team_tournament_team_registration_path(@tournament, reg),
                               class: "btn btn-sm btn-outline-secondary" %>
-                        <% unless locked_for_div %>
-                          <%= button_to "ลบ",
-                                tournament_team_registration_path(@tournament, reg),
-                                method: :delete,
-                                data: { turbo_confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
-                                class: "btn-pill btn-secondary",
-                                form_class: "inline-form" %>
-                        <% end %>
+                        <%= button_to "ลบ",
+                              tournament_team_registration_path(@tournament, reg),
+                              method: :delete,
+                              data: { turbo_confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
+                              class: "btn-pill btn-secondary",
+                              form_class: "inline-form" %>
                       <% else %>
                         <div class="<%= badge_class %>"><%= label %></div>
                       <% end %>

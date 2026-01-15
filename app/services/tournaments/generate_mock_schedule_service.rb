@@ -120,7 +120,7 @@ module Tournaments
     end
 
     def calculate_group_sizes
-      total_teams = @division.team_registrations.count
+      total_teams = @division.team_registrations.confirmed_for_competition.count
 
       if total_teams > 0
         base = total_teams / @group_count

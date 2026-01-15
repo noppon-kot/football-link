@@ -73,7 +73,14 @@ class TournamentsController < ApplicationController
   end
 
   def fixture
-    # ใช้ @tournament จาก set_tournament และ logic เดิมใน view สำหรับตารางแข่งขัน
+    divisions = @tournament.tournament_divisions.select(:id)
+    today_start = Time.zone.today.beginning_of_day
+
+    @next_match = Match.where(tournament_division_id: divisions)
+                      .where("kickoff_at >= ?", today_start)
+                      .includes(:home_team, :away_team, :group)
+                      .order(:kickoff_at, :id)
+                      .first
   end
 
   def table
@@ -109,7 +116,8 @@ class TournamentsController < ApplicationController
       return redirect_to groups_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
     end
 
-    competition_mode = params[:competition_mode].presence || "group_with_knockout"
+    division_id_for_mode = params[:division_id].to_s
+    competition_mode = params.dig(:competition_mode, division_id_for_mode).presence || "group_with_knockout"
     target_path = groups_tournament_path(@tournament)
 
     division = @tournament.tournament_divisions.find_by(id: params[:division_id])
@@ -119,7 +127,7 @@ class TournamentsController < ApplicationController
 
     if competition_mode == "knockout_only"
       # โหมดน็อคเอาท์อย่างเดียว: ไม่สร้างรอบแบ่งกลุ่ม สร้างเฉพาะรอบน็อคเอาท์จากจำนวนทีมที่มีอยู่
-      total_teams = division.team_registrations.distinct.count(:team_id)
+      total_teams = division.team_registrations.confirmed_for_competition.distinct.count(:team_id)
       if total_teams.zero?
         return redirect_to target_path, alert: "รุ่นนี้ยังไม่มีทีม ไม่สามารถสร้างรอบน็อคเอาท์ได้"
       end
@@ -173,7 +181,7 @@ class TournamentsController < ApplicationController
       end
 
       # ตรวจจำนวนสายไม่ให้เกินจำนวนทีม (อย่างน้อย 2 ทีมต่อสาย)
-      total_teams = division.team_registrations.distinct.count(:team_id)
+      total_teams = division.team_registrations.confirmed_for_competition.distinct.count(:team_id)
       group_count = params[:group_count].to_i
       if total_teams > 0 && group_count > 0
         max_groups = [1, total_teams / 2].max
@@ -292,9 +300,17 @@ class TournamentsController < ApplicationController
         match = Match.find_by(id: match_id)
         next unless match
 
-        permitted = attrs.permit(:home_score, :away_score, :kickoff_at, :penalty_winner_side)
+        permitted = attrs.permit(:home_score, :away_score, :kickoff_at, :penalty_winner_side, :home_team_id, :away_team_id)
 
         update_attrs = {}
+
+        # เลือกทีมลงคู่ (อนุญาตให้ผู้จัดกำหนดเอง)
+        if permitted.key?(:home_team_id)
+          update_attrs[:home_team_id] = permitted[:home_team_id].presence
+        end
+        if permitted.key?(:away_team_id)
+          update_attrs[:away_team_id] = permitted[:away_team_id].presence
+        end
 
         # วันเวลาแข่ง
         update_attrs[:kickoff_at] = permitted[:kickoff_at] if permitted[:kickoff_at].present?

@@ -86,15 +86,18 @@ function setupTournamentGroupsModeForm() {
       slotsInput.value = base;
     }
 
-    modeInputs.forEach(function (input) {
-      input.addEventListener("change", function () {
-        // reset readOnly flags when เปลี่ยนโหมด
-        if (groupCountInput) groupCountInput.readOnly = false;
-        if (slotsInput) slotsInput.readOnly = false;
+    function onModeInteraction() {
+      // reset readOnly flags when เปลี่ยนโหมด
+      if (groupCountInput) groupCountInput.readOnly = false;
+      if (slotsInput) slotsInput.readOnly = false;
 
-        updateVisibility();
-        recomputeSlotsPerGroup();
-      });
+      updateVisibility();
+      recomputeSlotsPerGroup();
+    }
+
+    modeInputs.forEach(function (input) {
+      input.addEventListener("change", onModeInteraction);
+      input.addEventListener("click", onModeInteraction);
     });
 
     if (groupCountInput) {

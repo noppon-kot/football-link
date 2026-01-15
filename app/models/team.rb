@@ -5,7 +5,7 @@ class Team < ApplicationRecord
   has_one_attached :logo
 
   validates :name, :contact_name, :contact_phone, presence: true
- 
+
   def replace_logo!(attachable)
     transaction do
       logo.purge if logo.attached?

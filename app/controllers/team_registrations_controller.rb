@@ -48,10 +48,6 @@ class TeamRegistrationsController < ApplicationController
   end
 
   def update
-    if locked_registration?(@registration)
-      return redirect_to teams_tournament_path(@tournament), alert: "ไม่สามารถแก้ไขทีมหลังจากมีการแบ่งสายการแข่งขันแล้ว"
-    end
-
     result = ::TeamRegistrations::UpdateStatusService.new(
       registration: @registration,
       params: params
@@ -65,10 +61,6 @@ class TeamRegistrationsController < ApplicationController
   end
 
   def destroy
-    if locked_registration?(@registration)
-      return redirect_to teams_tournament_path(@tournament), alert: "ไม่สามารถลบทีมหลังจากมีการแบ่งสายการแข่งขันแล้ว"
-    end
-
     result = ::TeamRegistrations::DestroyService.new(
       registration: @registration
     ).call

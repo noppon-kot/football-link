@@ -52,7 +52,7 @@ module Tournaments
       return Result.new(success?: false, message: "รูปแบบน็อคเอาท์ที่เลือกไม่ถูกต้อง") unless VALID_SIZES.include?(@bracket_size)
 
       if @enforce_max_by_team_count
-        total_teams = @division.team_registrations.distinct.count(:team_id)
+        total_teams = @division.team_registrations.confirmed_for_competition.distinct.count(:team_id)
         if total_teams < @bracket_size
           return Result.new(success?: false, message: "รุ่นนี้มีทีมทั้งหมด #{total_teams} ทีม เลือกจำนวนทีมในรอบน็อคเอาท์ได้ไม่เกิน #{total_teams} ทีม")
         end

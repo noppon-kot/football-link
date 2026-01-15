@@ -14,7 +14,7 @@ module Tournaments
       first_round_matches = matches.select { |m| m.round_number == 1 }
       return Result.new(success?: false, message: "ไม่พบแมตช์รอบแรกของรอบน็อคเอาท์") if first_round_matches.empty?
 
-      total_teams = @division.team_registrations.includes(:team).distinct.order(:id).map(&:team).compact.shuffle
+      total_teams = @division.team_registrations.confirmed_for_competition.includes(:team).distinct.order(:id).map(&:team).compact.shuffle
       if total_teams.empty?
         return Result.new(success?: false, message: "ยังไม่มีทีมในรุ่นนี้")
       end
