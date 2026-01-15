@@ -76,11 +76,22 @@ class TournamentsController < ApplicationController
     divisions = @tournament.tournament_divisions.select(:id)
     today_start = Time.zone.today.beginning_of_day
 
-    @next_match = Match.where(tournament_division_id: divisions)
-                      .where("kickoff_at >= ?", today_start)
-                      .includes(:home_team, :away_team, :group)
-                      .order(:kickoff_at, :id)
-                      .first
+    upcoming = Match.where(tournament_division_id: divisions)
+                    .where("kickoff_at >= ?", today_start)
+                    .where.not(kickoff_at: nil)
+                    .order(:kickoff_at, :id)
+
+    @next_match = upcoming.includes(:home_team, :away_team, :group).first
+    @next_match_day = @next_match&.kickoff_at&.to_date
+
+    @next_day_matches = if @next_match_day.present?
+                          Match.where(tournament_division_id: divisions)
+                              .where(kickoff_at: @next_match_day.beginning_of_day..@next_match_day.end_of_day)
+                              .includes(:home_team, :away_team, :group, :tournament_division)
+                              .order(:kickoff_at, :id)
+                        else
+                          Match.none
+                        end
   end
 
   def table

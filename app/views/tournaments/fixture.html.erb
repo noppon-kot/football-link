@@ -21,23 +21,58 @@
       <div class="card shadow-sm mb-3">
         <div class="card-header fw-bold">Match ต่อไป</div>
         <div class="card-body">
-          <% if @next_match.present? %>
-            <div class="d-flex justify-content-between align-items-center" style="gap:12px;">
-              <div>
-                <div class="fw-bold" style="font-size:14px;">
-                  <%= @next_match.home_name %> vs <%= @next_match.away_name %>
-                </div>
-                <div class="text-muted" style="font-size:12px;">
-                  <%= @next_match.kickoff_at.strftime("%d/%m/%Y %H:%M") %>
-                </div>
-              </div>
-              <div class="text-muted" style="font-size:12px;white-space:nowrap;">
-                <% if @next_match.knockout? %>
-                  <%= @next_match.round_label %>
-                <% else %>
-                  <%= @next_match.group&.name.present? ? "สาย #{@next_match.group.name}" : "รอบแบ่งกลุ่ม" %>
-                <% end %>
-              </div>
+          <% if @next_match_day.present? && @next_day_matches.any? %>
+            <div class="mb-2" style="font-size:13px;font-weight:bold;">
+              <%= @next_match_day.strftime("%d/%m/%Y") %>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" style="width:80px;">เวลา</th>
+                    <th scope="col">ทีมเหย้า</th>
+                    <th scope="col">ทีมเยือน</th>
+                    <th scope="col" class="text-end" style="width:120px;">สกอร์</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @next_day_matches.each do |match| %>
+                    <tr>
+                      <td style="font-size:12px;white-space:nowrap;">
+                        <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
+                      </td>
+                      <td>
+                        <div class="d-flex align-items-center" style="gap:6px;">
+                          <% if match.home_team&.logo&.attached? %>
+                            <%= image_tag match.home_team.logo,
+                                          class: "rounded-circle",
+                                          style: "width:24px;height:24px;object-fit:cover;" %>
+                          <% end %>
+                          <span><%= match.home_name %></span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="d-flex align-items-center" style="gap:6px;">
+                          <% if match.away_team&.logo&.attached? %>
+                            <%= image_tag match.away_team.logo,
+                                          class: "rounded-circle",
+                                          style: "width:24px;height:24px;object-fit:cover;" %>
+                          <% end %>
+                          <span><%= match.away_name %></span>
+                        </div>
+                      </td>
+                      <td class="text-end" style="font-size:12px;white-space:nowrap;">
+                        <% if match.home_score.present? && match.away_score.present? %>
+                          <%= match.home_score %> - <%= match.away_score %>
+                        <% else %>
+                          <span class="text-muted" style="font-size:12px;">ยังไม่ระบุสกอร์</span>
+                        <% end %>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
             </div>
           <% else %>
             <div class="text-muted" style="font-size:13px;">ยังไม่มีโปรแกรมการแข่งขันถัดไป (ตั้งแต่วันนี้เป็นต้นไป)</div>
