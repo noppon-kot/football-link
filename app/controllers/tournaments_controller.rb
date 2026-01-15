@@ -132,6 +132,33 @@ class TournamentsController < ApplicationController
                         else
                           Match.none
                         end
+
+    @day_per_page = 6
+    @day_page = params[:page].to_i
+    @day_page = 1 if @day_page <= 0
+    @next_day_matches_total = @next_day_matches.count
+    @next_day_matches_total_pages = (@next_day_matches_total.to_f / @day_per_page).ceil
+    offset = (@day_page - 1) * @day_per_page
+    @next_day_matches_page = @next_day_matches.offset(offset).limit(@day_per_page)
+
+    all_matches_base = Match.where(tournament_division_id: divisions)
+                           .includes(:home_team, :away_team, :group, :tournament_division)
+
+    # คู่ที่ยังไม่แข่ง (ไม่มีสกอร์ครบ) ให้ขึ้นก่อน แล้วค่อยเรียงตามวันเวลา
+    all_matches_base = all_matches_base.order(
+      Arel.sql("CASE WHEN matches.home_score IS NOT NULL AND matches.away_score IS NOT NULL THEN 1 ELSE 0 END ASC"),
+      Arel.sql("CASE WHEN matches.kickoff_at IS NULL THEN 1 ELSE 0 END ASC"),
+      Arel.sql("matches.kickoff_at ASC"),
+      :id
+    )
+
+    @all_per_page = 30
+    @all_page = params[:all_page].to_i
+    @all_page = 1 if @all_page <= 0
+    @all_matches_total = all_matches_base.count
+    @all_matches_total_pages = (@all_matches_total.to_f / @all_per_page).ceil
+    all_offset = (@all_page - 1) * @all_per_page
+    @all_matches_page = all_matches_base.offset(all_offset).limit(@all_per_page)
   end
 
   def table
@@ -356,11 +383,11 @@ class TournamentsController < ApplicationController
         update_attrs = {}
 
         # เลือกทีมลงคู่ (อนุญาตให้ผู้จัดกำหนดเอง)
-        if permitted.key?(:home_team_id)
-          update_attrs[:home_team_id] = permitted[:home_team_id].presence
+        if permitted[:home_team_id].present?
+          update_attrs[:home_team_id] = permitted[:home_team_id]
         end
-        if permitted.key?(:away_team_id)
-          update_attrs[:away_team_id] = permitted[:away_team_id].presence
+        if permitted[:away_team_id].present?
+          update_attrs[:away_team_id] = permitted[:away_team_id]
         end
 
         # วันเวลาแข่ง

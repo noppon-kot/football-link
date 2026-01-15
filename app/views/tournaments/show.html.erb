@@ -108,9 +108,11 @@
               <div class="tournament-info-card card shadow-sm" style="font-size:16px;">
       <% if @tournament.images.attached? %>
         <div class="mb-3">
-          <%= image_tag @tournament.images.first,
-                        class: "img-fluid rounded",
-                        style: "width:100%;height:auto;" %>
+          <% @tournament.images.each do |img| %>
+            <%= image_tag img,
+                          class: "img-fluid rounded",
+                          style: "width:100%;height:auto;" %>
+          <% end %>
         </div>
       <% end %>
 

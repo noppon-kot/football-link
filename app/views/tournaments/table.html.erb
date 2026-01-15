@@ -107,7 +107,129 @@
                     <% team_ids = (group_matches.map(&:home_team_id) + group_matches.map(&:away_team_id)).compact.uniq %>
 
                     <div class="mb-2">
-                      <div class="mb-1" style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
+                      <% card_id = "standings-card-#{div.id}-#{group.id}" %>
+                      <div class="d-flex align-items-center justify-content-between mb-1" style="gap:8px;">
+                        <div style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
+                        <button type="button"
+                                class="btn btn-sm btn-success js-standings-export"
+                                data-target="<%= card_id %>"
+                                data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>_group_<%= group.name %>.png">
+                          ดาวน์โหลดตารางคะแนน
+                        </button>
+                      </div>
+
+                      <div id="<%= card_id %>" style="position:fixed;left:-10000px;top:0;width:1080px;height:1350px;overflow:hidden;">
+                        <div style="position:relative;width:1080px;height:1350px;background:#071b14;">
+                          <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
+                          <div style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(6,58,42,0.88) 0%, rgba(11,74,51,0.78) 45%, rgba(10,47,34,0.88) 100%);"></div>
+
+                          <div style="position:absolute;left:54px;right:54px;top:48px;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;">
+                            <div>
+                              <div style="font-size:50px;font-weight:900;letter-spacing:0.4px;line-height:1.05;color:#d7ff59;text-transform:uppercase;">
+                                <%= @tournament.title %>
+                              </div>
+                              <div style="margin-top:12px;font-size:30px;font-weight:900;color:rgba(255,255,255,0.92);letter-spacing:0.8px;">ตารางคะแนน</div>
+                              <div style="margin-top:8px;font-size:18px;color:rgba(255,255,255,0.88);">
+                                รุ่น <%= div.name %> · สาย <%= group.name %>
+                                <% show_top10_badge = team_ids.length > 10 %>
+                                <% if show_top10_badge %>
+                                  · Top 10
+                                <% end %>
+                              </div>
+                            </div>
+
+                            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
+                              <%= image_tag "logox.png", alt: "DERNSAI", style: "width:26px;height:34px;border-radius:6px;object-fit:cover;" %>
+                              <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
+                            </div>
+                          </div>
+
+                          <div style="position:absolute;left:54px;right:54px;top:260px;bottom:54px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
+                            <div style="padding:18px 20px;">
+                              <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.9);font-weight:900;font-size:15px;letter-spacing:0.6px;">
+                                <div style="width:60px;text-align:center;">NO</div>
+                                <div style="flex:1;">CLUB</div>
+                                <div style="width:60px;text-align:center;">P</div>
+                                <div style="width:60px;text-align:center;">W</div>
+                                <div style="width:60px;text-align:center;">D</div>
+                                <div style="width:60px;text-align:center;">L</div>
+                                <div style="width:70px;text-align:center;">GD</div>
+                                <div style="width:80px;text-align:center;">PTS</div>
+                              </div>
+
+                              <% if team_ids.any? %>
+                                <% stats = {} %>
+                                <% team_ids.each do |tid| %>
+                                  <% stats[tid] = { played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0, pts: 0 } %>
+                                <% end %>
+
+                                <% group_matches.each do |match| %>
+                                  <% next if match.home_team_id.blank? || match.away_team_id.blank? %>
+                                  <% next unless match.home_score.present? && match.away_score.present? %>
+
+                                  <% h_id = match.home_team_id %>
+                                  <% a_id = match.away_team_id %>
+                                  <% hs  = match.home_score.to_i %>
+                                  <% as  = match.away_score.to_i %>
+
+                                  <% stats[h_id][:played] += 1 %>
+                                  <% stats[a_id][:played] += 1 %>
+                                  <% stats[h_id][:gf] += hs; stats[h_id][:ga] += as %>
+                                  <% stats[a_id][:gf] += as; stats[a_id][:ga] += hs %>
+
+                                  <% if hs > as %>
+                                    <% stats[h_id][:won]  += 1; stats[h_id][:pts] += win_pts %>
+                                    <% stats[a_id][:lost] += 1; stats[a_id][:pts] += loss_pts %>
+                                  <% elsif hs < as %>
+                                    <% stats[a_id][:won]  += 1; stats[a_id][:pts] += win_pts %>
+                                    <% stats[h_id][:lost] += 1; stats[h_id][:pts] += loss_pts %>
+                                  <% else %>
+                                    <% if draw_mode == "pk" && match.decided_by_penalty && match.penalty_winner_side.present? %>
+                                      <% if match.penalty_winner_side == "home" %>
+                                        <% winner_id = h_id; loser_id = a_id %>
+                                      <% else %>
+                                        <% winner_id = a_id; loser_id = h_id %>
+                                      <% end %>
+
+                                      <% stats[winner_id][:draw] += 1; stats[winner_id][:pts] += pk_win_pts %>
+                                      <% stats[loser_id][:draw]  += 1; stats[loser_id][:pts]  += pk_loss_pts %>
+                                    <% else %>
+                                      <% stats[h_id][:draw] += 1; stats[h_id][:pts] += draw_pts %>
+                                      <% stats[a_id][:draw] += 1; stats[a_id][:pts] += draw_pts %>
+                                    <% end %>
+                                  <% end %>
+                                <% end %>
+
+                                <% sorted = team_ids.map { |tid| [tid, stats[tid]] }.sort_by { |tid, s| [-s[:pts], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
+                              <% sorted.first(10).each_with_index do |(tid, s), idx| %>
+                                <% team = Team.find(tid) %>
+                                <% gd = s[:gf] - s[:ga] %>
+                                <div style="display:flex;align-items:center;gap:10px;padding:14px 0;border-top:1px solid rgba(255,255,255,0.18);">
+                                    <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:20px;"><%= idx + 1 %></div>
+                                    <div style="flex:1;display:flex;align-items:center;gap:12px;min-width:0;">
+                                      <% if team.logo.attached? %>
+                                        <%= image_tag team.logo, style: "width:48px;height:48px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);" %>
+                                      <% else %>
+                                        <div style="width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
+                                      <% end %>
+                                      <div style="font-size:24px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></div>
+                                    </div>
+                                    <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:played] %></div>
+                                    <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:won] %></div>
+                                    <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:draw] %></div>
+                                    <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:lost] %></div>
+                                    <div style="width:70px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= gd %></div>
+                                    <div style="width:80px;text-align:center;color:#ffffff;font-weight:900;font-size:24px;"><%= s[:pts] %></div>
+                                  </div>
+                                <% end %>
+                              <% else %>
+                                <div style="padding:26px 0;color:rgba(255,255,255,0.85);font-size:18px;font-weight:700;">ยังไม่มีข้อมูลตารางคะแนน</div>
+                              <% end %>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       <div class="table-responsive">
                         <table class="table table-sm align-middle mb-0">
                           <thead class="table-light">
@@ -209,8 +331,19 @@
                     </div>
                   <% end %>
                 <% else %>
+                  <% card_id = "standings-card-#{div.id}-no-group" %>
+                  <div class="d-flex align-items-center justify-content-between mb-1" style="gap:8px;">
+                    <div style="font-size:12px;color:#546e7a;">ตารางคะแนนรุ่นนี้</div>
+                    <button type="button"
+                            class="btn btn-sm btn-success js-standings-export"
+                            data-target="<%= card_id %>"
+                            data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>.png">
+                      ดาวน์โหลดตารางคะแนน
+                    </button>
+                  </div>
                   <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
+                    <div id="<%= card_id %>">
+                      <table class="table table-sm align-middle mb-0">
                       <thead class="table-light">
                         <tr>
                           <th scope="col">ทีม</th>
@@ -231,7 +364,8 @@
                           </td>
                         </tr>
                       </tbody>
-                    </table>
+                      </table>
+                    </div>
                   </div>
                 <% end %>
               </div>
@@ -243,4 +377,47 @@
       </div>
     </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    (function() {
+      document.addEventListener('click', async function(e) {
+        var btn = e.target.closest('.js-standings-export');
+        if (!btn) return;
+
+        var targetId = btn.getAttribute('data-target');
+        if (!targetId) return;
+
+        var target = document.getElementById(targetId);
+        if (!target) return;
+
+        var filename = btn.getAttribute('data-filename') || 'standings.png';
+
+        var oldText = btn.innerText;
+        try {
+          btn.disabled = true;
+          btn.innerText = 'กำลังสร้างรูป...';
+
+          var canvas = await html2canvas(target, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true
+          });
+
+          var dataUrl = canvas.toDataURL('image/png');
+          var a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } catch (err) {
+          alert('สร้างรูปไม่สำเร็จ');
+        } finally {
+          btn.disabled = false;
+          btn.innerText = oldText;
+        }
+      });
+    })();
+  </script>
 </div>
