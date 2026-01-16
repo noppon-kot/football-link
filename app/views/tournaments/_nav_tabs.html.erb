@@ -1,11 +1,23 @@
 <% active = local_assigns[:active] || :show %>
 
+<% show_my_tab = current_user.present? && (
+  TeamRegistrationManager.joins(:team_registration).where(team_registrations: { tournament_id: @tournament.id }, user_id: current_user.id).exists? ||
+  @tournament.team_registrations.where(manager_user_id: current_user.id).exists?
+) %>
+
 <ul class="nav nav-pills mb-3 flex-nowrap" id="tournament-main-tabs" role="tablist" style="overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch;gap:6px;">
   <li class="nav-item" role="presentation">
     <%= link_to "Info",
                 tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :show}" %>
   </li>
+  <% if show_my_tab %>
+    <li class="nav-item" role="presentation">
+      <%= link_to "My",
+                  my_tournament_path(@tournament),
+                  class: "nav-link #{'active' if active == :my}" %>
+    </li>
+  <% end %>
   <li class="nav-item" role="presentation">
     <%= link_to "Team",
                 teams_tournament_path(@tournament),

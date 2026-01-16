@@ -13,6 +13,9 @@ class Tournament < ApplicationRecord
   has_many :teams, through: :team_registrations
   has_many :tournament_divisions, dependent: :destroy
 
+  has_many :tournament_staffs, dependent: :destroy
+  has_many :staff_users, through: :tournament_staffs, source: :user
+
   accepts_nested_attributes_for :tournament_divisions, allow_destroy: true
 
   validates :title,

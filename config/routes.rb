@@ -8,6 +8,12 @@ Rails.application.routes.draw do
   post "login"  => "sessions#create"
   delete "logout" => "sessions#destroy"
 
+  if Rails.env.development?
+    get  "dev/impersonate/:id", to: "sessions#impersonate"
+    post "dev/impersonate/:id", to: "sessions#impersonate", as: :dev_impersonate
+    delete "dev/impersonate", to: "sessions#stop_impersonating", as: :dev_stop_impersonating
+  end
+
   get "/login/line", to: "sessions#line_login", as: :line_login
   get "/auth/:provider/callback", to: "sessions#line_callback"
 
@@ -20,6 +26,8 @@ Rails.application.routes.draw do
       member do
         get :edit_team
         patch :update_team
+        get :edit_manager
+        patch :update_manager
       end
     end
     post :generate_mock_schedule, on: :member
@@ -29,6 +37,16 @@ Rails.application.routes.draw do
       get :fixture
       get :table
       get :knockout
+      get :staff, to: "tournament_staffs#show"
+      patch :staff, to: "tournament_staffs#update"
+      get :my, to: "tournament_my#show"
+      get "my/entries/:team_registration_id", to: "tournament_my_entries#show", as: :my_entry
+      get "my/entries/:team_registration_id/players", to: "tournament_players#index", as: :my_entry_players
+      get "my/entries/:team_registration_id/players/new", to: "tournament_players#new", as: :new_my_entry_player
+      post "my/entries/:team_registration_id/players", to: "tournament_players#create", as: :my_entry_players_create
+      get "my/entries/:team_registration_id/players/:id/edit", to: "tournament_players#edit", as: :edit_my_entry_player
+      patch "my/entries/:team_registration_id/players/:id", to: "tournament_players#update", as: :my_entry_player
+      delete "my/entries/:team_registration_id/players/:id", to: "tournament_players#destroy"
       post :generate_mock_schedule
       post :generate_knockout
       post :assign_slot_teams

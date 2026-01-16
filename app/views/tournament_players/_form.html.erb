@@ -1,0 +1,47 @@
+<div class="card shadow-sm">
+  <div class="card-body">
+    <% if flash[:alert].present? %>
+      <div class="alert alert-danger"><%= flash[:alert] %></div>
+    <% end %>
+
+    <%= form_with model: player,
+                  url: player.persisted? ? my_entry_player_tournament_path(tournament, team_registration_id: entry.id, id: player.id) : my_entry_players_tournament_path(tournament, team_registration_id: entry.id),
+                  method: player.persisted? ? :patch : :post,
+                  local: true do |f| %>
+      <div class="mb-3">
+        <label class="form-label">ชื่อ-นามสกุล</label>
+        <%= f.text_field :full_name, class: "form-control" %>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">วันเดือนปีเกิด</label>
+        <%= f.date_field :birth_date, class: "form-control" %>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">หมายเลขเสื้อ</label>
+        <%= f.number_field :jersey_number, class: "form-control" %>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">รูปนักกีฬา</label>
+        <%= f.file_field :photo, class: "form-control" %>
+        <% if player.photo.attached? %>
+          <div class="mt-2">
+            <%= image_tag player.photo, class: "rounded", style: "width:72px;height:72px;object-fit:cover;" %>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="form-check mb-3">
+        <%= f.check_box :active, class: "form-check-input" %>
+        <label class="form-check-label">ใช้งานอยู่</label>
+      </div>
+
+      <div class="d-flex justify-content-end" style="gap:8px;">
+        <%= link_to "ยกเลิก", my_entry_players_tournament_path(tournament, team_registration_id: entry.id), class: "btn btn-outline-secondary" %>
+        <%= f.submit submit_label, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>

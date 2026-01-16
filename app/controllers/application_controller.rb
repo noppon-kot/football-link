@@ -27,7 +27,8 @@ class ApplicationController < ActionController::Base
   def can_edit_tournament?(tournament)
     return false unless logged_in?
     return true if admin?
-    tournament.organizer_id == current_user.id
+    return true if tournament.organizer_id == current_user.id
+    TournamentStaff.where(tournament_id: tournament.id, user_id: current_user.id).exists?
   end
 
   def can_manage_registrations?(tournament)

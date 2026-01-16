@@ -1,0 +1,21 @@
+<div class="app-shell">
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <%= render "tournaments/nav_tabs", active: :my %>
+
+      <div class="d-flex justify-content-between align-items-center mb-2" style="gap:8px;">
+        <div>
+          <div style="font-size:18px;font-weight:bold;">แก้ไขนักกีฬา</div>
+          <div class="text-muted" style="font-size:13px;"><%= @entry.team.name %> · รุ่น <%= @entry.tournament_division&.name || "-" %></div>
+        </div>
+        <div>
+          <%= link_to "กลับ",
+                      my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id),
+                      class: "btn btn-sm btn-outline-secondary" %>
+        </div>
+      </div>
+
+      <%= render "form", player: @player, tournament: @tournament, entry: @entry, submit_label: "บันทึก" %>
+    </div>
+  </div>
+</div>

@@ -4,6 +4,13 @@ class User < ApplicationRecord
 
   has_many :organized_tournaments, class_name: "Tournament", foreign_key: :organizer_id, dependent: :nullify
   has_many :fields, dependent: :nullify
+  has_many :managed_team_registrations, class_name: "TeamRegistration", foreign_key: :manager_user_id, dependent: :nullify
+
+  has_many :team_registration_managers, dependent: :destroy
+  has_many :managed_team_registrations_multi, through: :team_registration_managers, source: :team_registration
+
+  has_many :tournament_staffs, dependent: :destroy
+  has_many :staffed_tournaments, through: :tournament_staffs, source: :tournament
 
   def self.from_line_omniauth(auth)
     where(provider: auth.provider, uid: auth.uid).first_or_create do |user|

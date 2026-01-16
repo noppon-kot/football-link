@@ -1,0 +1,52 @@
+<div class="app-shell">
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <%= render "tournaments/nav_tabs", active: :my %>
+
+      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">My Teams</h2>
+      <p class="text-muted" style="font-size:13px;">ทีม/รุ่นที่คุณดูแลในรายการนี้</p>
+      <hr>
+
+      <div class="mb-3">
+        <%= link_to "สมัครเข้าแข่งขัน",
+                    new_tournament_team_registration_path(@tournament),
+                    class: "btn btn-success w-100" %>
+      </div>
+
+      <% if @entries.any? %>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex flex-column" style="gap:10px;">
+              <% @entries.each do |entry| %>
+                <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                  <div class="d-flex align-items-center" style="gap:10px;min-width:0;">
+                    <% if entry.team.logo.attached? %>
+                      <%= image_tag entry.team.logo, class: "rounded-circle", style: "width:40px;height:40px;object-fit:cover;" %>
+                    <% end %>
+                    <div style="min-width:0;">
+                      <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= entry.team.name %></div>
+                      <div class="text-muted" style="font-size:12px;">
+                        รุ่น: <%= entry.tournament_division&.name || "-" %>
+                      </div>
+                      <div class="text-muted" style="font-size:12px;">
+                        นักเตะ: <%= entry.attributes["players_count"].to_i %> คน
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="flex:0 0 auto;">
+                    <%= link_to "จัดการ",
+                                my_entry_tournament_path(@tournament, team_registration_id: entry.id),
+                                class: "btn btn-sm btn-outline-primary" %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% else %>
+        <div class="alert alert-info">คุณยังไม่มีทีมที่สมัครในรายการนี้</div>
+      <% end %>
+    </div>
+  </div>
+</div>

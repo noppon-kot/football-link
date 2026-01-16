@@ -18,6 +18,14 @@
       <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
       <hr>
 
+      <% unless can_manage_registrations?(@tournament) %>
+        <div class="mb-3">
+          <%= link_to "สมัครเข้าแข่งขัน",
+                      new_tournament_team_registration_path(@tournament),
+                      class: "btn btn-success w-100" %>
+        </div>
+      <% end %>
+
       <div class="team-list-card card shadow-sm">
         <div class="team-list-header d-flex justify-content-between align-items-center">
           <span>ทีมที่สนใจ / สมัคร</span>
@@ -74,6 +82,16 @@
                       <div>
                         <div><strong><%= team.name %></strong></div>
                         <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
+                        <% if can_manage_registrations?(@tournament) %>
+                          <div class="text-muted" style="font-size:12px;">
+                            ผู้ดูแล:
+                            <% if reg.manager_users.any? %>
+                              <%= reg.manager_users.order(:id).map { |u| u.name.presence || "User##{u.id}" }.join(", ") %>
+                            <% else %>
+                              ผู้จัดรายการ
+                            <% end %>
+                          </div>
+                        <% end %>
                       </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:6px;">
@@ -88,6 +106,9 @@
                         <%= link_to "แก้ไขทีม",
                               edit_team_tournament_team_registration_path(@tournament, reg),
                               class: "btn btn-sm btn-outline-secondary" %>
+                        <%= link_to "กำหนดผู้จัดการทีม",
+                              edit_manager_tournament_team_registration_path(@tournament, reg),
+                              class: "btn btn-sm btn-outline-primary" %>
                         <%= button_to "ลบ",
                               tournament_team_registration_path(@tournament, reg),
                               method: :delete,

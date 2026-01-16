@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_10_090000) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_16_112500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -117,6 +117,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_10_090000) do
     t.index ["tournament_division_id"], name: "index_matches_on_tournament_division_id"
   end
 
+  create_table "team_registration_managers", force: :cascade do |t|
+    t.bigint "team_registration_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["team_registration_id", "user_id"], name: "index_trm_on_team_registration_id_and_user_id", unique: true
+    t.index ["team_registration_id"], name: "index_team_registration_managers_on_team_registration_id"
+    t.index ["user_id"], name: "index_team_registration_managers_on_user_id"
+  end
+
   create_table "team_registrations", force: :cascade do |t|
     t.integer "status"
     t.text "notes"
@@ -125,6 +135,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_10_090000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "tournament_division_id"
+    t.bigint "manager_user_id"
+    t.index ["manager_user_id"], name: "index_team_registrations_on_manager_user_id"
     t.index ["team_id"], name: "index_team_registrations_on_team_id"
     t.index ["tournament_division_id"], name: "index_team_registrations_on_tournament_division_id"
     t.index ["tournament_id"], name: "index_team_registrations_on_tournament_id"
@@ -157,6 +169,28 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_10_090000) do
     t.integer "points_pk_win"
     t.integer "points_pk_loss"
     t.index ["tournament_id"], name: "index_tournament_divisions_on_tournament_id"
+  end
+
+  create_table "tournament_players", force: :cascade do |t|
+    t.bigint "team_registration_id", null: false
+    t.string "full_name", null: false
+    t.date "birth_date"
+    t.integer "jersey_number"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["team_registration_id", "jersey_number"], name: "idx_on_team_registration_id_jersey_number_e9a1d6d5fe"
+    t.index ["team_registration_id"], name: "index_tournament_players_on_team_registration_id"
+  end
+
+  create_table "tournament_staffs", force: :cascade do |t|
+    t.bigint "tournament_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tournament_id", "user_id"], name: "index_tournament_staffs_on_tournament_id_and_user_id", unique: true
+    t.index ["tournament_id"], name: "index_tournament_staffs_on_tournament_id"
+    t.index ["user_id"], name: "index_tournament_staffs_on_user_id"
   end
 
   create_table "tournaments", force: :cascade do |t|
@@ -210,8 +244,14 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_10_090000) do
   add_foreign_key "matches", "teams", column: "away_team_id"
   add_foreign_key "matches", "teams", column: "home_team_id"
   add_foreign_key "matches", "tournament_divisions"
+  add_foreign_key "team_registration_managers", "team_registrations"
+  add_foreign_key "team_registration_managers", "users"
   add_foreign_key "team_registrations", "teams"
   add_foreign_key "team_registrations", "tournament_divisions"
+  add_foreign_key "team_registrations", "users", column: "manager_user_id"
   add_foreign_key "tournament_divisions", "tournaments"
+  add_foreign_key "tournament_players", "team_registrations"
+  add_foreign_key "tournament_staffs", "tournaments"
+  add_foreign_key "tournament_staffs", "users"
   add_foreign_key "tournaments", "users", column: "organizer_id"
 end

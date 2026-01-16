@@ -2,7 +2,7 @@ class TeamRegistrationsController < ApplicationController
   before_action :require_login
   before_action :set_tournament
   before_action :set_registration, only: [:update, :destroy, :edit_team, :update_team]
-  before_action :require_manage_permission, only: [:update, :destroy, :edit_team, :update_team]
+  before_action :require_manage_permission, only: [:update, :destroy, :edit_team, :update_team, :edit_manager, :update_manager]
 
   def new
     @divisions = @tournament.tournament_divisions.order(:position, :id)
@@ -21,11 +21,79 @@ class TeamRegistrationsController < ApplicationController
     end
 
     if @team.update(permitted.except(:logo))
-      redirect_to teams_tournament_path(@tournament), notice: "บันทึกข้อมูลทีมเรียบร้อยแล้ว"
+      if can_manage_registrations?(@tournament)
+        redirect_to teams_tournament_path(@tournament), notice: "บันทึกข้อมูลทีมเรียบร้อยแล้ว"
+      else
+        redirect_to my_entry_tournament_path(@tournament, team_registration_id: @registration.id), notice: "บันทึกข้อมูลทีมเรียบร้อยแล้ว"
+      end
     else
       flash.now[:alert] = @team.errors.full_messages.to_sentence
       render :edit_team, status: :unprocessable_entity
     end
+  end
+
+  def edit_manager
+    @registration = @tournament.team_registrations.find(params[:id])
+
+    q = params[:q].to_s.strip
+    return if q.blank?
+
+    base = User.all
+
+    if q.match?(/\A\d+\z/)
+      @candidates = base.where(id: q.to_i)
+    else
+      @candidates = base
+                    .where("line_id = ? OR LOWER(name) LIKE ?", q, "%#{q.downcase}%")
+                    .order(:id)
+                    .limit(20)
+    end
+  end
+
+  def update_manager
+    @registration = @tournament.team_registrations.find(params[:id])
+
+    if params[:remove_user_id].present?
+      @registration.team_registration_managers.where(user_id: params[:remove_user_id]).destroy_all
+      if @registration.manager_users.empty?
+        @registration.update(manager_user_id: @tournament.organizer_id)
+      end
+      return redirect_to edit_manager_tournament_team_registration_path(@tournament, @registration), notice: "ลบผู้จัดการทีมเรียบร้อยแล้ว"
+    end
+
+    user_id = params.dig(:manager, :user_id).presence
+    query = params.dig(:manager, :query).to_s.strip
+
+    if user_id.blank? && query.blank?
+      @registration.team_registration_managers.destroy_all
+      @registration.update(manager_user_id: @tournament.organizer_id)
+      return redirect_to teams_tournament_path(@tournament), notice: "ตั้งค่าเป็นผู้จัดรายการเรียบร้อยแล้ว"
+    end
+
+    user = if user_id.present?
+             User.find_by(id: user_id)
+           elsif query.match?(/\A\d+\z/)
+             User.find_by(id: query.to_i)
+           else
+             User.find_by(line_id: query) || User.where("LOWER(name) LIKE ?", "%#{query.downcase}%").order(:id).first
+           end
+
+    unless user
+      flash.now[:alert] = "ไม่พบผู้ใช้ที่ค้นหา"
+      return render :edit_manager, status: :unprocessable_entity
+    end
+
+    begin
+      @registration.team_registration_managers.create!(user: user)
+    rescue ActiveRecord::RecordNotUnique
+      # already added
+    end
+
+    if @registration.manager_user_id.blank? || @registration.manager_user_id == @tournament.organizer_id
+      @registration.update(manager_user_id: user.id)
+    end
+
+    redirect_to edit_manager_tournament_team_registration_path(@tournament, @registration), notice: "เพิ่มผู้จัดการทีมเรียบร้อยแล้ว"
   end
 
   def create
@@ -33,7 +101,8 @@ class TeamRegistrationsController < ApplicationController
 
     result = ::TeamRegistrations::CreateService.new(
       tournament: @tournament,
-      params: params
+      params: params,
+      current_user: current_user
     ).call
 
     if result.success?
@@ -83,9 +152,14 @@ class TeamRegistrationsController < ApplicationController
   end
 
   def require_manage_permission
-    unless can_manage_registrations?(@tournament)
-      redirect_to @tournament, alert: I18n.t("sessions.flash.login_required")
+    return if can_manage_registrations?(@tournament)
+
+    if %w[edit_team update_team].include?(action_name) && @registration.present?
+      return if @registration.team_registration_managers.where(user_id: current_user.id).exists?
+      return if @registration.manager_user_id == current_user.id
     end
+
+    redirect_to @tournament, alert: I18n.t("sessions.flash.login_required")
   end
 
   def team_registration_params

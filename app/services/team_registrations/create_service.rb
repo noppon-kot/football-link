@@ -2,9 +2,10 @@ module TeamRegistrations
   class CreateService
     Result = Struct.new(:success?, :tournament, :registration, :errors, keyword_init: true)
 
-    def initialize(tournament:, params:)
+    def initialize(tournament:, params:, current_user: nil)
       @tournament = tournament
       @params     = params
+      @current_user = current_user
     end
 
     def call
@@ -21,6 +22,8 @@ module TeamRegistrations
       registration = nil
 
       ActiveRecord::Base.transaction do
+        default_manager_user_id = @current_user&.id.presence || @tournament.organizer_id
+
         team = Team.create!(
           name:          team_params[:team_name],
           contact_name:  team_params[:contact_name],
@@ -38,9 +41,18 @@ module TeamRegistrations
           team:                   team,
           tournament:             @tournament,
           tournament_division_id: division_id.presence,
+          manager_user_id:        default_manager_user_id,
           status:                 :interested,
           notes:                  "สมัครผ่านฟอร์มสนใจสมัคร"
         )
+
+        if registration.manager_user_id.present?
+          begin
+            TeamRegistrationManager.create!(team_registration: registration, user_id: registration.manager_user_id)
+          rescue ActiveRecord::RecordNotUnique
+            # ignore
+          end
+        end
       end
 
       Result.new(success?: true, tournament: @tournament, registration: registration, errors: [])

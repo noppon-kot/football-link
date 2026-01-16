@@ -1,0 +1,92 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-top-nav">
+      <%= link_to "←", teams_tournament_path(@tournament), class: "app-top-nav-left", style: "text-decoration:none;" %>
+      <div class="app-top-nav-center">กำหนดผู้จัดการทีม</div>
+      <div class="app-top-nav-right"></div>
+    </div>
+    <div class="app-header-title"><%= @tournament.title %></div>
+  </header>
+
+  <div class="container py-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <% if flash[:alert].present? %>
+          <div class="alert alert-danger" role="alert"><%= flash[:alert] %></div>
+        <% end %>
+
+        <div class="mb-3">
+          <div class="fw-bold"><%= @registration.team.name %></div>
+          <div class="text-muted" style="font-size:12px;">รุ่น: <%= @registration.tournament_division&.name || "-" %></div>
+          <div class="text-muted" style="font-size:12px;">ผู้ดูแลปัจจุบัน:</div>
+          <div style="margin-top:4px;">
+            <% if @registration.manager_users.any? %>
+              <div class="d-flex flex-wrap" style="gap:6px;">
+                <% @registration.manager_users.order(:id).each do |u| %>
+                  <div class="badge bg-light text-dark" style="border:1px solid #e5e7eb;">
+                    <%= u.name.presence || "User##{u.id}" %> (ID: <%= u.id %><%= u.line_id.present? ? ", LINE: #{u.line_id}" : "" %>)
+                    <%= button_to "ลบ",
+                                  update_manager_tournament_team_registration_path(@tournament, @registration, remove_user_id: u.id),
+                                  method: :patch,
+                                  form_class: "d-inline",
+                                  class: "btn btn-sm btn-link",
+                                  style: "padding:0 0 0 6px;text-decoration:none;" %>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="text-muted" style="font-size:12px;">ยังไม่มีผู้จัดการทีม (จะถือว่าเป็นผู้จัดรายการ)</div>
+            <% end %>
+          </div>
+        </div>
+
+        <%= form_with url: edit_manager_tournament_team_registration_path(@tournament, @registration), method: :get, local: true do %>
+          <div class="mb-3">
+            <label class="form-label">ค้นหาผู้ใช้ (ชื่อ / user_id / LINE ID)</label>
+            <%= text_field_tag :q, params[:q].to_s, class: "form-control", placeholder: "เช่น 12 หรือ mock_manager_1 หรือ ชื่อผู้ใช้" %>
+            <div class="text-muted" style="font-size:12px;margin-top:4px;">พิมพ์คำค้นแล้วกดค้นหา จากนั้นกด “เพิ่ม” เพื่อเพิ่มเป็นผู้จัดการทีม</div>
+          </div>
+
+          <div class="d-flex justify-content-end" style="gap:8px;">
+            <%= link_to "ยกเลิก", teams_tournament_path(@tournament), class: "btn btn-outline-secondary" %>
+            <%= submit_tag "ค้นหา", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+
+        <% if defined?(@candidates) && @candidates.present? %>
+          <hr />
+          <div class="fw-bold mb-2">ผลการค้นหา</div>
+          <div class="list-group">
+            <% @candidates.each do |u| %>
+              <div class="list-group-item d-flex justify-content-between align-items-center" style="gap:10px;">
+                <div style="min-width:0;">
+                  <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= u.name.presence || "User##{u.id}" %></div>
+                  <div class="text-muted" style="font-size:12px;">ID: <%= u.id %><%= u.line_id.present? ? ", LINE: #{u.line_id}" : "" %></div>
+                </div>
+                <div style="flex:0 0 auto;">
+                  <%= button_to "เพิ่ม",
+                                update_manager_tournament_team_registration_path(@tournament, @registration, manager: { user_id: u.id }),
+                                method: :patch,
+                                class: "btn btn-sm btn-outline-primary" %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <hr />
+        <%= form_with url: update_manager_tournament_team_registration_path(@tournament, @registration), method: :patch, local: true do %>
+          <div class="mb-3">
+            <label class="form-label">ตั้งค่าเป็นผู้จัดรายการ (ล้างผู้จัดการทีมทั้งหมด)</label>
+            <div class="text-muted" style="font-size:12px;margin-top:4px;">กดปุ่มนี้เพื่อให้ผู้จัดรายการเป็นผู้ดูแลทีม/รุ่นนี้</div>
+          </div>
+
+          <div class="d-flex justify-content-end" style="gap:8px;">
+            <%= link_to "ยกเลิก", teams_tournament_path(@tournament), class: "btn btn-outline-secondary" %>
+            <%= submit_tag "ตั้งเป็นผู้จัดรายการ", class: "btn btn-outline-danger" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

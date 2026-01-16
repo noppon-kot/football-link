@@ -1,0 +1,64 @@
+<div class="app-shell">
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <%= render "tournaments/nav_tabs", active: :my %>
+
+      <div class="d-flex justify-content-between align-items-center mb-2" style="gap:8px;">
+        <div>
+          <div style="font-size:18px;font-weight:bold;">นักกีฬา</div>
+          <div class="text-muted" style="font-size:13px;"><%= @entry.team.name %> · รุ่น <%= @entry.tournament_division&.name || "-" %></div>
+        </div>
+        <div class="d-flex" style="gap:8px;">
+          <%= link_to "กลับ",
+                      my_entry_tournament_path(@tournament, team_registration_id: @entry.id),
+                      class: "btn btn-sm btn-outline-secondary" %>
+          <%= link_to "เพิ่มนักกีฬา",
+                      new_my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id),
+                      class: "btn btn-sm btn-primary" %>
+        </div>
+      </div>
+
+      <% if flash[:alert].present? %>
+        <div class="alert alert-danger"><%= flash[:alert] %></div>
+      <% end %>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <% if @players.any? %>
+            <div class="d-flex flex-column" style="gap:10px;">
+              <% @players.each do |p| %>
+                <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                  <div class="d-flex align-items-center" style="gap:10px;min-width:0;">
+                    <% if p.photo.attached? %>
+                      <%= image_tag p.photo, class: "rounded-circle", style: "width:36px;height:36px;object-fit:cover;" %>
+                    <% end %>
+                    <div style="min-width:0;">
+                      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= p.full_name %></div>
+                      <div class="text-muted" style="font-size:12px;">
+                        วันเกิด: <%= p.birth_date&.strftime("%d/%m/%Y") || "-" %> · เบอร์: <%= p.jersey_number.presence || "-" %>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="d-flex" style="gap:6px;flex:0 0 auto;">
+                    <%= link_to "แก้ไข",
+                                edit_my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
+                                class: "btn btn-sm btn-outline-secondary" %>
+                    <%= button_to "ลบ",
+                                  my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
+                                  method: :delete,
+                                  data: { turbo_confirm: "ลบนักกีฬาคนนี้?" },
+                                  class: "btn btn-sm btn-outline-danger",
+                                  form_class: "inline-form" %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-muted">ยังไม่มีนักกีฬาในทีมนี้</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

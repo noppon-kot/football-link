@@ -1,0 +1,82 @@
+<div class="app-shell">
+  <header class="app-header">
+    <div class="app-top-nav">
+      <%= link_to "←", tournament_path(@tournament), class: "app-top-nav-left", style: "text-decoration:none;" %>
+      <div class="app-top-nav-center">ผู้จัดร่วม</div>
+      <div class="app-top-nav-right"></div>
+    </div>
+    <div class="app-header-title"><%= @tournament.title %></div>
+  </header>
+
+  <div class="container py-3">
+    <% if flash[:alert].present? %>
+      <div class="alert alert-danger" role="alert"><%= flash[:alert] %></div>
+    <% end %>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="mb-2 fw-bold">ผู้จัดหลัก</div>
+        <div class="text-muted" style="font-size:12px;">
+          <%= @tournament.organizer&.name.presence || "User##{@tournament.organizer_id}" %> (ID: <%= @tournament.organizer_id %>)
+        </div>
+
+        <hr />
+
+        <div class="mb-2 fw-bold">ผู้จัดร่วม</div>
+        <% staffs = @tournament.tournament_staffs.includes(:user).map(&:user).compact.sort_by(&:id) %>
+        <% if staffs.any? %>
+          <div class="d-flex flex-wrap" style="gap:6px;">
+            <% staffs.each do |u| %>
+              <div class="badge bg-light text-dark" style="border:1px solid #e5e7eb;">
+                <%= u.name.presence || "User##{u.id}" %> (ID: <%= u.id %><%= u.line_id.present? ? ", LINE: #{u.line_id}" : "" %>)
+                <%= button_to "ลบ",
+                              tournament_staff_path(@tournament, remove_user_id: u.id),
+                              method: :patch,
+                              form_class: "d-inline",
+                              class: "btn btn-sm btn-link",
+                              style: "padding:0 0 0 6px;text-decoration:none;" %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-muted" style="font-size:12px;">ยังไม่มีผู้จัดร่วม</div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <%= form_with url: tournament_staff_path(@tournament), method: :get, local: true do %>
+          <div class="mb-3">
+            <label class="form-label">ค้นหาผู้ใช้ (ชื่อ / user_id / LINE ID)</label>
+            <%= text_field_tag :q, params[:q].to_s, class: "form-control", placeholder: "เช่น 12 หรือ mock_manager_1 หรือ ชื่อผู้ใช้" %>
+          </div>
+          <div class="d-flex justify-content-end" style="gap:8px;">
+            <%= submit_tag "ค้นหา", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+
+        <% if defined?(@candidates) && @candidates.present? %>
+          <hr />
+          <div class="fw-bold mb-2">ผลการค้นหา</div>
+          <div class="list-group">
+            <% @candidates.each do |u| %>
+              <div class="list-group-item d-flex justify-content-between align-items-center" style="gap:10px;">
+                <div style="min-width:0;">
+                  <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= u.name.presence || "User##{u.id}" %></div>
+                  <div class="text-muted" style="font-size:12px;">ID: <%= u.id %><%= u.line_id.present? ? ", LINE: #{u.line_id}" : "" %></div>
+                </div>
+                <div style="flex:0 0 auto;">
+                  <%= button_to "เพิ่ม",
+                                tournament_staff_path(@tournament, staff: { user_id: u.id }),
+                                method: :patch,
+                                class: "btn btn-sm btn-outline-primary" %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
