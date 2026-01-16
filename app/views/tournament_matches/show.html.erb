@@ -20,9 +20,16 @@
 
       <div class="card shadow-sm mb-3">
         <div class="card-body">
+          <% home_team = @match.home_team %>
+          <% away_team = @match.away_team %>
           <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
             <div style="min-width:0;">
-              <div class="fw-bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= @match.home_name %></div>
+              <div class="d-flex align-items-center" style="gap:8px;min-width:0;">
+                <% if home_team&.logo&.attached? %>
+                  <%= image_tag home_team.logo, style: "width:24px;height:24px;border-radius:999px;object-fit:cover;background:rgba(0,0,0,0.06);flex:0 0 auto;" %>
+                <% end %>
+                <div class="fw-bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= @match.home_name %></div>
+              </div>
               <div class="text-muted" style="font-size:12px;">ทีมเหย้า</div>
             </div>
             <div class="text-center" style="min-width:120px;">
@@ -32,13 +39,16 @@
               <div class="text-muted" style="font-size:12px;">สกอร์</div>
             </div>
             <div class="text-end" style="min-width:0;">
-              <div class="fw-bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= @match.away_name %></div>
+              <div class="d-flex align-items-center justify-content-end" style="gap:8px;min-width:0;">
+                <div class="fw-bold" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= @match.away_name %></div>
+                <% if away_team&.logo&.attached? %>
+                  <%= image_tag away_team.logo, style: "width:24px;height:24px;border-radius:999px;object-fit:cover;background:rgba(0,0,0,0.06);flex:0 0 auto;" %>
+                <% end %>
+              </div>
               <div class="text-muted" style="font-size:12px;">ทีมเยือน</div>
             </div>
           </div>
 
-		  <% home_team = @match.home_team %>
-		  <% away_team = @match.away_team %>
 		  <% home_entry_id = @home_entry&.id %>
 		  <% away_entry_id = @away_entry&.id %>
 		  <% home_events = (@match_events || []).select { |e| e.tournament_player&.team_registration_id == home_entry_id } %>
