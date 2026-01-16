@@ -226,14 +226,33 @@
           align-items: center;
           gap: 6px;
         }
+
+        .fixture-filter-row {
+          display: flex;
+          align-items: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+          width: 100%;
+        }
+
+        @media (min-width: 768px) {
+          .fixture-filter-row {
+            width: auto;
+            flex: 1 1 auto;
+          }
+
+          .fixture-export-wrap {
+            flex: 0 0 auto;
+          }
+        }
       </style>
 
       <div class="card shadow-sm mb-3">
         <div class="card-header fw-bold">Match Day</div>
         <div class="card-body">
           <div class="mb-2">
-            <%= form_with url: fixture_tournament_path(@tournament), method: :get, local: true, class: "d-flex flex-column", style: "gap:8px;" do %>
-              <div class="d-flex align-items-end flex-wrap" style="gap:8px;">
+            <%= form_with url: fixture_tournament_path(@tournament), method: :get, local: true, class: "d-flex flex-column flex-md-row align-items-md-end", style: "gap:8px;" do %>
+              <div class="fixture-filter-row">
                 <div>
                   <label class="form-label" style="font-size:12px;margin-bottom:2px;">เลือกวันที่</label>
                   <%= date_field_tag :day,
@@ -257,7 +276,7 @@
                 </div>
               </div>
 
-              <div>
+              <div class="fixture-export-wrap">
                 <button type="button" id="fixture-export" class="btn btn-sm btn-success">ดาวโหลดรูปแข่งหน้านี้</button>
               </div>
             <% end %>
