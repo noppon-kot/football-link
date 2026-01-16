@@ -1,28 +1,28 @@
 <% active = local_assigns[:active] || :show %>
 
-<ul class="nav nav-pills mb-3" id="tournament-main-tabs" role="tablist">
+<ul class="nav nav-pills mb-3 flex-nowrap" id="tournament-main-tabs" role="tablist" style="overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch;gap:6px;">
   <li class="nav-item" role="presentation">
-    <%= link_to "ℹ️ รายละเอียด",
+    <%= link_to "Info",
                 tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :show}" %>
   </li>
   <li class="nav-item" role="presentation">
-    <%= link_to "👥 ทีม",
+    <%= link_to "Team",
                 teams_tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :teams}" %>
   </li>
   <li class="nav-item" role="presentation">
-    <%= link_to "🧩 สายการแข่งขัน",
+    <%= link_to "Group",
                 groups_tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :groups}" %>
   </li>
   <li class="nav-item" role="presentation">
-    <%= link_to "📅 โปรแกรม/ผล",
+    <%= link_to "Fixtures",
                 fixture_tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :fixture}" %>
   </li>
   <li class="nav-item" role="presentation">
-    <%= link_to "📊 คะแนน",
+    <%= link_to "Table",
                 table_tournament_path(@tournament),
                 class: "nav-link #{'active' if active == :table}" %>
   </li>

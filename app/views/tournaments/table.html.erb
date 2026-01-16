@@ -193,13 +193,13 @@
                       </div>
 
                       <div id="<%= card_id %>" style="position:fixed;left:-10000px;top:0;width:1080px;height:1350px;overflow:hidden;">
-                        <div style="position:relative;width:1080px;height:1350px;background:#071b14;">
+                        <div data-theme-root style="position:relative;width:1080px;height:1350px;background:#071b14;">
                           <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
-                          <div style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(6,58,42,0.88) 0%, rgba(11,74,51,0.78) 45%, rgba(10,47,34,0.88) 100%);"></div>
+                          <div data-theme-gradient style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(6,58,42,0.88) 0%, rgba(11,74,51,0.78) 45%, rgba(10,47,34,0.88) 100%);"></div>
 
                           <div style="position:absolute;left:54px;right:54px;top:48px;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;">
                             <div>
-                              <div style="font-size:50px;font-weight:900;letter-spacing:0.4px;line-height:1.05;color:#d7ff59;text-transform:uppercase;">
+                              <div data-theme-title style="font-size:50px;font-weight:900;letter-spacing:0.4px;line-height:1.05;color:#d7ff59;text-transform:uppercase;">
                                 <%= @tournament.title %>
                               </div>
                               <div style="margin-top:12px;font-size:30px;font-weight:900;color:rgba(255,255,255,0.92);letter-spacing:0.8px;">ตารางคะแนน</div>
@@ -469,6 +469,25 @@
         try {
           btn.disabled = true;
           btn.innerText = 'กำลังสร้างรูป...';
+
+          (function() {
+            var themes = [
+              { name: 'green', primary: '#063a2a', secondary: '#0b4a33', title: '#d7ff59' },
+              { name: 'blue', primary: '#0a1b3a', secondary: '#0b2a4f', title: '#8ecbff' },
+              { name: 'purple', primary: '#2a1247', secondary: '#3b1a63', title: '#e0b3ff' },
+              { name: 'yellow', primary: '#3a2f00', secondary: '#5a4800', title: '#ffe066' },
+              { name: 'orange', primary: '#3a1f00', secondary: '#5a2e00', title: '#ffb347' },
+              { name: 'red', primary: '#3a0a12', secondary: '#5a1220', title: '#ff7b7b' },
+              { name: 'navy', primary: '#061226', secondary: '#0b1f3d', title: '#7fb3ff' }
+            ];
+            var theme = themes[Math.floor(Math.random() * themes.length)];
+            var root = target.querySelector('[data-theme-root]');
+            var gradient = target.querySelector('[data-theme-gradient]');
+            var title = target.querySelector('[data-theme-title]');
+            if (root) root.style.background = theme.primary;
+            if (gradient) gradient.style.background = 'linear-gradient(135deg, ' + theme.primary + 'e0 0%, ' + theme.secondary + 'c7 45%, ' + theme.primary + 'e0 100%)';
+            if (title) title.style.color = theme.title;
+          })();
 
           var canvas = await html2canvas(target, {
             backgroundColor: '#ffffff',

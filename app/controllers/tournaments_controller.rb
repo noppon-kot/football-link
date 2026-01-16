@@ -372,6 +372,7 @@ class TournamentsController < ApplicationController
 
     matches_params = params[:matches] || {}
     affected_division_ids = Set.new
+    last_kickoff_day = nil
 
     Match.transaction do
       matches_params.each do |match_id, attrs|
@@ -391,7 +392,27 @@ class TournamentsController < ApplicationController
         end
 
         # วันเวลาแข่ง
-        update_attrs[:kickoff_at] = permitted[:kickoff_at] if permitted[:kickoff_at].present?
+        # NOTE: kickoff_at อาจถูกส่งมาเป็น "" เพื่อเคลียร์วันเวลา
+        unless permitted[:kickoff_at].nil?
+          submitted_kickoff_at = permitted[:kickoff_at].to_s
+          current_kickoff_at = match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")
+
+          if submitted_kickoff_at.blank?
+            if match.kickoff_at.present?
+              update_attrs[:kickoff_at] = nil
+            end
+          elsif current_kickoff_at != submitted_kickoff_at
+            parsed_time = nil
+            begin
+              parsed_time = Time.zone.parse(submitted_kickoff_at)
+            rescue ArgumentError, TypeError
+              parsed_time = nil
+            end
+
+            update_attrs[:kickoff_at] = parsed_time || submitted_kickoff_at
+            last_kickoff_day = (parsed_time&.to_date || (Date.parse(submitted_kickoff_at) rescue nil) || last_kickoff_day)
+          end
+        end
 
         # สกอร์: ต้องกรอกทั้งสองฝั่งถึงจะบันทึก
         home_score = permitted[:home_score]
@@ -425,8 +446,11 @@ class TournamentsController < ApplicationController
     auto_seed_message = auto_seed_knockout_if_ready(division_ids)
     advance_message = auto_advance_knockout_winners(division_ids)
 
-    notice_msg = ["บันทึกสกอร์เรียบร้อยแล้ว", auto_seed_message, advance_message].compact.join(" ")
-    redirect_to fixture_tournament_path(@tournament), notice: notice_msg
+    notice_msg = ["บันทึกข้อมูลเรียบร้อยแล้ว", auto_seed_message, advance_message].compact.join(" ")
+    redirect_params = {}
+    redirect_params[:day] = (last_kickoff_day || (params[:day].presence && Date.parse(params[:day])) rescue nil)&.strftime("%Y-%m-%d")
+    redirect_params[:page] = params[:page] if params[:page].present?
+    redirect_to fixture_tournament_path(@tournament, redirect_params), notice: notice_msg
   rescue ActiveRecord::RecordInvalid => e
     redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
   end
