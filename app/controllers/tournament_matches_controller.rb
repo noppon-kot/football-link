@@ -6,9 +6,12 @@ class TournamentMatchesController < ApplicationController
   before_action :set_entries
   before_action :set_lineups
 
+  helper_method :can_manage_entry?
+
   def show
-    @home_players = @home_entry ? @home_entry.tournament_players.order(:full_name, :id) : TournamentPlayer.none
-    @away_players = @away_entry ? @away_entry.tournament_players.order(:full_name, :id) : TournamentPlayer.none
+    players_order = Arel.sql("birth_date IS NULL, birth_date DESC, full_name ASC, id ASC")
+    @home_players = @home_entry ? @home_entry.tournament_players.order(players_order) : TournamentPlayer.none
+    @away_players = @away_entry ? @away_entry.tournament_players.order(players_order) : TournamentPlayer.none
 
     @home_starter_ids = @home_lineup.match_lineup_players.starter.pluck(:tournament_player_id)
     @home_sub_ids = @home_lineup.match_lineup_players.substitute.pluck(:tournament_player_id)

@@ -8,4 +8,14 @@ class TournamentPlayer < ApplicationRecord
   has_one_attached :photo, dependent: :purge_later
 
   validates :full_name, presence: true
+
+  def age
+    return nil unless birth_date
+
+    today = Date.current
+    years = today.year - birth_date.year
+    had_birthday = (today.month > birth_date.month) || (today.month == birth_date.month && today.day >= birth_date.day)
+    years -= 1 unless had_birthday
+    years
+  end
 end
