@@ -495,9 +495,10 @@
 
 .team-list-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
   font-size: 13px;
   border-top: 1px solid #eceff1;
 }

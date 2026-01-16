@@ -39,8 +39,16 @@ Rails.application.routes.draw do
       get :knockout
       get :staff, to: "tournament_staffs#show"
       patch :staff, to: "tournament_staffs#update"
+      get "matches/:match_id", to: "tournament_matches#show", as: :match
+      patch "matches/:match_id/score", to: "tournament_matches#update_score", as: :match_score
+      patch "matches/:match_id/lineups/:side", to: "tournament_matches#submit_lineup", as: :match_lineup
+      patch "matches/:match_id/lineups/:side/unlock", to: "tournament_matches#unlock_lineup", as: :match_lineup_unlock
+      post "matches/:match_id/events", to: "tournament_matches#create_event", as: :match_events
+      delete "matches/:match_id/events/:event_id", to: "tournament_matches#destroy_event", as: :match_event
       get :my, to: "tournament_my#show"
-      get "my/entries/:team_registration_id", to: "tournament_my_entries#show", as: :my_entry
+      get "teams/:team_registration_id/players", to: "tournament_players#public_index", as: :team_players
+      patch "my/entries/:team_registration_id/roster/submit", to: "tournament_my_entries#submit_roster", as: :my_entry_roster_submit
+      patch "my/entries/:team_registration_id/roster/unlock", to: "tournament_my_entries#unlock_roster", as: :my_entry_roster_unlock
       get "my/entries/:team_registration_id/players", to: "tournament_players#index", as: :my_entry_players
       get "my/entries/:team_registration_id/players/new", to: "tournament_players#new", as: :new_my_entry_player
       post "my/entries/:team_registration_id/players", to: "tournament_players#create", as: :my_entry_players_create

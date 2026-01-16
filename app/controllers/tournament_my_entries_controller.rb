@@ -7,6 +7,33 @@ class TournamentMyEntriesController < ApplicationController
   def show
   end
 
+  def submit_roster
+    if @entry.roster_locked?
+      return redirect_to my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id), notice: "ส่งรายชื่อแล้ว"
+    end
+
+    if @entry.tournament_players.count.zero?
+      return redirect_to my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id), alert: "ยังไม่มีนักกีฬาในทีมนี้"
+    end
+
+    @entry.update!(
+      roster_locked: true,
+      roster_submitted_at: Time.zone.now,
+      roster_submitted_by_user_id: current_user.id
+    )
+
+    redirect_to my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id), notice: "ส่งรายชื่อนักกีฬาเรียบร้อยแล้ว"
+  end
+
+  def unlock_roster
+    unless can_manage_registrations?(@tournament)
+      return redirect_to my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    @entry.update!(roster_locked: false, roster_submitted_at: nil, roster_submitted_by_user_id: nil)
+    redirect_to my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id), notice: "ปลดล็อครายชื่อนักกีฬาเรียบร้อยแล้ว"
+  end
+
   private
 
   def set_tournament

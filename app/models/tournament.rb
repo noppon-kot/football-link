@@ -2,7 +2,7 @@ class Tournament < ApplicationRecord
   belongs_to :organizer, class_name: "User"
   belongs_to :field
 
-  has_many_attached :images
+  has_many_attached :images, dependent: :purge_later
 
   # status: 0 = pending (รออนุมัติ), 1 = active (แสดงในหน้าค้นหา)
   enum status: { pending: 0, active: 1 }
@@ -43,10 +43,26 @@ class Tournament < ApplicationRecord
 
   before_validation :set_default_status, on: :create
 
+  before_destroy :remember_team_ids_for_cleanup
+  after_destroy :destroy_orphan_teams
+
   private
 
   def set_default_status
     self.status ||= :pending
+  end
+
+  def remember_team_ids_for_cleanup
+    @team_ids_for_cleanup = team_registrations.pluck(:team_id).compact.uniq
+  end
+
+  def destroy_orphan_teams
+    return if @team_ids_for_cleanup.blank?
+
+    Team.where(id: @team_ids_for_cleanup).find_each do |team|
+      next if team.team_registrations.exists?
+      team.destroy
+    end
   end
 
   def registration_dates_must_be_in_order

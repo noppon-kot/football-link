@@ -1,7 +1,8 @@
 <div class="app-shell">
   <div class="tournament-show-body">
     <div class="container py-2">
-      <%= render "tournaments/nav_tabs", active: :my %>
+      <% public_view = !!@public_view %>
+      <%= render "tournaments/nav_tabs", active: (public_view ? :teams : :my) %>
 
       <div class="d-flex justify-content-between align-items-center mb-2" style="gap:8px;">
         <div>
@@ -10,13 +11,42 @@
         </div>
         <div class="d-flex" style="gap:8px;">
           <%= link_to "กลับ",
-                      my_entry_tournament_path(@tournament, team_registration_id: @entry.id),
+                      (public_view ? teams_tournament_path(@tournament) : my_tournament_path(@tournament)),
                       class: "btn btn-sm btn-outline-secondary" %>
-          <%= link_to "เพิ่มนักกีฬา",
-                      new_my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id),
-                      class: "btn btn-sm btn-primary" %>
+          <% can_edit_roster = !public_view && ((!@entry.respond_to?(:roster_locked?) || !@entry.roster_locked?) || can_manage_registrations?(@tournament)) %>
+          <% can_submit_roster = (@entry.respond_to?(:roster_locked?) && !@entry.roster_locked?) %>
+          <% if can_edit_roster %>
+            <%= link_to "เพิ่มนักกีฬา",
+                        new_my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id),
+                        class: "btn btn-sm btn-primary" %>
+          <% end %>
+          <% if can_submit_roster && !public_view %>
+            <%= button_to "ส่งรายชื่อนักกีฬา",
+                          my_entry_roster_submit_tournament_path(@tournament, team_registration_id: @entry.id),
+                          method: :patch,
+                          data: {
+                              turbo_confirm: "ยืนยันส่งรายชื่อนักกีฬา?\n\nโปรดตรวจสอบว่ากรอกข้อมูลนักกีฬาครบแล้ว\nหลังส่งแล้วจะไม่สามารถแก้ไขได้\nหากต้องการแก้ไข ต้องให้ผู้จัด/แอดมินปลดล็อคให้"
+                          },
+                          class: "btn btn-sm btn-warning",
+                          form_class: "inline-form" %>
+          <% end %>
         </div>
       </div>
+
+      <% if @entry.respond_to?(:roster_locked?) && @entry.roster_locked? %>
+        <div class="alert alert-warning">
+          ส่งรายชื่อนักกีฬาแล้ว (ล็อก)
+          <% if !public_view && can_manage_registrations?(@tournament) %>
+            <div class="mt-2">
+              <%= button_to "ปลดล็อคเพื่อแก้ไข",
+                          my_entry_roster_unlock_tournament_path(@tournament, team_registration_id: @entry.id),
+                          method: :patch,
+                          class: "btn btn-sm btn-outline-danger",
+                          form_class: "inline-form" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
 
       <% if flash[:alert].present? %>
         <div class="alert alert-danger"><%= flash[:alert] %></div>
@@ -40,17 +70,19 @@
                     </div>
                   </div>
 
-                  <div class="d-flex" style="gap:6px;flex:0 0 auto;">
-                    <%= link_to "แก้ไข",
-                                edit_my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
-                                class: "btn btn-sm btn-outline-secondary" %>
-                    <%= button_to "ลบ",
-                                  my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
-                                  method: :delete,
-                                  data: { turbo_confirm: "ลบนักกีฬาคนนี้?" },
-                                  class: "btn btn-sm btn-outline-danger",
-                                  form_class: "inline-form" %>
-                  </div>
+                  <% if can_edit_roster %>
+                    <div class="d-flex" style="gap:6px;flex:0 0 auto;">
+                      <%= link_to "แก้ไข",
+                                  edit_my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
+                                  class: "btn btn-sm btn-outline-secondary" %>
+                      <%= button_to "ลบ",
+                                    my_entry_player_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
+                                    method: :delete,
+                                    data: { turbo_confirm: "ลบนักกีฬาคนนี้?" },
+                                    class: "btn btn-sm btn-outline-danger",
+                                    form_class: "inline-form" %>
+                    </div>
+                  <% end %>
                 </div>
               <% end %>
             </div>

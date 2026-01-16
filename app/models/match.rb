@@ -4,6 +4,9 @@ class Match < ApplicationRecord
   belongs_to :home_team, class_name: "Team", optional: true
   belongs_to :away_team, class_name: "Team", optional: true
 
+  has_many :match_lineups, dependent: :destroy
+  has_many :match_events, dependent: :destroy
+
   enum status: { scheduled: 0, finished: 1 }
   enum stage: { group_stage: 0, knockout: 1 }
 

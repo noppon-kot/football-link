@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_16_112500) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_16_131500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -90,6 +90,43 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_16_112500) do
     t.index ["tournament_division_id"], name: "index_groups_on_tournament_division_id"
   end
 
+  create_table "match_events", force: :cascade do |t|
+    t.bigint "match_id", null: false
+    t.bigint "tournament_player_id", null: false
+    t.integer "event_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["match_id", "event_type"], name: "index_match_events_on_match_id_and_event_type"
+    t.index ["match_id"], name: "index_match_events_on_match_id"
+    t.index ["tournament_player_id"], name: "index_match_events_on_tournament_player_id"
+  end
+
+  create_table "match_lineup_players", force: :cascade do |t|
+    t.bigint "match_lineup_id", null: false
+    t.bigint "tournament_player_id", null: false
+    t.integer "role", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["match_lineup_id", "tournament_player_id"], name: "index_mlp_on_lineup_and_player", unique: true
+    t.index ["match_lineup_id"], name: "index_match_lineup_players_on_match_lineup_id"
+    t.index ["tournament_player_id"], name: "index_match_lineup_players_on_tournament_player_id"
+  end
+
+  create_table "match_lineups", force: :cascade do |t|
+    t.bigint "match_id", null: false
+    t.integer "side", null: false
+    t.bigint "team_registration_id"
+    t.bigint "submitted_by_user_id"
+    t.datetime "submitted_at"
+    t.boolean "locked", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["match_id", "side"], name: "index_match_lineups_on_match_id_and_side", unique: true
+    t.index ["match_id"], name: "index_match_lineups_on_match_id"
+    t.index ["submitted_by_user_id"], name: "index_match_lineups_on_submitted_by_user_id"
+    t.index ["team_registration_id"], name: "index_match_lineups_on_team_registration_id"
+  end
+
   create_table "matches", force: :cascade do |t|
     t.bigint "tournament_division_id", null: false
     t.bigint "group_id"
@@ -136,7 +173,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_16_112500) do
     t.datetime "updated_at", null: false
     t.bigint "tournament_division_id"
     t.bigint "manager_user_id"
+    t.boolean "roster_locked", default: false, null: false
+    t.datetime "roster_submitted_at"
+    t.bigint "roster_submitted_by_user_id"
     t.index ["manager_user_id"], name: "index_team_registrations_on_manager_user_id"
+    t.index ["roster_locked"], name: "index_team_registrations_on_roster_locked"
+    t.index ["roster_submitted_by_user_id"], name: "index_team_registrations_on_roster_submitted_by_user_id"
     t.index ["team_id"], name: "index_team_registrations_on_team_id"
     t.index ["tournament_division_id"], name: "index_team_registrations_on_tournament_division_id"
     t.index ["tournament_id"], name: "index_team_registrations_on_tournament_id"
@@ -240,6 +282,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_16_112500) do
   add_foreign_key "admin_messages", "users"
   add_foreign_key "fields", "users"
   add_foreign_key "groups", "tournament_divisions"
+  add_foreign_key "match_events", "matches"
+  add_foreign_key "match_events", "tournament_players"
+  add_foreign_key "match_lineup_players", "match_lineups"
+  add_foreign_key "match_lineup_players", "tournament_players"
+  add_foreign_key "match_lineups", "matches"
+  add_foreign_key "match_lineups", "team_registrations"
+  add_foreign_key "match_lineups", "users", column: "submitted_by_user_id"
   add_foreign_key "matches", "groups"
   add_foreign_key "matches", "teams", column: "away_team_id"
   add_foreign_key "matches", "teams", column: "home_team_id"
@@ -249,6 +298,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_16_112500) do
   add_foreign_key "team_registrations", "teams"
   add_foreign_key "team_registrations", "tournament_divisions"
   add_foreign_key "team_registrations", "users", column: "manager_user_id"
+  add_foreign_key "team_registrations", "users", column: "roster_submitted_by_user_id"
   add_foreign_key "tournament_divisions", "tournaments"
   add_foreign_key "tournament_players", "team_registrations"
   add_foreign_key "tournament_staffs", "tournaments"

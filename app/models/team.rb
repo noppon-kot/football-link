@@ -2,7 +2,7 @@ class Team < ApplicationRecord
   has_many :team_registrations, dependent: :destroy
   has_many :tournaments, through: :team_registrations
 
-  has_one_attached :logo
+  has_one_attached :logo, dependent: :purge_later
 
   validates :name, :contact_name, :contact_phone, presence: true
 

@@ -336,44 +336,46 @@
                                  end %>
                 <% group_or_round = group_name.presence || round_title.presence || "-" %>
 
-                <div class="fixture-match-card">
-                  <div class="fixture-match-card-header">
-                    <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
-                    <div style="white-space:nowrap;">
-                      <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
-                      <span style="color:#78909c;">· <%= group_or_round %> · <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y") : "ยังไม่ได้กำหนดวัน" %></span>
-                    </div>
-                  </div>
-                  <div class="fixture-match-card-body">
-                    <div class="fixture-teams-row">
-                      <div class="fixture-team">
-                        <% if match.home_team&.logo&.attached? %>
-                          <%= image_tag match.home_team.logo, class: "fixture-logo" %>
-                        <% else %>
-                          <div class="fixture-logo"></div>
-                        <% end %>
-                        <div class="fixture-team-name"><%= match.home_name %></div>
-                      </div>
-
-                      <div class="fixture-score">
-                        <% if match.home_score.present? && match.away_score.present? %>
-                          <div class="fixture-score-main"><%= match.home_score %> - <%= match.away_score %></div>
-                        <% else %>
-                          <div class="fixture-score-main">VS</div>
-                        <% end %>
-                      </div>
-
-                      <div class="fixture-team fixture-team--away">
-                        <div class="fixture-team-name"><%= match.away_name %></div>
-                        <% if match.away_team&.logo&.attached? %>
-                          <%= image_tag match.away_team.logo, class: "fixture-logo" %>
-                        <% else %>
-                          <div class="fixture-logo"></div>
-                        <% end %>
+                <%= link_to match_tournament_path(@tournament, match_id: match.id), style: "text-decoration:none;color:inherit;" do %>
+                  <div class="fixture-match-card">
+                    <div class="fixture-match-card-header">
+                      <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
+                      <div style="white-space:nowrap;">
+                        <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
+                        <span style="color:#78909c;">· <%= group_or_round %> · <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y") : "ยังไม่ได้กำหนดวัน" %></span>
                       </div>
                     </div>
+                    <div class="fixture-match-card-body">
+                      <div class="fixture-teams-row">
+                        <div class="fixture-team">
+                          <% if match.home_team&.logo&.attached? %>
+                            <%= image_tag match.home_team.logo, class: "fixture-logo" %>
+                          <% else %>
+                            <div class="fixture-logo"></div>
+                          <% end %>
+                          <div class="fixture-team-name"><%= match.home_name %></div>
+                        </div>
+
+                        <div class="fixture-score">
+                          <% if match.home_score.present? && match.away_score.present? %>
+                            <div class="fixture-score-main"><%= match.home_score %> - <%= match.away_score %></div>
+                          <% else %>
+                            <div class="fixture-score-main">VS</div>
+                          <% end %>
+                        </div>
+
+                        <div class="fixture-team fixture-team--away">
+                          <div class="fixture-team-name"><%= match.away_name %></div>
+                          <% if match.away_team&.logo&.attached? %>
+                            <%= image_tag match.away_team.logo, class: "fixture-logo" %>
+                          <% else %>
+                            <div class="fixture-logo"></div>
+                          <% end %>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                <% end %>
               <% end %>
             </div>
 
@@ -393,7 +395,9 @@
                 <tbody>
                   <% @next_day_matches_page.each_with_index do |match, idx| %>
                     <tr>
-                      <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= ((@day_page - 1) * @day_per_page) + idx + 1 %></td>
+                      <td class="text-center" style="font-size:12px;white-space:nowrap;">
+                        <%= link_to "คู่ที่ #{((@day_page - 1) * @day_per_page) + idx + 1}", match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" %>
+                      </td>
                       <td style="font-size:12px;white-space:nowrap;">
                         <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
                       </td>
@@ -665,7 +669,10 @@
                               <div class="fixture-match-card">
                                 <div class="fixture-match-card-header">
                                   <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
-                                  <div><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></div>
+                                  <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
+                                    <span><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></span>
+                                    <%= link_to "รายละเอียด", match_tournament_path(@tournament, match_id: match.id), class: "btn btn-sm btn-outline-secondary" %>
+                                  </div>
                                 </div>
                                 <div class="fixture-match-card-body">
                                   <div class="fixture-teams-row">
@@ -755,7 +762,9 @@
                                 <% matches.each_with_index do |match, idx| %>
                                   <% played = match.home_score.present? && match.away_score.present? %>
                                   <tr>
-                                    <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= (match.position.presence || (idx + 1)) %></td>
+                                    <td class="text-center" style="font-size:12px;white-space:nowrap;">
+                                      <%= link_to "คู่ที่ #{(match.position.presence || (idx + 1))}", match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" %>
+                                    </td>
                                     <td>
                                       <%= datetime_field_tag "matches[#{match.id}][kickoff_at]",
                                             (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
@@ -796,6 +805,9 @@
                                               class: "form-select form-select-sm",
                                               style: "width:auto;display:inline-block;" %>
                                       </div>
+                                      <div class="mt-1 text-end">
+                                        <%= link_to "รายละเอียด", match_tournament_path(@tournament, match_id: match.id), class: "btn btn-sm btn-outline-secondary" %>
+                                      </div>
 
                                       <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
                                         <div class="mt-1 text-end" style="font-size:11px;">
@@ -823,116 +835,120 @@
                         <div class="d-block d-md-none">
                           <% matches.each_with_index do |match, idx| %>
                             <% hs = match.home_score; as = match.away_score %>
-                            <div class="fixture-match-card">
-                              <div class="fixture-match-card-header">
-                                <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
-                                <div><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></div>
-                              </div>
-                              <div class="fixture-match-card-body">
-                                <div class="fixture-teams-row">
-                                  <div class="fixture-team">
-                                    <% if match.home_team&.logo&.attached? %>
-                                      <%= image_tag match.home_team.logo, class: "fixture-logo" %>
-                                    <% else %>
-                                      <div class="fixture-logo"></div>
-                                    <% end %>
-                                    <div class="fixture-team-name"><%= match.home_name %></div>
-                                  </div>
+                            <%= link_to match_tournament_path(@tournament, match_id: match.id), style: "text-decoration:none;color:inherit;" do %>
+                              <div class="fixture-match-card">
+                                <div class="fixture-match-card-header">
+                                  <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
+                                  <div><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></div>
+                                </div>
+                                <div class="fixture-match-card-body">
+                                  <div class="fixture-teams-row">
+                                    <div class="fixture-team">
+                                      <% if match.home_team&.logo&.attached? %>
+                                        <%= image_tag match.home_team.logo, class: "fixture-logo" %>
+                                      <% else %>
+                                        <div class="fixture-logo"></div>
+                                      <% end %>
+                                      <div class="fixture-team-name"><%= match.home_name %></div>
+                                    </div>
 
-                                  <div class="fixture-score">
-                                    <% if match.home_score.present? && match.away_score.present? %>
-                                      <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
-                                        <% if match.penalty_winner_side == "home" %>
-                                          <div class="fixture-score-main">*<%= hs %> - <%= as %></div>
+                                    <div class="fixture-score">
+                                      <% if match.home_score.present? && match.away_score.present? %>
+                                        <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
+                                          <% if match.penalty_winner_side == "home" %>
+                                            <div class="fixture-score-main">*<%= hs %> - <%= as %></div>
+                                          <% else %>
+                                            <div class="fixture-score-main"><%= hs %> - *<%= as %></div>
+                                          <% end %>
                                         <% else %>
-                                          <div class="fixture-score-main"><%= hs %> - *<%= as %></div>
+                                          <div class="fixture-score-main"><%= hs %> - <%= as %></div>
                                         <% end %>
                                       <% else %>
-                                        <div class="fixture-score-main"><%= hs %> - <%= as %></div>
+                                        <div class="fixture-score-main">VS</div>
                                       <% end %>
-                                    <% else %>
-                                      <div class="fixture-score-main">VS</div>
-                                    <% end %>
-                                  </div>
+                                    </div>
 
-                                  <div class="fixture-team fixture-team--away">
-                                    <div class="fixture-team-name"><%= match.away_name %></div>
-                                    <% if match.away_team&.logo&.attached? %>
-                                      <%= image_tag match.away_team.logo, class: "fixture-logo" %>
-                                    <% else %>
-                                      <div class="fixture-logo"></div>
-                                    <% end %>
+                                    <div class="fixture-team fixture-team--away">
+                                      <div class="fixture-team-name"><%= match.away_name %></div>
+                                      <% if match.away_team&.logo&.attached? %>
+                                        <%= image_tag match.away_team.logo, class: "fixture-logo" %>
+                                      <% else %>
+                                        <div class="fixture-logo"></div>
+                                      <% end %>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          <% end %>
-                        </div>
+                            <% end %>
+                          </div>
 
-                        <div class="table-responsive d-none d-md-block">
-                          <table class="table table-sm align-middle mb-0">
-                            <thead class="table-light">
-                              <tr>
-                                <th scope="col" class="text-center" style="width:60px;">คู่ที่</th>
-                                <th scope="col" style="width:160px;">วันเวลา</th>
-                                <th scope="col">ทีมเหย้า</th>
-                                <th scope="col">ทีมเยือน</th>
-                                <th scope="col" class="text-end">สกอร์</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <% matches.each_with_index do |match, idx| %>
-                                <% played = match.home_score.present? && match.away_score.present? %>
+                          <div class="table-responsive d-none d-md-block">
+                            <table class="table table-sm align-middle mb-0">
+                              <thead class="table-light">
                                 <tr>
-                                  <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= (match.position.presence || (idx + 1)) %></td>
-                                  <td>
-                                    <% if match.kickoff_at.present? %>
-                                      <%= match.kickoff_at.strftime("%d/%m/%Y %H:%M") %>
-                                    <% else %>
-                                      <span class="text-muted" style="font-size:12px;">ยังไม่ได้กำหนด</span>
-                                    <% end %>
-                                  </td>
-                                  <td>
-                                    <div class="d-flex align-items-center" style="gap:6px;">
-                                      <% if match.home_team&.logo&.attached? %>
-                                        <%= image_tag match.home_team.logo,
-                                                      class: "rounded-circle",
-                                                      style: "width:24px;height:24px;object-fit:cover;" %>
+                                  <th scope="col" class="text-center" style="width:60px;">คู่ที่</th>
+                                  <th scope="col" style="width:160px;">วันเวลา</th>
+                                  <th scope="col">ทีมเหย้า</th>
+                                  <th scope="col">ทีมเยือน</th>
+                                  <th scope="col" class="text-end">สกอร์</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <% matches.each_with_index do |match, idx| %>
+                                  <% played = match.home_score.present? && match.away_score.present? %>
+                                  <tr>
+                                    <td class="text-center" style="font-size:12px;white-space:nowrap;">
+                                      <%= link_to "คู่ที่ #{(match.position.presence || (idx + 1))}", match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" %>
+                                    </td>
+                                    <td>
+                                      <% if match.kickoff_at.present? %>
+                                        <%= match.kickoff_at.strftime("%d/%m/%Y %H:%M") %>
+                                      <% else %>
+                                        <span class="text-muted" style="font-size:12px;">ยังไม่ได้กำหนด</span>
                                       <% end %>
-                                      <span><%= match.home_name %></span>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div class="d-flex align-items-center" style="gap:6px;">
-                                      <% if match.away_team&.logo&.attached? %>
-                                        <%= image_tag match.away_team.logo,
-                                                      class: "rounded-circle",
-                                                      style: "width:24px;height:24px;object-fit:cover;" %>
-                                      <% end %>
-                                      <span><%= match.away_name %></span>
-                                    </div>
-                                  </td>
-                                  <td class="text-end">
-                                    <% if match.home_score.present? && match.away_score.present? %>
-                                      <% hs = match.home_score; as = match.away_score %>
-                                      <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
-                                        <% if match.penalty_winner_side == "home" %>
-                                          *<%= hs %> - <%= as %>
+                                    </td>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.home_team&.logo&.attached? %>
+                                          <%= image_tag match.home_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <span><%= match.home_name %></span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div class="d-flex align-items-center" style="gap:6px;">
+                                        <% if match.away_team&.logo&.attached? %>
+                                          <%= image_tag match.away_team.logo,
+                                                        class: "rounded-circle",
+                                                        style: "width:24px;height:24px;object-fit:cover;" %>
+                                        <% end %>
+                                        <span><%= match.away_name %></span>
+                                      </div>
+                                    </td>
+                                    <td class="text-end">
+                                      <% if match.home_score.present? && match.away_score.present? %>
+                                        <% hs = match.home_score; as = match.away_score %>
+                                        <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
+                                          <% if match.penalty_winner_side == "home" %>
+                                            *<%= hs %> - <%= as %>
+                                          <% else %>
+                                            <%= hs %> - *<%= as %>
+                                          <% end %>
                                         <% else %>
-                                          <%= hs %> - *<%= as %>
+                                          <%= hs %> - <%= as %>
                                         <% end %>
                                       <% else %>
-                                        <%= hs %> - <%= as %>
+                                        <span class="text-muted" style="font-size:12px;">-</span>
                                       <% end %>
-                                    <% else %>
-                                      <span class="text-muted" style="font-size:12px;">-</span>
-                                    <% end %>
-                                  </td>
-                                </tr>
-                              <% end %>
-                            </tbody>
-                          </table>
-                        </div>
+                                    </td>
+                                  </tr>
+                                <% end %>
+                              </tbody>
+                            </table>
+                          </div>
+                        <% end %>
                       <% end %>
                     </div>
                   <% end %>

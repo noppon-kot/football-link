@@ -3,10 +3,20 @@ class TournamentPlayersController < ApplicationController
   before_action :set_tournament
   before_action :set_entry
   before_action :require_entry_permission
+  before_action :require_roster_unlocked, only: [:new, :create, :edit, :update, :destroy]
   before_action :set_player, only: [:edit, :update, :destroy]
+
+  skip_before_action :require_login, only: [:public_index]
+  skip_before_action :require_entry_permission, only: [:public_index]
 
   def index
     @players = @entry.tournament_players.order(:full_name, :id)
+  end
+
+  def public_index
+    @public_view = true
+    @players = @entry.tournament_players.order(:full_name, :id)
+    render :index
   end
 
   def new
@@ -64,10 +74,18 @@ class TournamentPlayersController < ApplicationController
 
   def require_entry_permission
     return if admin?
+    return if can_manage_registrations?(@tournament)
     return if @entry.team_registration_managers.where(user_id: current_user.id).exists?
     return if @entry.manager_user_id == current_user.id
 
     redirect_to my_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+  end
+
+  def require_roster_unlocked
+    return if can_manage_registrations?(@tournament)
+    return unless @entry.roster_locked?
+
+    redirect_to my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id), alert: "ส่งรายชื่อนักกีฬาแล้ว ไม่สามารถแก้ไขได้"
   end
 
   def player_params

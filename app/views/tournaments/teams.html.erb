@@ -59,7 +59,7 @@
               </div>
 
               <% if sorted_regs.any? %>
-                <% sorted_regs.each do |reg| %>
+                <% sorted_regs.each_with_index do |reg, reg_idx| %>
                   <% team = reg.team %>
                   <% display_state = case reg.status
                                      when "confirmed", "paid" then :confirmed
@@ -72,15 +72,20 @@
                                    end %>
 
                   <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
-                  <div class="team-list-row">
-                    <div class="d-flex align-items-center" style="gap:8px;">
+                  <div style="padding:10px 0;">
+                    <div class="d-flex align-items-start" style="gap:10px;">
                       <% if team.logo.attached? %>
-                        <%= image_tag team.logo,
-                                      class: "rounded-circle",
-                                      style: "width:32px;height:32px;object-fit:cover;" %>
+                        <%= image_tag team.logo, class: "rounded-circle", style: "width:32px;height:32px;object-fit:cover;flex:0 0 auto;" %>
                       <% end %>
-                      <div>
-                        <div><strong><%= team.name %></strong></div>
+                      <div style="min-width:0;flex:1;">
+                        <% if can_manage_registrations?(@tournament) %>
+                          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></div>
+                        <% else %>
+                          <%= link_to team.name,
+                                team_players_tournament_path(@tournament, team_registration_id: reg.id),
+                                class: "text-decoration-none",
+                                style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
+                        <% end %>
                         <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
                         <% if can_manage_registrations?(@tournament) %>
                           <div class="text-muted" style="font-size:12px;">
@@ -92,33 +97,41 @@
                             <% end %>
                           </div>
                         <% end %>
+
+                        <% status_btn_class = (display_state == :confirmed ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-secondary") %>
+                        <div style="margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
+                          <% if can_manage_registrations?(@tournament) %>
+                            <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
+                            <%= button_to label,
+                                  tournament_team_registration_path(@tournament, reg),
+                                  method: :patch,
+                                  params: { team_registration: { status: target_status } },
+                                  class: status_btn_class,
+                                  form_class: "inline-form" %>
+                            <%= link_to "แก้ไขทีม",
+                                  edit_team_tournament_team_registration_path(@tournament, reg),
+                                  class: "btn btn-sm btn-outline-secondary" %>
+                            <%= link_to "จัดการนักเตะ",
+                                  my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
+                                  class: "btn btn-sm btn-outline-success" %>
+                            <%= link_to "กำหนดผู้จัดการทีม",
+                                  edit_manager_tournament_team_registration_path(@tournament, reg),
+                                  class: "btn btn-sm btn-outline-primary" %>
+                            <%= button_to "ลบ",
+                                  tournament_team_registration_path(@tournament, reg),
+                                  method: :delete,
+                                  data: { turbo_confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
+                                  class: "btn btn-sm btn-outline-danger",
+                                  form_class: "inline-form" %>
+                          <% else %>
+                            <div class="<%= badge_class %>"><%= label %></div>
+                          <% end %>
+                        </div>
                       </div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:6px;">
-                      <% if can_manage_registrations?(@tournament) %>
-                        <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
-                        <%= button_to label,
-                              tournament_team_registration_path(@tournament, reg),
-                              method: :patch,
-                              params: { team_registration: { status: target_status } },
-                              class: "team-status-badge #{badge_class}",
-                              form_class: "inline-form" %>
-                        <%= link_to "แก้ไขทีม",
-                              edit_team_tournament_team_registration_path(@tournament, reg),
-                              class: "btn btn-sm btn-outline-secondary" %>
-                        <%= link_to "กำหนดผู้จัดการทีม",
-                              edit_manager_tournament_team_registration_path(@tournament, reg),
-                              class: "btn btn-sm btn-outline-primary" %>
-                        <%= button_to "ลบ",
-                              tournament_team_registration_path(@tournament, reg),
-                              method: :delete,
-                              data: { turbo_confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
-                              class: "btn-pill btn-secondary",
-                              form_class: "inline-form" %>
-                      <% else %>
-                        <div class="<%= badge_class %>"><%= label %></div>
-                      <% end %>
-                    </div>
+                    <% if reg_idx < (sorted_regs.size - 1) %>
+                      <hr class="my-1" />
+                    <% end %>
                   </div>
                 <% end %>
               <% else %>
@@ -137,7 +150,7 @@
                 </div>
               </div>
               <% sorted_regs = regs_without_div.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
-              <% sorted_regs.each do |reg| %>
+              <% sorted_regs.each_with_index do |reg, reg_idx| %>
                 <% team = reg.team %>
                 <% display_state = case reg.status
                                    when "confirmed", "paid" then :confirmed
@@ -150,41 +163,54 @@
                                  end %>
 
                 <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
-                <div class="team-list-row">
-                  <div class="d-flex align-items-center" style="gap:8px;">
+                <div style="padding:10px 0;">
+                  <div class="d-flex align-items-start" style="gap:10px;">
                     <% if team.logo.attached? %>
-                      <%= image_tag team.logo,
-                                    class: "rounded-circle",
-                                    style: "width:32px;height:32px;object-fit:cover;" %>
+                      <%= image_tag team.logo, class: "rounded-circle", style: "width:32px;height:32px;object-fit:cover;flex:0 0 auto;" %>
                     <% end %>
-                    <div>
-                      <div><strong><%= team.name %></strong></div>
+                    <div style="min-width:0;flex:1;">
+                      <% if can_manage_registrations?(@tournament) %>
+                        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></div>
+                      <% else %>
+                        <%= link_to team.name,
+                              team_players_tournament_path(@tournament, team_registration_id: reg.id),
+                              class: "text-decoration-none",
+                              style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
+                      <% end %>
                       <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
+
+                      <% status_btn_class = (display_state == :confirmed ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-secondary") %>
+                      <div style="margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
+                        <% if can_manage_registrations?(@tournament) %>
+                          <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
+                          <%= button_to label,
+                                tournament_team_registration_path(@tournament, reg),
+                                method: :patch,
+                                params: { team_registration: { status: target_status } },
+                                class: status_btn_class,
+                                form_class: "inline-form" %>
+                          <%= link_to "แก้ไขทีม",
+                                edit_team_tournament_team_registration_path(@tournament, reg),
+                                class: "btn btn-sm btn-outline-secondary" %>
+                          <%= link_to "จัดการนักเตะ",
+                                my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
+                                class: "btn btn-sm btn-outline-success" %>
+                          <%# สำหรับทีมที่ไม่ระบุรุ่น จะไม่มี lock ที่ระดับ division จึงลบได้เสมอ %>
+                          <%= button_to "ลบ",
+                                tournament_team_registration_path(@tournament, reg),
+                                method: :delete,
+                                data: { turbo_confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
+                                class: "btn btn-sm btn-outline-danger",
+                                form_class: "inline-form" %>
+                        <% else %>
+                          <div class="<%= badge_class %>"><%= label %></div>
+                        <% end %>
+                      </div>
                     </div>
                   </div>
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <% if can_manage_registrations?(@tournament) %>
-                      <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
-                      <%= button_to label,
-                            tournament_team_registration_path(@tournament, reg),
-                            method: :patch,
-                            params: { team_registration: { status: target_status } },
-                            class: "team-status-badge #{badge_class}",
-                            form_class: "inline-form" %>
-                      <%= link_to "แก้ไขทีม",
-                            edit_team_tournament_team_registration_path(@tournament, reg),
-                            class: "btn btn-sm btn-outline-secondary" %>
-                      <%# สำหรับทีมที่ไม่ระบุรุ่น จะไม่มี lock ที่ระดับ division จึงลบได้เสมอ %>
-                      <%= button_to "ลบ",
-                            tournament_team_registration_path(@tournament, reg),
-                            method: :delete,
-                            data: { turbo_confirm: "ลบทีมนี้ออกจากรายการแข่ง?" },
-                            class: "btn btn-sm btn-outline-danger",
-                            form_class: "inline-form" %>
-                    <% else %>
-                      <div class="<%= badge_class %>"><%= label %></div>
-                    <% end %>
-                  </div>
+                  <% if reg_idx < (sorted_regs.size - 1) %>
+                    <hr class="my-1" />
+                  <% end %>
                 </div>
               <% end %>
             </div>

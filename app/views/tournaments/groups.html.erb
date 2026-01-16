@@ -324,7 +324,14 @@
                                                         class: "rounded-circle",
                                                         style: "width:24px;height:24px;object-fit:cover;" %>
                                         <% end %>
-                                        <span><%= team_name.presence || "-" %></span>
+                                        <% if assigned_reg.present? && assigned_reg.tournament_players.exists? %>
+                                          <%= link_to team_name,
+                                                    team_players_tournament_path(@tournament, team_registration_id: assigned_reg.id),
+                                                    class: "text-decoration-none",
+                                                    style: "color:inherit;" %>
+                                        <% else %>
+                                          <span><%= team_name.presence || "-" %></span>
+                                        <% end %>
                                       </div>
                                     </td>
                                   </tr>
