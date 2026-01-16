@@ -163,8 +163,8 @@
         }
 
         .fixture-team-name {
-          font-weight: 900;
-          font-size: 16px;
+          font-weight: 400;
+          font-size: 15px;
           line-height: 1.15;
           white-space: nowrap;
           overflow: hidden;
@@ -185,9 +185,9 @@
         }
 
         .fixture-score-main {
-          font-weight: 900;
-          font-size: 18px;
-          letter-spacing: 0.3px;
+          font-weight: 400;
+          font-size: 15px;
+          letter-spacing: 0;
         }
 
         .fixture-score-sub {
@@ -232,28 +232,32 @@
         <div class="card-header fw-bold">Match Day</div>
         <div class="card-body">
           <div class="mb-2">
-            <%= form_with url: fixture_tournament_path(@tournament), method: :get, local: true, class: "d-flex align-items-end", style: "gap:8px;flex-wrap:wrap;" do %>
-              <div>
-                <label class="form-label" style="font-size:12px;margin-bottom:2px;">เลือกวันที่</label>
-                <%= date_field_tag :day,
-                      (@selected_day&.strftime("%Y-%m-%d")),
-                      class: "form-control form-control-sm",
-                      style: "max-width:180px;" %>
+            <%= form_with url: fixture_tournament_path(@tournament), method: :get, local: true, class: "d-flex flex-column", style: "gap:8px;" do %>
+              <div class="d-flex align-items-end flex-wrap" style="gap:8px;">
+                <div>
+                  <label class="form-label" style="font-size:12px;margin-bottom:2px;">เลือกวันที่</label>
+                  <%= date_field_tag :day,
+                        (@selected_day&.strftime("%Y-%m-%d")),
+                        class: "form-control form-control-sm",
+                        style: "max-width:180px;" %>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <button type="submit" class="btn btn-sm btn-outline-primary">ดูวันที่เลือก</button>
+                  <% if @prev_match_day.present? %>
+                    <%= link_to "<<",
+                                fixture_tournament_path(@tournament, day: @prev_match_day.strftime("%Y-%m-%d")),
+                                class: "btn btn-sm btn-outline-secondary" %>
+                  <% end %>
+
+                  <% if @next_match_day_nav.present? %>
+                    <%= link_to ">>",
+                                fixture_tournament_path(@tournament, day: @next_match_day_nav.strftime("%Y-%m-%d")),
+                                class: "btn btn-sm btn-outline-secondary" %>
+                  <% end %>
+                </div>
               </div>
+
               <div>
-                <button type="submit" class="btn btn-sm btn-outline-primary">ดูวันที่เลือก</button>
-                <% if @prev_match_day.present? %>
-                  <%= link_to "<<",
-                              fixture_tournament_path(@tournament, day: @prev_match_day.strftime("%Y-%m-%d")),
-                              class: "btn btn-sm btn-outline-secondary" %>
-                <% end %>
-
-                <% if @next_match_day_nav.present? %>
-                  <%= link_to ">>",
-                              fixture_tournament_path(@tournament, day: @next_match_day_nav.strftime("%Y-%m-%d")),
-                              class: "btn btn-sm btn-outline-secondary" %>
-                <% end %>
-
                 <button type="button" id="fixture-export" class="btn btn-sm btn-success">ดาวโหลดรูปแข่งหน้านี้</button>
               </div>
             <% end %>
@@ -315,13 +319,11 @@
 
                 <div class="fixture-match-card">
                   <div class="fixture-match-card-header">
-                    <div>
-                      <div>คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
-                      <div style="margin-top:2px;font-size:11px;color:#78909c;">
-                        <%= group_or_round %> · <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y") : "ยังไม่ได้กำหนดวัน" %>
-                      </div>
+                    <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
+                    <div style="white-space:nowrap;">
+                      <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
+                      <span style="color:#78909c;">· <%= group_or_round %> · <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y") : "ยังไม่ได้กำหนดวัน" %></span>
                     </div>
-                    <div><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %></div>
                   </div>
                   <div class="fixture-match-card-body">
                     <div class="fixture-teams-row">
@@ -339,7 +341,6 @@
                           <div class="fixture-score-main"><%= match.home_score %> - <%= match.away_score %></div>
                         <% else %>
                           <div class="fixture-score-main">VS</div>
-                          <div class="fixture-score-sub">ยังไม่ระบุสกอร์</div>
                         <% end %>
                       </div>
 
@@ -432,7 +433,7 @@
                         <% if match.home_score.present? && match.away_score.present? %>
                           <%= match.home_score %> - <%= match.away_score %>
                         <% else %>
-                          <span class="text-muted" style="font-size:12px;">ยังไม่ระบุสกอร์</span>
+                          <span class="text-muted" style="font-size:12px;">-</span>
                         <% end %>
                       </td>
                     </tr>
@@ -663,7 +664,6 @@
                                         <div class="fixture-score-main"><%= match.home_score %> - <%= match.away_score %></div>
                                       <% else %>
                                         <div class="fixture-score-main">VS</div>
-                                        <div class="fixture-score-sub">ยังไม่ระบุสกอร์</div>
                                       <% end %>
                                     </div>
 
@@ -833,7 +833,6 @@
                                       <% end %>
                                     <% else %>
                                       <div class="fixture-score-main">VS</div>
-                                      <div class="fixture-score-sub">ยังไม่ระบุสกอร์</div>
                                     <% end %>
                                   </div>
 
@@ -907,7 +906,7 @@
                                         <%= hs %> - <%= as %>
                                       <% end %>
                                     <% else %>
-                                      <span class="text-muted" style="font-size:12px;">ยังไม่ระบุสกอร์</span>
+                                      <span class="text-muted" style="font-size:12px;">-</span>
                                     <% end %>
                                   </td>
                                 </tr>
