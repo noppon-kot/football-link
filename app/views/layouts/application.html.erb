@@ -69,14 +69,14 @@
   <body>
     <div style="max-width:960px;margin:0 auto;">
       <div class="ls-topbar">
-        <button type="button" class="ls-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="เมนู">
+        <button type="button" class="ls-icon-btn ls-icon-btn--left" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="เมนู">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
             <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
 
         <%= link_to root_path, class: "ls-brand", style: "text-decoration:none;" do %>
-          <span>DERNSAI</span>
+          <%= image_tag "dernsai_ban.png", alt: "DERNSAI", class: "ls-brand-img" %>
         <% end %>
 
         <button type="button" class="ls-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#searchDrawer" aria-controls="searchDrawer" aria-label="ค้นหา">
@@ -85,6 +85,18 @@
           </svg>
         </button>
       </div>
+
+      <% if defined?(@tournament) && @tournament.present? && @tournament.persisted? %>
+        <nav class="ls-subnav" aria-label="Tournament navigation">
+          <div class="ls-subnav-scroll">
+            <%= link_to "Info", tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(tournament_path(@tournament))}" %>
+            <%= link_to "Team", teams_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(teams_tournament_path(@tournament))}" %>
+            <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
+            <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
+            <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+          </div>
+        </nav>
+      <% end %>
 
       <div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel" style="width:320px;">
         <div class="offcanvas-header" style="background:#111315;color:#ffffff;">
