@@ -221,8 +221,7 @@
         <% end %>
       </div>
 
-      <% show_events_section = can_manage_registrations?(@tournament) || (current_user && ((@home_entry && can_manage_entry?(@home_entry)) || (@away_entry && can_manage_entry?(@away_entry)))) %>
-      <% if show_events_section %>
+      <% if can_manage_registrations?(@tournament) %>
         <div class="card shadow-sm mt-3">
           <div class="card-body">
             <div class="fw-bold mb-1">เหตุการณ์ (Goals / Cards)</div>
