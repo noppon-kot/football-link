@@ -461,7 +461,6 @@ class TournamentsController < ApplicationController
       @tournament.contact_phone ||= current_user.phone
       @tournament.line_id       ||= current_user.line_id
     end
-    @tournament.tournament_divisions.build
   end
 
   def edit
@@ -482,7 +481,7 @@ class TournamentsController < ApplicationController
         update_attrs[:line_id] = @tournament.line_id       if @tournament.line_id.present?
         current_user.update(update_attrs) if update_attrs.any?
       end
-      redirect_to @tournament, notice: I18n.t("tournaments.flash.create_success")
+      redirect_to mytournaments_path, notice: "#{I18n.t('tournaments.flash.create_success')} รหัสรายการ: #{@tournament.id}"
     else
       render :new, status: :unprocessable_entity
     end

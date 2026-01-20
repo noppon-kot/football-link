@@ -7,11 +7,48 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
+    <% share_title = if defined?(@tournament) && @tournament.present?
+                      @tournament.title
+                    else
+                      "DERNSAI"
+                    end %>
+    <% share_description = if defined?(@tournament) && @tournament.present?
+                            parts = []
+                            parts << tournament_competition_date_label(@tournament) if respond_to?(:tournament_competition_date_label)
+                            parts << @tournament.location_name if @tournament.respond_to?(:location_name)
+                            parts << truncate(strip_tags(@tournament.description.to_s), length: 140) if @tournament.respond_to?(:description)
+                            parts.compact.reject(&:blank?).join(" · ")
+                          else
+                            "รวมรายการฟุตบอล ช่วยจัดตารางแข่งขัน และตารางคะแนน"
+                          end %>
+    <% share_url = request.original_url %>
+    <% share_image_url = begin
+        if defined?(@tournament) && @tournament.present? && @tournament.respond_to?(:images) && @tournament.images.attached?
+          rails_blob_url(@tournament.images.first, host: request.base_url)
+        else
+          URI.join(request.base_url, asset_path("logo.png")).to_s
+        end
+      rescue
+        URI.join(request.base_url, asset_path("logo.png")).to_s
+      end %>
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="DERNSAI">
+    <meta property="og:title" content="<%= share_title %>">
+    <meta property="og:description" content="<%= share_description %>">
+    <meta property="og:url" content="<%= share_url %>">
+    <meta property="og:image" content="<%= share_image_url %>">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= share_title %>">
+    <meta name="twitter:description" content="<%= share_description %>">
+    <meta name="twitter:image" content="<%= share_image_url %>">
+
     <%= yield :head %>
 
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="<%= asset_path "logo.png" %>" type="image/png">
-    <link rel="apple-touch-icon" href="<%= asset_path "logo.png" %>">
+    <link rel="icon" href="<%= asset_path "dernsai_icon.png" %>" type="image/png">
+    <link rel="apple-touch-icon" href="<%= asset_path "dernsai_icon.png" %>">
 
     <!-- Bootstrap 5 CSS via CDN -->
     <link
@@ -60,6 +97,48 @@
 
             <% if can_create_tournaments? %>
               <%= link_to "รายการของฉัน", mytournaments_path, class: "ls-drawer-link" %>
+            <% end %>
+
+            <%= link_to "เพิ่มรายการแข่ง", new_tournament_path, class: "ls-drawer-link" %>
+
+            <% if defined?(@tournament) && @tournament.present? && @tournament.persisted? %>
+              <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
+
+              <% show_my_tab = current_user.present? && (
+                TeamRegistrationManager.joins(:team_registration).where(team_registrations: { tournament_id: @tournament.id }, user_id: current_user.id).exists? ||
+                @tournament.team_registrations.where(manager_user_id: current_user.id).exists?
+              ) %>
+
+              <% can_manage_competition = can_manage_registrations?(@tournament) %>
+
+              <% if can_manage_competition %>
+                <a
+                  class="ls-drawer-link"
+                  data-bs-toggle="collapse"
+                  href="#tournamentCompetitionMenu"
+                  role="button"
+                  aria-expanded="false"
+                  aria-controls="tournamentCompetitionMenu">
+                  จัดการแข่งขัน
+                </a>
+
+                <div class="collapse" id="tournamentCompetitionMenu">
+                  <div class="d-flex flex-column" style="gap:10px;padding-left:10px;">
+                    <%= link_to "Info", tournament_path(@tournament), class: "ls-drawer-link" %>
+                    <% if show_my_tab %>
+                      <%= link_to "My", my_tournament_path(@tournament), class: "ls-drawer-link" %>
+                    <% end %>
+                    <%= link_to "Team", teams_tournament_path(@tournament), class: "ls-drawer-link" %>
+                    <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-drawer-link" %>
+                    <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-drawer-link" %>
+                    <%= link_to "Table", table_tournament_path(@tournament), class: "ls-drawer-link" %>
+                  </div>
+                </div>
+              <% else %>
+                <div class="ls-drawer-link" aria-disabled="true" style="opacity:0.55;cursor:not-allowed;">
+                  จัดการแข่งขัน
+                </div>
+              <% end %>
             <% end %>
 
             <div style="height:1px;background:rgba(255,255,255,0.08);"></div>

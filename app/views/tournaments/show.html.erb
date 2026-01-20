@@ -1,16 +1,23 @@
 <div class="app-shell">
-  <div class="container py-3" style="max-width:720px;">
+  <div class="container py-3" style="max-width:960px;">
     <div class="card shadow-sm" style="border-radius:14px;">
       <div class="card-body" style="padding:14px;">
-        <div class="fw-bold" style="font-size:16px;line-height:1.25;"><%= @tournament.title %></div>
+        <div class="d-flex justify-content-between align-items-start" style="gap:10px;">
+          <div class="fw-bold" style="font-size:clamp(18px, 3.4vw, 26px);line-height:1.15;"><%= @tournament.title %></div>
+          <button type="button" id="share-tournament-btn" class="btn btn-sm btn-outline-secondary" aria-label="แชร์รายการ" style="line-height:1;padding:6px 8px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.1c.1-.3.1-.5.1-.8s0-.5-.1-.8l7-4.1c.5.5 1.2.8 2 .8 1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3c0 .3 0 .5.1.8l-7 4.1c-.5-.5-1.2-.8-2-.8-1.7 0-3 1.3-3 3s1.3 3 3 3c.8 0 1.5-.3 2-.8l7.1 4.1c-.1.2-.1.5-.1.7 0 1.7 1.3 3 3 3s3-1.3 3-3-1.3-3-3-3z" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
         <div class="text-muted" style="font-size:12px;margin-top:6px;">
           <%= tournament_competition_date_label(@tournament) %>
         </div>
         <div class="text-muted" style="font-size:12px;">
-          <%= @tournament.location_name %>
+          <%= @tournament.location_name %> · <%= @tournament.province %>
         </div>
         <% if admin? %>
-          <div class="mt-2" style="display:flex;gap:6px;">
+          <div class="mt-2 d-flex gap-2">
             <%= button_to "ลบรายการแข่ง",
                           tournament_path(@tournament),
                           method: :delete,
@@ -49,66 +56,41 @@
       });
     })();
 
-    // explicit tab handler for main tournament tabs เพื่อให้ซ่อน/แสดง pane ถูกต้องเสมอ
     (function() {
-      function activateTabBySelector(targetSelector) {
-        var tabsContainer = document.getElementById('tournament-main-tabs');
-        var contentContainer = document.getElementById('tournament-main-tabs-content');
-        if (!tabsContainer || !contentContainer) return;
+      var btn = document.getElementById('share-tournament-btn');
+      if (!btn) return;
 
-        var tabLink = tabsContainer.querySelector('[data-bs-target="' + targetSelector + '"]');
-        if (!tabLink) return;
+      btn.addEventListener('click', async function() {
+        var url = window.location.href;
+        var title = "<%= j @tournament.title.to_s %>";
 
-        // toggle active on nav links
-        var allLinks = tabsContainer.querySelectorAll('.nav-link');
-        allLinks.forEach(function(link) { link.classList.remove('active'); });
-        tabLink.classList.add('active');
-
-        // toggle panes
-        var allPanes = contentContainer.querySelectorAll('.tab-pane');
-        allPanes.forEach(function(pane) {
-          pane.classList.remove('show', 'active');
-        });
-
-        var targetPane = contentContainer.querySelector(targetSelector);
-        if (targetPane) {
-          targetPane.classList.add('show', 'active');
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: title, url: url });
+            return;
+          }
+        } catch (e) {
         }
-      }
 
-      document.addEventListener('click', function(e) {
-        var tabLink = e.target.closest('#tournament-main-tabs .nav-link');
-        if (!tabLink) return;
-
-        var targetSelector = tabLink.getAttribute('data-bs-target');
-        if (!targetSelector) return;
-
-        activateTabBySelector(targetSelector);
-      });
-
-      // ถ้าเปิดหน้ามาพร้อม hash ของ panel-schedule ให้สลับแท็บให้อัตโนมัติ
-      document.addEventListener('DOMContentLoaded', function() {
-        if (window.location.hash === '#panel-schedule') {
-          activateTabBySelector('#panel-schedule');
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+            alert('คัดลอกลิงก์แล้ว');
+            return;
+          }
+        } catch (e) {
         }
+
+        window.prompt('คัดลอกลิงก์เพื่อแชร์', url);
       });
     })();
   </script>
 
   <div class="tournament-show-body">
     <div class="container py-2">
-      <!-- Main navigation between subpages -->
-      <%= render "tournaments/nav_tabs", active: :show %>
-
-      <div class="tab-content" id="tournament-main-tabs-content">
-        <div
-          class="tab-pane fade show active"
-          id="panel-general"
-          role="tabpanel"
-          aria-labelledby="tab-general">
-          <div class="row g-3">
-            <div class="col-12">
-              <div class="tournament-info-card card shadow-sm" style="font-size:16px;">
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="tournament-info-card card shadow-sm" style="font-size:16px;">
       <% if @tournament.description.present? %>
         <div class="mb-3">
           <div class="fw-bold mb-1">รายละเอียด</div>
@@ -116,19 +98,20 @@
         </div>
       <% end %>
 
-      <div class="mb-2">
-        <span class="fw-bold">จำนวนผู้เล่น:</span>
-        <span class="ms-1"><%= @tournament.team_size %> คน</span>
-      </div>
-
-      <div class="mb-2">
-        <div><span class="fw-bold">วันเปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_open_on&.strftime("%Y-%m-%d") %></span></div>
-        <div><span class="fw-bold">วันปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_close_on&.strftime("%Y-%m-%d") %></span></div>
+      <div class="fw-bold mb-1">ข้อมูลการแข่งขัน</div>
+      <div class="mb-3">
+        <div><span class="fw-bold">จำนวนผู้เล่น:</span> <span class="ms-1"><%= @tournament.team_size %> คน</span></div>
         <div><span class="fw-bold">วันแข่งขัน:</span> <span class="ms-1">เริ่ม <%= tournament_start_date_label(@tournament) %></span></div>
       </div>
 
+      <div class="fw-bold mb-1">การรับสมัคร</div>
       <div class="mb-3">
-        <span class="fw-bold">สถานะรายการ:</span>
+        <div><span class="fw-bold">วันเปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_open_on&.strftime("%Y-%m-%d") %></span></div>
+        <div><span class="fw-bold">วันปิดรับสมัคร:</span> <span class="ms-1"><%= @tournament.registration_close_on&.strftime("%Y-%m-%d") %></span></div>
+      </div>
+
+      <div class="fw-bold mb-1">สถานะรายการ</div>
+      <div class="mb-3">
         <% status_label = if @tournament.pending?
                             "รออนุมัติจากแอดมิน"
                           elsif @tournament.expired?
@@ -136,7 +119,7 @@
                           else
                             "เปิดให้ค้นหาและสมัครได้"
                           end %>
-        <span class="badge bg-info text-dark ms-1"><%= status_label %></span>
+        <span class="badge bg-info text-dark"><%= status_label %></span>
       </div>
 
       <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
@@ -185,60 +168,53 @@
       <% end %>
 
       <div class="mb-1"><span class="fw-bold">ผู้จัด:</span> <span class="ms-1"><%= @tournament.organizer.name %> (<%= @tournament.organizer.phone %>)</span></div>
-      <% if @tournament.contact_phone.present? %>
-        <div class="mb-2"><span class="fw-bold">เบอร์โทรผู้ติดต่อรายการแข่ง:</span> <span class="ms-1"><%= @tournament.contact_phone %></span></div>
-      <% end %>
-          <% if @tournament.line_id.present? %>
-            <div style="margin-top:8px;">
-              <% line_url = "line://ti/p/~#{@tournament.line_id}" %>
-              <%= link_to "LINE ID: #{@tournament.line_id}",
-                          line_url,
-                          class: "btn-pill btn-apply",
-                          style: "background-color:#00c300;border-color:#00c300;color:#ffffff;" %>
-            </div>
-          <% end %>
       <% if can_edit_tournament?(@tournament) %>
         <div class="mt-3">
           <%= link_to "แก้ไขรายการแข่งนี้", edit_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary" %>
         </div>
       <% end %>
 
-        <div class="mt-3">
-          <%= link_to "สมัครเข้าแข่งขัน",
-                      new_tournament_team_registration_path(@tournament),
-                      class: "btn btn-success w-100" %>
-        </div>
+      <div class="fw-bold mb-1 mt-3">การติดต่อ</div>
+      <div class="mb-0 text-muted" style="font-size:13px;">
+        <% if @tournament.line_id.present? %>
+          <div>LINE ID: <%= @tournament.line_id %></div>
+        <% end %>
+        <% if @tournament.contact_phone.present? %>
+          <div>โทร: <%= @tournament.contact_phone %></div>
+        <% end %>
+      </div>
         </div>
         </div>
       </div>
-
-      <!-- team list moved to /tournaments/:id/teams -->
-        </div> <!-- /col-12 general -->
-      </div>   <!-- /row general -->
-        </div> <!-- /tab-pane general -->
-
-        <div
-          class="tab-pane fade"
-          id="panel-schedule"
-          role="tabpanel"
-          aria-labelledby="tab-schedule">
-          <div class="card shadow-sm">
-            <div class="card-body" style="font-size:13px;">
-              <p class="mb-1 fw-bold">โปรแกรมแข่งขัน</p>
-              <p class="mb-2 text-muted">กรุณาดูหรือจัดการตารางแข่งขันจากหน้าต่างหาก:</p>
-              <%= link_to "ไปที่หน้าโปรแกรมแข่งขัน", fixture_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary" %>
-            </div>
-          </div>
-          <div class="card shadow-sm mt-3">
-            <div class="card-body" style="font-size:13px;">
-              <p class="mb-1 fw-bold">ตารางคะแนน</p>
-              <p class="mb-2 text-muted">กรุณาดูตารางคะแนนจากหน้าต่างหาก:</p>
-              <%= link_to "ไปที่หน้าตารางคะแนน", table_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary" %>
-            </div>
-          </div>
-        </div>
-      </div> <!-- /tab-content main -->
     </div>
   </div>
+
+  <% if @tournament.line_id.present? || @tournament.contact_phone.present? %>
+    <% line_deep_link = @tournament.line_id.present? ? "line://ti/p/~#{@tournament.line_id}" : nil %>
+    <% line_web_link  = @tournament.line_id.present? ? "https://line.me/R/ti/p/~#{@tournament.line_id}" : nil %>
+    <% tel_raw = @tournament.contact_phone.to_s %>
+    <% tel_href = "tel:#{tel_raw.gsub(/[^0-9+]/, '')}" %>
+
+    <div style="position:fixed;left:12px;right:12px;bottom:16px;z-index:1040;max-width:520px;margin:0 auto;">
+      <div class="d-flex" style="gap:10px;">
+        <% if @tournament.line_id.present? %>
+          <%= link_to "LINE: #{@tournament.line_id}",
+                      line_deep_link,
+                      class: "btn btn-success",
+                      style: "flex:1 1 0;background-color:#00c300;border-color:#00c300;color:#ffffff;box-shadow:0 6px 18px rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-size:14px;",
+                      target: "_blank",
+                      rel: "noopener",
+                      data: { fallback_url: line_web_link } %>
+        <% end %>
+
+        <% if @tournament.contact_phone.present? %>
+          <%= link_to "โทร: #{@tournament.contact_phone}",
+                      tel_href,
+                      class: "btn btn-primary",
+                      style: "flex:1 1 0;box-shadow:0 6px 18px rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-size:14px;" %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
 
 </div>

@@ -19,15 +19,11 @@ class Tournament < ApplicationRecord
   accepts_nested_attributes_for :tournament_divisions, allow_destroy: true
 
   validates :title,
-            :description,
             :location_name,
-            :city,
             :province,
-            :team_size,
             :contact_phone,
             :competition_date,
-            :registration_open_on,
-            :registration_close_on,
+            :line_id,
             presence: true
 
   validate :registration_dates_must_be_in_order
@@ -75,6 +71,8 @@ class Tournament < ApplicationRecord
   end
 
   def must_have_at_least_one_division
+    return unless pro?
+
     # อนุญาตให้สร้าง Tournament เปล่า ๆ ได้ในเคสพิเศษ เช่น seed หรือสร้างตรงจาก console
     # ถ้าต้องการบังคับผ่านฟอร์ม จะมี tournament_divisions ติดมาด้วยอยู่แล้ว
     return if new_record? && tournament_divisions.empty?

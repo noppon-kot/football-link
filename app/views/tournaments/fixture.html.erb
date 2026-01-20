@@ -1,108 +1,111 @@
 <div class="app-shell">
-  <% bg_image = "banner2.png" %>
-  <div class="tournament-show-header">
-    <div style="position:absolute;inset:0;background-image:url('<%= asset_path(bg_image) %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
-    <div style="position:relative;">
-      <div class="tournament-show-title"><%= @tournament.title %></div>
-      <div class="tournament-show-subtitle">
-        <%= tournament_competition_date_label(@tournament) %> · <%= @tournament.location_name %>
+  <div class="container py-3" style="max-width:960px;">
+    <div class="card shadow-sm" style="border-radius:14px;">
+      <div class="card-body" style="padding:14px;">
+        <div class="fw-bold" style="font-size:16px;line-height:1.25;"><%= @tournament.title %></div>
+        <div class="text-muted" style="font-size:12px;margin-top:6px;">
+          <%= tournament_competition_date_label(@tournament) %>
+        </div>
+        <div class="text-muted" style="font-size:12px;">
+          <%= @tournament.location_name %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% day_has_result = @next_day_matches_page.any? { |m| m.home_score.present? && m.away_score.present? } %>
+  <% share_title = day_has_result ? "ผลการแข่งขัน" : "MATCH DAY" %>
+  <% theme_primary = day_has_result ? "#0a1b3a" : "#063a2a" %>
+  <% theme_secondary = day_has_result ? "#0b2a4f" : "#0b4a33" %>
+  <% title_accent = day_has_result ? "#8ecbff" : "#d7ff59" %>
+  <% label_accent = day_has_result ? "rgba(142,203,255,0.95)" : "rgba(215,255,89,0.95)" %>
+
+  <div id="fixture-share-card" style="position:fixed;left:-10000px;top:0;width:1080px;height:1350px;overflow:hidden;">
+    <div data-theme-root style="position:relative;width:1080px;height:1350px;background:#071b14;">
+      <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
+      <div data-theme-gradient style="position:absolute;inset:0;background:linear-gradient(135deg, <%= theme_primary %>e0 0%, <%= theme_secondary %>c7 45%, <%= theme_primary %>e0 100%);"></div>
+
+      <div style="position:absolute;left:80px;right:80px;top:48px;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;">
+        <div>
+          <div data-theme-title style="font-size:50px;font-weight:900;letter-spacing:0.4px;line-height:1.05;color:<%= title_accent %>;text-transform:uppercase;">
+            <%= @tournament.title %>
+          </div>
+          <div style="margin-top:12px;font-size:30px;font-weight:900;color:rgba(255,255,255,0.92);letter-spacing:0.8px;">
+            <%= share_title %>
+          </div>
+          <div style="margin-top:8px;font-size:18px;color:rgba(255,255,255,0.88);">
+            <%= @selected_day.present? ? @selected_day.strftime("%d/%m/%Y") : "-" %>
+            <% if @tournament.location_name.present? %>
+              · <%= @tournament.location_name %>
+            <% end %>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
+          <%= image_tag "logox.png", alt: "DERNSAI", style: "width:26px;height:34px;border-radius:6px;object-fit:cover;", crossorigin: "anonymous" %>
+          <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
+        </div>
       </div>
 
-      <% day_has_result = @next_day_matches_page.any? { |m| m.home_score.present? && m.away_score.present? } %>
-      <% share_title = day_has_result ? "ผลการแข่งขัน" : "MATCH DAY" %>
-      <% theme_primary = day_has_result ? "#0a1b3a" : "#063a2a" %>
-      <% theme_secondary = day_has_result ? "#0b2a4f" : "#0b4a33" %>
-      <% title_accent = day_has_result ? "#8ecbff" : "#d7ff59" %>
-      <% label_accent = day_has_result ? "rgba(142,203,255,0.95)" : "rgba(215,255,89,0.95)" %>
+      <div style="position:absolute;left:80px;right:80px;top:250px;bottom:48px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
+        <div style="padding:14px 16px;">
+          <% if @next_day_matches_page.any? %>
+            <% @next_day_matches_page.each do |match| %>
+              <div style="padding:16px 24px 14px 24px;border:1px solid rgba(255,255,255,0.16);border-radius:16px;background:rgba(0,0,0,0.18);margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                  <div style="font-size:21px;font-weight:900;color:#ffffff;">
+                    <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
+                  </div>
+                  <div style="font-size:15px;font-weight:800;color:rgba(255,255,255,0.88);">
+                    <% if match.tournament_division&.name.present? %>
+                      รุ่น <%= match.tournament_division.name %>
+                    <% end %>
+                  </div>
+                </div>
 
-      <div id="fixture-share-card" style="position:fixed;left:-10000px;top:0;width:1080px;height:1350px;overflow:hidden;">
-        <div data-theme-root style="position:relative;width:1080px;height:1350px;background:#071b14;">
-          <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
-          <div data-theme-gradient style="position:absolute;inset:0;background:linear-gradient(135deg, <%= theme_primary %>e0 0%, <%= theme_secondary %>c7 45%, <%= theme_primary %>e0 100%);"></div>
-
-          <div style="position:absolute;left:80px;right:80px;top:48px;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;">
-            <div>
-              <div data-theme-title style="font-size:50px;font-weight:900;letter-spacing:0.4px;line-height:1.05;color:<%= title_accent %>;text-transform:uppercase;">
-                <%= @tournament.title %>
-              </div>
-              <div style="margin-top:12px;font-size:30px;font-weight:900;color:rgba(255,255,255,0.92);letter-spacing:0.8px;">
-                <%= share_title %>
-              </div>
-              <div style="margin-top:8px;font-size:18px;color:rgba(255,255,255,0.88);">
-                <%= @selected_day.present? ? @selected_day.strftime("%d/%m/%Y") : "-" %>
-                <% if @tournament.location_name.present? %>
-                  · <%= @tournament.location_name %>
-                <% end %>
-              </div>
-            </div>
-
-            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
-              <%= image_tag "logox.png", alt: "DERNSAI", style: "width:26px;height:34px;border-radius:6px;object-fit:cover;", crossorigin: "anonymous" %>
-              <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
-            </div>
-          </div>
-
-          <div style="position:absolute;left:80px;right:80px;top:250px;bottom:48px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
-            <div style="padding:14px 16px;">
-              <% if @next_day_matches_page.any? %>
-                <% @next_day_matches_page.each do |match| %>
-                  <div style="padding:16px 24px 14px 24px;border:1px solid rgba(255,255,255,0.16);border-radius:16px;background:rgba(0,0,0,0.18);margin-bottom:10px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                      <div style="font-size:21px;font-weight:900;color:#ffffff;">
-                        <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
-                      </div>
-                      <div style="font-size:15px;font-weight:800;color:rgba(255,255,255,0.88);">
-                        <% if match.tournament_division&.name.present? %>
-                          รุ่น <%= match.tournament_division.name %>
-                        <% end %>
-                      </div>
-                    </div>
-
-                    <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 10px;">
-                      <div style="flex:1;min-width:0;">
-                        <div data-theme-label style="font-size:16px;font-weight:900;color:<%= label_accent %>;margin-bottom:6px;">ทีมเหย้า</div>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                          <% if match.home_team&.logo&.attached? %>
-                            <%= image_tag match.home_team.logo, style: "width:56px;height:56px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
-                          <% else %>
-                            <div style="width:56px;height:56px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
-                          <% end %>
-                          <div style="font-size:32px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            <%= match.home_name %>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style="flex:0 0 auto;text-align:center;">
-                        <div style="font-size:26px;font-weight:900;color:rgba(255,255,255,0.86);letter-spacing:1.2px;">VS</div>
-                        <% if match.home_score.present? && match.away_score.present? %>
-                          <div style="margin-top:4px;font-size:20px;font-weight:900;color:#ffffff;letter-spacing:0.4px;">
-                            <%= match.home_score %> - <%= match.away_score %>
-                          </div>
-                        <% end %>
-                      </div>
-
-                      <div style="flex:1;min-width:0;">
-                        <div data-theme-label style="font-size:16px;font-weight:900;color:<%= label_accent %>;margin-bottom:6px;text-align:right;">ทีมเยือน</div>
-                        <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end;">
-                          <div style="font-size:32px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            <%= match.away_name %>
-                          </div>
-                          <% if match.away_team&.logo&.attached? %>
-                            <%= image_tag match.away_team.logo, style: "width:56px;height:56px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
-                          <% else %>
-                            <div style="width:56px;height:56px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
-                          <% end %>
-                        </div>
+                <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 10px;">
+                  <div style="flex:1;min-width:0;">
+                    <div data-theme-label style="font-size:16px;font-weight:900;color:<%= label_accent %>;margin-bottom:6px;">ทีมเหย้า</div>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <% if match.home_team&.logo&.attached? %>
+                        <%= image_tag match.home_team.logo, style: "width:56px;height:56px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
+                      <% else %>
+                        <div style="width:56px;height:56px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
+                      <% end %>
+                      <div style="font-size:32px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <%= match.home_name %>
                       </div>
                     </div>
                   </div>
-                <% end %>
-              <% else %>
-                <div style="padding:26px 0;color:rgba(255,255,255,0.85);font-size:18px;font-weight:700;">ยังไม่มีข้อมูลสำหรับวันที่นี้</div>
-              <% end %>
-            </div>
-          </div>
+
+                  <div style="flex:0 0 auto;text-align:center;">
+                    <div style="font-size:26px;font-weight:900;color:rgba(255,255,255,0.86);letter-spacing:1.2px;">VS</div>
+                    <% if match.home_score.present? && match.away_score.present? %>
+                      <div style="margin-top:4px;font-size:20px;font-weight:900;color:#ffffff;letter-spacing:0.4px;">
+                        <%= match.home_score %> - <%= match.away_score %>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <div style="flex:1;min-width:0;">
+                    <div data-theme-label style="font-size:16px;font-weight:900;color:<%= label_accent %>;margin-bottom:6px;text-align:right;">ทีมเยือน</div>
+                    <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end;">
+                      <div style="font-size:32px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        <%= match.away_name %>
+                      </div>
+                      <% if match.away_team&.logo&.attached? %>
+                        <%= image_tag match.away_team.logo, style: "width:56px;height:56px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
+                      <% else %>
+                        <div style="width:56px;height:56px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div style="padding:26px 0;color:rgba(255,255,255,0.85);font-size:18px;font-weight:700;">ยังไม่มีข้อมูลสำหรับวันที่นี้</div>
+          <% end %>
         </div>
       </div>
     </div>
@@ -110,8 +113,6 @@
 
   <div class="tournament-show-body">
     <div class="container py-2">
-      <%= render "tournaments/nav_tabs", active: :fixture %>
-
       <h2 style="font-size:18px;font-weight:bold;" class="mb-2">โปรแกรมแข่งขัน</h2>
       <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
       <hr>

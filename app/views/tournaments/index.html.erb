@@ -1,11 +1,6 @@
 <div class="container py-3" style="max-width:720px;">
   <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
     <div class="fw-bold" style="font-size:16px;">รายการแข่งขัน</div>
-    <% if can_create_tournaments? %>
-      <div class="d-flex align-items-center" style="gap:6px;">
-        <%= link_to "รายการของฉัน", mytournaments_path, class: "btn btn-sm", style: "background:#e3f2fd;color:#1565c0;border-color:#90caf9;" %>
-      </div>
-    <% end %>
   </div>
 
   <% if @tournaments.any? %>
@@ -22,7 +17,7 @@
                   วันที่แข่งขัน: <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
                 </div>
                 <div class="text-muted" style="font-size:12px;">
-                  <%= tournament.location_name %> · <%= tournament.city %>, <%= tournament.province %>
+                  <%= tournament.location_name %> · <%= tournament.province %>
                 </div>
                 <div class="text-muted" style="font-size:12px;margin-top:4px;">
                   <% division_names = tournament.tournament_divisions.order(:position, :id).pluck(:name) %>

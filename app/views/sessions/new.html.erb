@@ -8,53 +8,74 @@
     <div class="app-header-title"><%= t('sessions.form.header') %></div>
   </header>
 
-  <div class="tournament-form">
-    <%= form_with url: login_path, scope: :session, local: true do |f| %>
-      <div class="tournament-form-group">
-        <label><%= t('sessions.form.select_user_label') %></label>
-        <%= f.select :user_id,
-              options_from_collection_for_select(@users, :id, :name),
-              { include_blank: t('sessions.form.select_placeholder') },
-              class: "tournament-form-input" %>
-      </div>
+  <% if params[:admin].present? %>
+    <div class="tournament-form">
+      <%= form_with url: login_path, scope: :session, local: true do |f| %>
+        <div class="tournament-form-group">
+          <label><%= t('sessions.form.select_user_label') %></label>
+          <%= f.select :user_id,
+                options_from_collection_for_select(@users, :id, :name),
+                { include_blank: t('sessions.form.select_placeholder') },
+                class: "tournament-form-input" %>
+        </div>
 
-      <div class="tournament-form-group">
-        <label>รหัสผ่าน</label>
-        <%= f.password_field :password, class: "tournament-form-input", autocomplete: "off" %>
-      </div>
+        <div class="tournament-form-group">
+          <label>รหัสผ่าน</label>
+          <%= f.password_field :password, class: "tournament-form-input", autocomplete: "off" %>
+        </div>
 
-      <div class="tournament-form-actions">
-        <%= f.submit t('sessions.form.submit'), class: "link-button" %>
+        <div class="tournament-form-actions">
+          <%= f.submit t('sessions.form.submit'), class: "link-button" %>
+        </div>
+      <% end %>
+      <div class="text-center" style="margin-top:10px;">
+        <%= link_to "กลับไปเข้าสู่ระบบด้วย LINE", login_path, class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
       </div>
-    <% end %>
-  </div>
+    </div>
+  <% else %>
+    <div class="container py-3" style="max-width:520px;">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <%= link_to "เข้าสู่ระบบด้วย LINE", line_login_path,
+                      class: "btn w-100",
+                      style: "background:#00c300;border-color:#00c300;color:#ffffff;font-weight:800;padding:12px 14px;" %>
+
+          <div class="text-center" style="margin-top:12px;">
+            <%= link_to "Admin login", login_path(admin: 1), class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
 </div>
 
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    var userSelect = document.querySelector('select[name="session[user_id]"]');
-    var passwordInput = document.querySelector('input[name="session[password]"]');
+<% if params[:admin].present? %>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var userSelect = document.querySelector('select[name="session[user_id]"]');
+      var passwordInput = document.querySelector('input[name="session[password]"]');
 
-    if (!userSelect || !passwordInput) return;
+      if (!userSelect || !passwordInput) return;
 
-    function updatePassword() {
-      var selectedOption = userSelect.options[userSelect.selectedIndex];
-      if (!selectedOption) {
-        passwordInput.value = "";
-        return;
+      function updatePassword() {
+        var selectedOption = userSelect.options[userSelect.selectedIndex];
+        if (!selectedOption) {
+          passwordInput.value = "";
+          return;
+        }
+
+        var label = (selectedOption.text || "").toLowerCase();
+
+        if (label.indexOf("admin") !== -1) {
+          passwordInput.value = "";
+        } else if (userSelect.value) {
+          passwordInput.value = "qwer";
+        } else {
+          passwordInput.value = "";
+        }
       }
 
-      var label = (selectedOption.text || "").toLowerCase();
-
-      if (label.indexOf("admin") !== -1) {
-        passwordInput.value = "";
-      } else if (userSelect.value) {
-        passwordInput.value = "qwer";
-      } else {
-        passwordInput.value = "";
-      }
-    }
-
-    userSelect.addEventListener("change", updatePassword);
-  });
-</script>
+      userSelect.addEventListener("change", updatePassword);
+    });
+  </script>
+<% end %>
