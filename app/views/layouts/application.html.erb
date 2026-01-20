@@ -31,63 +31,82 @@
 
   <body>
     <div style="max-width:960px;margin:0 auto;">
-      <nav class="navbar navbar-expand-md navbar-light" style="background:#eceff1;border-bottom:1px solid #cfd8dc;position:sticky;top:0;z-index:1030;">
-        <div class="container-fluid" style="padding:4px 12px;display:flex;align-items:center;">
-          <%= link_to root_path, class: "navbar-brand me-2", style: "font-size:13px;color:#1565c0;font-weight:bold;display:flex;align-items:center;gap:4px;" do %>
-            <%= image_tag "logox.png", size: "32x42", alt: "DERNSAI", style: "border-radius:4px;" %>
-            <span>DERNSAI</span>
-          <% end %>
+      <div class="ls-topbar">
+        <button type="button" class="ls-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="เมนู">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
 
-          <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
+        <%= link_to root_path, class: "ls-brand", style: "text-decoration:none;" do %>
+          <span>DERNSAI</span>
+        <% end %>
 
-          <div class="collapse navbar-collapse ms-2" id="topNav">
-            <ul class="navbar-nav me-2 mb-2 mb-md-0" style="font-size:12px;">
-              <% if can_create_tournaments? %>
-                <li class="nav-item">
-                  <%= link_to "รายการของฉัน", mytournaments_path, class: "nav-link" %>
-                </li>
-              <% end %>
+        <button type="button" class="ls-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#searchDrawer" aria-controls="searchDrawer" aria-label="ค้นหา">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path d="M10.5 3a7.5 7.5 0 105.2 12.9l3.4 3.4 1.4-1.4-3.4-3.4A7.5 7.5 0 0010.5 3zm0 2a5.5 5.5 0 110 11 5.5 5.5 0 010-11z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
 
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="moreMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  เพิ่มเติม
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="moreMenu" style="font-size:12px;">
-                  <li>
-                    <a class="dropdown-item" href="#">วิธีใช้งาน</a>
-                  </li>
-                  <!-- เพิ่มเมนูอื่น ๆ ได้ในอนาคต -->
-                </ul>
-              </li>
-            </ul>
+      <div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel" style="width:320px;">
+        <div class="offcanvas-header" style="background:#111315;color:#ffffff;">
+          <h5 class="offcanvas-title" id="mainMenuLabel" style="font-size:16px;">เมนู</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body" style="background:#0f1113;color:#ffffff;">
+          <div class="d-flex flex-column" style="gap:10px;">
+            <%= link_to "รายการแข่งขัน", root_path, class: "ls-drawer-link" %>
 
-            <ul class="navbar-nav ms-auto mb-2 mb-md-0 flex-row" style="font-size:12px;align-items:center;gap:4px;">
-              <% if current_user %>
-                <li class="nav-item">
-                  <span class="nav-link" style="color:#455a64;font-weight:bold;padding-right:4px;"> <%= current_user.name %> </span>
-                </li>
-                <li class="nav-item">
-                  <%= button_to "ออกจากระบบ", logout_path,
-                        method: :delete,
-                        form: { style: "margin:0;display:inline;" },
-                        class: "btn btn-sm",
-                        params: {},
-                        style: "background:#e3f2fd;color:#1565c0;border-color:#90caf9;" %>
-                </li>
-              <% else %>
-                <li class="nav-item">
-                  <%= link_to "เข้าสู่ระบบ", login_path, class: "btn btn-sm btn-outline-primary" %>
-                </li>
-                <li class="nav-item">
-                  <%= link_to "เข้าสู่ระบบด้วย LINE", line_login_path, class: "btn btn-sm btn-success" %>
-                </li>
-              <% end %>
-            </ul>
+            <% if can_create_tournaments? %>
+              <%= link_to "รายการของฉัน", mytournaments_path, class: "ls-drawer-link" %>
+            <% end %>
+
+            <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
+
+            <% if current_user %>
+              <div class="text-muted" style="font-size:12px;"> <%= current_user.name %> </div>
+              <%= button_to "ออกจากระบบ", logout_path,
+                    method: :delete,
+                    form: { style: "margin:0;" },
+                    class: "ls-drawer-button" %>
+            <% else %>
+              <%= link_to "เข้าสู่ระบบ", login_path, class: "ls-drawer-button", style: "text-decoration:none;" %>
+              <%= link_to "เข้าสู่ระบบด้วย LINE", line_login_path, class: "ls-drawer-button ls-drawer-button--line", style: "text-decoration:none;" %>
+            <% end %>
           </div>
         </div>
-      </nav>
+      </div>
+
+      <div class="offcanvas offcanvas-end" tabindex="-1" id="searchDrawer" aria-labelledby="searchDrawerLabel" style="width:360px;">
+        <div class="offcanvas-header" style="background:#111315;color:#ffffff;">
+          <h5 class="offcanvas-title" id="searchDrawerLabel" style="font-size:16px;">ค้นหารายการ</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body" style="background:#0f1113;color:#ffffff;">
+          <%= form_with url: tournaments_path, method: :get, local: true do |f| %>
+            <div class="mb-2">
+              <%= f.text_field :q, value: params[:q], placeholder: "พิมพ์ชื่อรายการ...", class: "form-control", autofocus: true %>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <%= f.select :province,
+                      options_for_select([["ทุกจังหวัด", ""]] + Array(@search_provinces).map { |p| [p, p] }, params[:province]),
+                      {},
+                      class: "form-select" %>
+              </div>
+              <div class="col-6">
+                <%= f.select :age_category,
+                      options_for_select([["ทุกรุ่นอายุ", ""]] + Array(@search_age_categories).map { |a| [a, a] }, params[:age_category]),
+                      {},
+                      class: "form-select" %>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">ค้นหา</button>
+          <% end %>
+          <div class="text-muted" style="font-size:12px;margin-top:10px;">ค้นหาจากชื่อรายการ</div>
+        </div>
+      </div>
 
       <% if flash.present? %>
         <div id="flash-toast-container" style="position:fixed;left:50%;transform:translateX(-50%);bottom:72px;max-width:90%;z-index:1100;pointer-events:none;">

@@ -1,19 +1,22 @@
 <div class="app-shell">
-  <% bg_image = "banner2.png" %>
-  <div class="tournament-show-header">
-    <div style="position:absolute;inset:0;background-image:url('<%= asset_path(bg_image) %>');background-size:cover;background-position:center;filter:brightness(0.8);"></div>
-    <div style="position:relative;">
-      <div class="tournament-show-title"><%= @tournament.title %></div>
-      <div class="tournament-show-subtitle">
-        <%= tournament_competition_date_label(@tournament) %> · <%= @tournament.location_name %>
-      </div>
-      <div class="tournament-show-actions" style="margin-top:6px;display:flex;gap:6px;">
+  <div class="container py-3" style="max-width:720px;">
+    <div class="card shadow-sm" style="border-radius:14px;">
+      <div class="card-body" style="padding:14px;">
+        <div class="fw-bold" style="font-size:16px;line-height:1.25;"><%= @tournament.title %></div>
+        <div class="text-muted" style="font-size:12px;margin-top:6px;">
+          <%= tournament_competition_date_label(@tournament) %>
+        </div>
+        <div class="text-muted" style="font-size:12px;">
+          <%= @tournament.location_name %>
+        </div>
         <% if admin? %>
-          <%= button_to "ลบรายการแข่ง",
-                        tournament_path(@tournament),
-                        method: :delete,
-                        data: { turbo_confirm: "ยืนยันลบรายการแข่งนี้? ข้อมูลทั้งหมดที่เกี่ยวข้องจะถูกลบด้วย" },
-                        class: "btn btn-sm btn-danger" %>
+          <div class="mt-2" style="display:flex;gap:6px;">
+            <%= button_to "ลบรายการแข่ง",
+                          tournament_path(@tournament),
+                          method: :delete,
+                          data: { turbo_confirm: "ยืนยันลบรายการแข่งนี้? ข้อมูลทั้งหมดที่เกี่ยวข้องจะถูกลบด้วย" },
+                          class: "btn btn-sm btn-danger" %>
+          </div>
         <% end %>
       </div>
     </div>
@@ -106,16 +109,6 @@
           <div class="row g-3">
             <div class="col-12">
               <div class="tournament-info-card card shadow-sm" style="font-size:16px;">
-      <% if @tournament.images.attached? %>
-        <div class="mb-3">
-          <% @tournament.images.each do |img| %>
-            <%= image_tag img,
-                          class: "img-fluid rounded",
-                          style: "width:100%;height:auto;" %>
-          <% end %>
-        </div>
-      <% end %>
-
       <% if @tournament.description.present? %>
         <div class="mb-3">
           <div class="fw-bold mb-1">รายละเอียด</div>

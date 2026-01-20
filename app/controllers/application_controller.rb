@@ -5,6 +5,7 @@ class ApplicationController < ActionController::Base
   helper_method :current_user, :logged_in?, :admin?, :can_create_tournaments?, :can_edit_tournament?, :can_manage_registrations?
 
   before_action :require_login
+  before_action :set_global_search_filters
 
   private
 
@@ -40,5 +41,13 @@ class ApplicationController < ActionController::Base
 
     session[:return_to] = request.fullpath
     redirect_to login_path, alert: I18n.t("sessions.flash.login_required")
+  end
+
+  def set_global_search_filters
+    @search_age_categories = Tournament.distinct.order(:age_category).pluck(:age_category).compact.reject(&:blank?)
+    @search_provinces = Tournament.distinct.order(:province).pluck(:province).compact.reject(&:blank?)
+  rescue ActiveRecord::StatementInvalid
+    @search_age_categories = []
+    @search_provinces = []
   end
 end
