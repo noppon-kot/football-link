@@ -38,6 +38,7 @@ class Tournament < ApplicationRecord
   }
 
   before_validation :set_default_status, on: :create
+  before_validation :set_default_plan, on: :create
 
   before_destroy :remember_team_ids_for_cleanup
   after_destroy :destroy_orphan_teams
@@ -46,6 +47,10 @@ class Tournament < ApplicationRecord
 
   def set_default_status
     self.status ||= :pending
+  end
+
+  def set_default_plan
+    self.plan ||= :free
   end
 
   def remember_team_ids_for_cleanup
@@ -102,6 +107,11 @@ class Tournament < ApplicationRecord
   end
 
   public
+
+  def competition_data_present?
+    Group.joins(:tournament_division).where(tournament_divisions: { tournament_id: id }).exists? ||
+      Match.joins(:tournament_division).where(tournament_divisions: { tournament_id: id }).exists?
+  end
 
   def expired?
     competition_date.present? && competition_date < Date.current

@@ -98,6 +98,15 @@ body {
   border-color: rgba(255, 255, 255, 0.95);
 }
 
+.ls-subnav-link.is-disabled {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.ls-subnav-link.is-disabled:hover {
+  opacity: 0.75;
+}
+
 .ls-subnav-link:focus-visible {
   color: #0f1113;
   background: #ffffff;

@@ -37,6 +37,7 @@ Rails.application.routes.draw do
       get :fixture
       get :table
       get :knockout
+      get :package
       get :staff, to: "tournament_staffs#show"
       patch :staff, to: "tournament_staffs#update"
       get "matches/:match_id", to: "tournament_matches#show", as: :match

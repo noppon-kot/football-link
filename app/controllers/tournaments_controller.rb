@@ -2,9 +2,10 @@ require "set"
 
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
-  before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :destroy]
+  before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :destroy]
   before_action :require_edit_permission, only: [:edit, :update]
+  before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
     result = ::Tournaments::IndexService.new(
       params: params,
@@ -66,6 +67,10 @@ class TournamentsController < ApplicationController
 
   def teams
     # ใช้ @tournament จาก set_tournament และ logic เดิมใน view สำหรับทีมที่สนใจ / สมัคร
+  end
+
+  def package
+    # หน้าแสดงแพ็กเกจ/สิทธิ์การใช้งานของรายการนี้
   end
 
   def groups
@@ -527,6 +532,14 @@ class TournamentsController < ApplicationController
     unless can_edit_tournament?(@tournament)
       redirect_to tournaments_path, alert: I18n.t("sessions.flash.login_required")
     end
+  end
+
+  def require_pro_plan
+    return if admin?
+    return if @tournament&.pro?
+    return if @tournament&.competition_data_present?
+
+    redirect_to tournament_path(@tournament), alert: "เมนูนี้รองรับเฉพาะแพ็กเกจ Pro (แพ็กเกจฟรีใช้งานได้เฉพาะ Info และ Team)"
   end
 
   def tournament_params

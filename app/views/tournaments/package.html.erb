@@ -1,0 +1,96 @@
+<div class="container py-3" style="max-width:920px;">
+  <div class="d-flex align-items-start justify-content-between" style="gap:10px;">
+    <div>
+      <div class="text-muted" style="font-size:12px;">แพ็กเกจของรายการ</div>
+      <div class="fw-bold" style="font-size:18px;line-height:1.2;"><%= @tournament.title %></div>
+      <div class="text-muted" style="font-size:12px;margin-top:4px;">รหัสรายการ: <%= @tournament.id %></div>
+    </div>
+
+    <div>
+      <% current_plan_label, current_plan_class = if @tournament.pro?
+                                                    ["Pro", "badge bg-light text-dark"]
+                                                  else
+                                                    ["Starter", "badge bg-secondary"]
+                                                  end %>
+      <span class="<%= current_plan_class %>" style="font-size:12px;">ใช้งานอยู่: <%= current_plan_label %></span>
+    </div>
+  </div>
+
+  <div class="row g-3" style="margin-top:10px;">
+    <div class="col-12 col-md-6">
+      <% starter_border = @tournament.free? ? "border:2px solid #16a34a;" : "border:1px solid rgba(0,0,0,0.14);" %>
+      <div class="card shadow-sm" style="<%= starter_border %>">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between" style="gap:10px;">
+            <div>
+              <div class="fw-bold" style="font-size:16px;">Starter</div>
+              <div class="text-muted" style="font-size:12px;">ฟรี</div>
+            </div>
+            <% if @tournament.free? %>
+              <span class="badge bg-dark" style="font-size:12px;">กำลังใช้งาน</span>
+            <% end %>
+          </div>
+
+          <div class="mt-3" style="font-size:14px;">
+            <div class="fw-semibold">ใช้งานได้</div>
+            <div class="mt-2">
+              - สร้างรายการเองได้ (รอแอดมินอนุมัติก่อนแสดงหน้าแรก)
+              <br>
+              - หมดอายุอัตโนมัติเมื่อถึงวันแข่งแล้ว
+              <br>
+              - เมนู <strong>Info</strong> (ปรับข้อมูลรายการ)
+              <br>
+              - เมนู <strong>Team</strong> (ดูทีมสมัคร)
+            </div>
+
+            <div class="fw-semibold mt-3">ข้อจำกัด</div>
+            <div class="mt-2 text-muted" style="font-size:13px;">
+              - เมนู Group / Fixtures / Table ถูกปิดไว้
+              <br>
+              - การสร้างทีม/จัดทีมให้แอดมินเป็นผู้ดำเนินการ
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <% pro_border = @tournament.pro? ? "border:2px solid #16a34a;" : "border:1px solid rgba(0,0,0,0.14);" %>
+      <div class="card shadow-sm" style="<%= pro_border %>">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between" style="gap:10px;">
+            <div>
+              <div class="fw-bold" style="font-size:16px;">Pro</div>
+              <div class="text-muted" style="font-size:12px;">แพ็กเกจเสียเงิน</div>
+            </div>
+            <% if @tournament.pro? %>
+              <span class="badge bg-dark" style="font-size:12px;">กำลังใช้งาน</span>
+            <% end %>
+          </div>
+
+          <div class="mt-3" style="font-size:14px;">
+            <div class="fw-semibold">ได้ทุกอย่างใน Starter +</div>
+            <div class="mt-2">
+              - จัดการ Group (แบ่งสาย)
+              <br>
+              - จัดการ Fixtures (ตารางแข่ง/ผล)
+              <br>
+              - จัดการ Table (ตารางคะแนน)
+              <br>
+              - เครื่องมือจัดการแข่งขันอื่น ๆ ในเมนูจัดการแข่งขัน
+            </div>
+
+            <% unless @tournament.pro? %>
+              <div class="mt-3">
+                <%= link_to "ติดต่ออัปเกรดเป็น Pro", new_admin_message_path(tournament_id: @tournament.id, message_type: "payment_notify"), class: "btn btn-dark w-100" %>
+                <div class="text-muted" style="font-size:12px;margin-top:6px;">
+                  แอดมินจะเป็นผู้ปรับแพ็กเกจให้หลังตรวจสอบการชำระเงิน
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

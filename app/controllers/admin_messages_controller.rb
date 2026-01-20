@@ -51,6 +51,7 @@ class AdminMessagesController < ApplicationController
   def new
     @admin_message = AdminMessage.new
     @admin_message.tournament_id = params[:tournament_id] if params[:tournament_id].present?
+    @admin_message.message_type = params[:message_type] if params[:message_type].present?
   end
 
   def create

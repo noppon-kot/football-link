@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "DERNSAI – โปรแกรมช่วยจัดการรายการแข่งขันฟุตบอลออนไลน์ รวบรวมรายการฟุตบอล ช่วยจัดตารางแข่งขัน และตารางคะแนน" %></title>
+    <title><%= content_for(:title) || "DERNSAI.com – รวบรวมรายการฟุตบอล ช่วยจัดตารางแข่งขัน และตารางคะแนน" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
@@ -89,13 +89,43 @@
       <% if defined?(@tournament) && @tournament.present? && @tournament.persisted? %>
         <nav class="ls-subnav" aria-label="Tournament navigation">
           <div class="ls-subnav-scroll">
+            <% pro_enabled = admin? || @tournament.pro? || @tournament.competition_data_present? %>
             <%= link_to "Info", tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(tournament_path(@tournament))}" %>
             <%= link_to "Team", teams_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(teams_tournament_path(@tournament))}" %>
-            <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
-            <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
-            <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+            <% if pro_enabled %>
+              <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
+              <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
+              <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+            <% else %>
+              <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Group</a>
+              <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Fixtures</a>
+              <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Table</a>
+            <% end %>
           </div>
         </nav>
+
+        <% unless pro_enabled %>
+          <div class="modal fade" id="planUpgradeModal" tabindex="-1" aria-labelledby="planUpgradeModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content" style="background:#111315;color:#ffffff;border:1px solid rgba(255,255,255,0.10);">
+                <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.10);">
+                  <h5 class="modal-title" id="planUpgradeModalLabel" style="font-size:16px;">ฟีเจอร์สำหรับแพ็กเกจ Pro</h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="font-size:14px;">
+                  แพ็กเกจฟรีใช้งานได้เฉพาะ <strong>Info</strong> และ <strong>Team</strong> เท่านั้น
+                  <div class="text-muted" style="font-size:12px;margin-top:6px;">
+                    ต้องการใช้งาน Group / Fixtures / Table กรุณาอัปเกรดเป็นแพ็กเกจ Pro
+                  </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid rgba(255,255,255,0.10);">
+                  <%= link_to "ดูรายละเอียดแพ็กเกจ", package_tournament_path(@tournament), class: "btn btn-light" %>
+                  <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">ปิด</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
       <% end %>
 
       <div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel" style="width:320px;">
@@ -105,7 +135,7 @@
         </div>
         <div class="offcanvas-body" style="background:#0f1113;color:#ffffff;">
           <div class="d-flex flex-column" style="gap:10px;">
-            <%= link_to "รายการแข่งขัน", root_path, class: "ls-drawer-link" %>
+            <%= link_to "รายการแข่งขันทั้งหมด", root_path, class: "ls-drawer-link" %>
 
             <% if can_create_tournaments? %>
               <%= link_to "รายการของฉัน", mytournaments_path, class: "ls-drawer-link" %>
@@ -120,37 +150,6 @@
                 TeamRegistrationManager.joins(:team_registration).where(team_registrations: { tournament_id: @tournament.id }, user_id: current_user.id).exists? ||
                 @tournament.team_registrations.where(manager_user_id: current_user.id).exists?
               ) %>
-
-              <% can_manage_competition = can_manage_registrations?(@tournament) %>
-
-              <% if can_manage_competition %>
-                <a
-                  class="ls-drawer-link"
-                  data-bs-toggle="collapse"
-                  href="#tournamentCompetitionMenu"
-                  role="button"
-                  aria-expanded="false"
-                  aria-controls="tournamentCompetitionMenu">
-                  จัดการแข่งขัน
-                </a>
-
-                <div class="collapse" id="tournamentCompetitionMenu">
-                  <div class="d-flex flex-column" style="gap:10px;padding-left:10px;">
-                    <%= link_to "Info", tournament_path(@tournament), class: "ls-drawer-link" %>
-                    <% if show_my_tab %>
-                      <%= link_to "My", my_tournament_path(@tournament), class: "ls-drawer-link" %>
-                    <% end %>
-                    <%= link_to "Team", teams_tournament_path(@tournament), class: "ls-drawer-link" %>
-                    <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-drawer-link" %>
-                    <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-drawer-link" %>
-                    <%= link_to "Table", table_tournament_path(@tournament), class: "ls-drawer-link" %>
-                  </div>
-                </div>
-              <% else %>
-                <div class="ls-drawer-link" aria-disabled="true" style="opacity:0.55;cursor:not-allowed;">
-                  จัดการแข่งขัน
-                </div>
-              <% end %>
             <% end %>
 
             <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
