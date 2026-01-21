@@ -28,16 +28,35 @@
         <%= f.file_field :images,
               multiple: true,
               accept: "image/*",
-              class: "form-control" %>
+              class: "form-control#{' is-invalid' if @tournament.errors[:images].present?}" %>
+
+        <% if @tournament.persisted? && @tournament.images.attached? %>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <% @tournament.images.each do |image| %>
+              <% next unless image.persisted? && image.blob&.persisted? %>
+              <div style="width:56px;height:56px;border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,0.12);background:#ffffff;">
+                <% begin %>
+                  <%= image_tag image.variant(resize_to_limit: [120, 120]), style: "width:56px;height:56px;object-fit:cover;display:block;" %>
+                <% rescue %>
+                  <%= image_tag image, style: "width:56px;height:56px;object-fit:cover;display:block;" %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if @tournament.errors[:images].present? %>
+          <div class="tournament-form-error"><%= @tournament.errors[:images].first %></div>
+        <% end %>
       </div>
 
       <div class="tournament-form-group">
         <label><%= t('tournaments.form.fields.title') %></label>
         <%= f.text_field :title,
-              class: "tournament-form-input",
+              class: "tournament-form-input#{' is-invalid' if @tournament.errors[:title].present?}",
               placeholder: t('tournaments.form.placeholders.title') %>
         <% if @tournament.errors[:title].present? %>
-          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกชื่อรายการแข่ง</div>
+          <div class="tournament-form-error">กรุณากรอกชื่อรายการแข่ง</div>
         <% end %>
       </div>
 
@@ -48,17 +67,17 @@
 
       <div class="tournament-form-group">
         <label><%= t('tournaments.form.fields.location_name') %></label>
-        <%= f.text_field :location_name, class: "tournament-form-input tournament-form-input--medium" %>
+        <%= f.text_field :location_name, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if @tournament.errors[:location_name].present?}" %>
         <% if @tournament.errors[:location_name].present? %>
-          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกชื่อสนาม / สถานที่แข่งขัน</div>
+          <div class="tournament-form-error">กรุณากรอกชื่อสนาม / สถานที่แข่งขัน</div>
         <% end %>
       </div>
 
       <div class="tournament-form-group">
         <label>วันที่แข่งขัน</label>
-        <%= f.date_field :competition_date, class: "tournament-form-input tournament-form-input--medium" %>
+        <%= f.date_field :competition_date, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if @tournament.errors[:competition_date].present?}" %>
         <% if @tournament.errors[:competition_date].present? %>
-          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาระบุวันที่แข่งขัน</div>
+          <div class="tournament-form-error">กรุณาระบุวันที่แข่งขัน</div>
         <% end %>
       </div>
 
@@ -68,31 +87,176 @@
         <%= f.select :province,
               options_for_select(thai_provinces, @tournament.province),
               { include_blank: "เลือกจังหวัด" },
-              class: "tournament-form-input" %>
+              class: "tournament-form-input#{' is-invalid' if @tournament.errors[:province].present?}" %>
         <% if @tournament.errors[:province].present? %>
-          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณาเลือกจังหวัด</div>
+          <div class="tournament-form-error">กรุณาเลือกจังหวัด</div>
         <% end %>
       </div>
 
       <div class="tournament-form-group">
         <label>LINE ID สำหรับติดต่อ</label>
-        <%= f.text_field :line_id, class: "tournament-form-input" %>
+        <%= f.text_field :line_id, class: "tournament-form-input#{' is-invalid' if @tournament.errors[:line_id].present?}" %>
         <% if @tournament.errors[:line_id].present? %>
-          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอก LINE ID สำหรับติดต่อ</div>
+          <div class="tournament-form-error">กรุณากรอก LINE ID สำหรับติดต่อ</div>
         <% end %>
       </div>
 
       <div class="tournament-form-group">
         <label>เบอร์โทรติดต่อ</label>
-        <%= f.text_field :contact_phone, class: "tournament-form-input" %>
+        <%= f.text_field :contact_phone, class: "tournament-form-input#{' is-invalid' if @tournament.errors[:contact_phone].present?}" %>
         <% if @tournament.errors[:contact_phone].present? %>
-          <div style="font-size:11px;color:#e53935;margin-top:2px;">กรุณากรอกเบอร์โทรติดต่อ</div>
+          <div class="tournament-form-error">กรุณากรอกเบอร์โทรติดต่อ</div>
         <% end %>
       </div>
 
+      <% if @tournament.persisted? %>
+        <div class="tournament-form-group">
+          <label>วันเปิดรับสมัคร</label>
+          <%= f.date_field :registration_open_on, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if @tournament.errors[:registration_open_on].present?}" %>
+          <% if @tournament.errors[:registration_open_on].present? %>
+            <div class="tournament-form-error"><%= @tournament.errors[:registration_open_on].first %></div>
+          <% end %>
+        </div>
+
+        <div class="tournament-form-group">
+          <label>วันปิดรับสมัคร</label>
+          <%= f.date_field :registration_close_on, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if @tournament.errors[:registration_close_on].present?}" %>
+          <% if @tournament.errors[:registration_close_on].present? %>
+            <div class="tournament-form-error"><%= @tournament.errors[:registration_close_on].first %></div>
+          <% end %>
+        </div>
+
+        <div class="tournament-form-group">
+          <label>จำนวนผู้เล่นต่อทีม</label>
+          <%= f.number_field :team_size, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if @tournament.errors[:team_size].present?}", min: 1 %>
+          <% if @tournament.errors[:team_size].present? %>
+            <div class="tournament-form-error"><%= @tournament.errors[:team_size].first %></div>
+          <% end %>
+        </div>
+
+        <div class="tournament-form-group">
+          <label>รายละเอียด</label>
+          <%= f.text_area :description, class: "tournament-form-input#{' is-invalid' if @tournament.errors[:description].present?}", rows: 4 %>
+          <% if @tournament.errors[:description].present? %>
+            <div class="tournament-form-error"><%= @tournament.errors[:description].first %></div>
+          <% end %>
+        </div>
+
+        <div class="tournament-form-group">
+          <label>ลิงก์ Google Maps</label>
+          <%= f.text_field :google_maps_url, class: "tournament-form-input#{' is-invalid' if @tournament.errors[:google_maps_url].present?}" %>
+          <% if @tournament.errors[:google_maps_url].present? %>
+            <div class="tournament-form-error"><%= @tournament.errors[:google_maps_url].first %></div>
+          <% end %>
+        </div>
+
+        <div class="tournament-form-group">
+          <label>รุ่นที่เปิดแข่ง (เพิ่มได้สูงสุด 5 รุ่น)</label>
+          <div id="division-list" style="display:flex;flex-direction:column;gap:10px;">
+            <% shown_blank = false %>
+            <%= f.fields_for :tournament_divisions do |df| %>
+              <% is_blank_row = df.object.new_record? && df.object.name.blank? && df.object.entry_fee.blank? && df.object.prize_amount.blank? %>
+              <% hide_row = is_blank_row && shown_blank %>
+              <% shown_blank = true if is_blank_row && !shown_blank %>
+
+              <div class="division-item" style="<%= 'display:none;' if hide_row %>">
+                <div class="card" style="border-radius:12px;">
+                  <div class="card-body" style="padding:12px;">
+                    <div class="mb-2">
+                      <label style="font-size:12px;">ชื่อรุ่น</label>
+                      <%= df.text_field :name, class: "tournament-form-input#{' is-invalid' if df.object.errors[:name].present?}", placeholder: "เช่น U12 / U15 / Open" %>
+                      <% if df.object.errors[:name].present? %>
+                        <div class="tournament-form-error"><%= df.object.errors[:name].first %></div>
+                      <% end %>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                      <div>
+                        <label style="font-size:12px;">ค่าสมัคร</label>
+                        <%= df.number_field :entry_fee, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if df.object.errors[:entry_fee].present?}", min: 0 %>
+                        <% if df.object.errors[:entry_fee].present? %>
+                          <div class="tournament-form-error"><%= df.object.errors[:entry_fee].first %></div>
+                        <% end %>
+                      </div>
+                      <div>
+                        <label style="font-size:12px;">เงินรางวัล</label>
+                        <%= df.number_field :prize_amount, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if df.object.errors[:prize_amount].present?}", min: 0 %>
+                        <% if df.object.errors[:prize_amount].present? %>
+                          <div class="tournament-form-error"><%= df.object.errors[:prize_amount].first %></div>
+                        <% end %>
+                      </div>
+                    </div>
+
+                    <div class="mt-2">
+                      <label style="font-size:12px;">รูปแบบแข่ง</label>
+                      <%= df.select :match_format,
+                            options_for_select([['เตะนัดเดียว', 'single_leg'], ['เหย้า-เยือน', 'home_away']], df.object.match_format),
+                            { include_blank: false },
+                            class: "tournament-form-input" %>
+                    </div>
+
+                    <% if df.object.persisted? %>
+                      <div class="mt-2" style="display:flex;align-items:center;gap:8px;">
+                        <%= df.check_box :_destroy %>
+                        <label style="font-size:12px;margin:0;">ลบรุ่นนี้</label>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <div class="mt-2">
+            <button type="button" id="add-division-btn" class="btn btn-sm btn-success">เพิ่มรุ่น</button>
+          </div>
+
+          <script>
+            (function() {
+              var btn = document.getElementById('add-division-btn');
+              var list = document.getElementById('division-list');
+              if (!btn || !list) return;
+
+              var setRowEnabled = function(row, enabled) {
+                if (!row) return;
+                var fields = row.querySelectorAll('input, select, textarea');
+                fields.forEach(function(el) {
+                  if (enabled) {
+                    el.removeAttribute('disabled');
+                  } else {
+                    el.setAttribute('disabled', 'disabled');
+                  }
+                });
+              };
+
+              var refresh = function() {
+                var hidden = list.querySelectorAll('.division-item[style*="display:none"]');
+                btn.disabled = hidden.length === 0;
+              };
+
+              // แถวที่ถูกซ่อนไว้ (ยังไม่ได้กดเพิ่มรุ่น) ต้องไม่ถูกส่งขึ้น server เพื่อไม่ให้ validate
+              list.querySelectorAll('.division-item').forEach(function(row) {
+                var isHidden = row.style.display === 'none';
+                setRowEnabled(row, !isHidden);
+              });
+
+              btn.addEventListener('click', function() {
+                var hidden = list.querySelectorAll('.division-item[style*="display:none"]');
+                if (!hidden.length) return;
+                hidden[0].style.display = '';
+                setRowEnabled(hidden[0], true);
+                refresh();
+              });
+
+              refresh();
+            })();
+          </script>
+        </div>
+      <% end %>
+
       <div class="tournament-form-actions">
         <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <%= f.submit t('tournaments.form.submit.create'), class: "btn btn-primary" %>
+          <%= f.submit(@tournament.persisted? ? "Update รายการ" : t('tournaments.form.submit.create'), class: "btn btn-primary") %>
         </div>
       </div>
     <% end %>

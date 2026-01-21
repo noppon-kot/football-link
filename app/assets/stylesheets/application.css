@@ -26,6 +26,140 @@ body {
   background: #ffffff;
 }
 
+body.theme-green {
+  background: #ffffff;
+  color: rgba(0, 0, 0, 0.92);
+}
+
+body.theme-green .app-shell {
+  background: #ffffff;
+}
+
+body.theme-green .app-shell {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
+}
+
+body.theme-green .card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.92);
+}
+
+body.theme-green .text-muted {
+  color: rgba(0, 0, 0, 0.65) !important;
+}
+
+body.theme-green .ls-subnav {
+  background: #16a34a;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+body.theme-green .ls-subnav-link {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.10);
+}
+
+body.theme-green .ls-subnav-link:hover {
+  color: rgba(255, 255, 255, 1);
+  background: rgba(0, 0, 0, 0.16);
+}
+
+body.theme-green .ls-subnav-link.is-active {
+  color: #16a34a;
+  background: #ffffff;
+  border-color: rgba(255, 255, 255, 0.95);
+}
+
+body.theme-green .page-link {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.92);
+}
+
+body.theme-green .page-item.active .page-link {
+  background: #111315;
+  border-color: #111315;
+  color: #ffffff;
+}
+
+body.theme-green .alert {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.92);
+}
+
+body.theme-green .btn-primary {
+  background-color: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+body.theme-green .btn-primary:hover,
+body.theme-green .btn-primary:focus {
+  background-color: #12853c;
+  border-color: #12853c;
+  color: #ffffff;
+}
+
+.btn-dark,
+body.theme-green .btn-dark {
+  color: #ffffff;
+}
+
+.btn-dark:hover,
+.btn-dark:focus,
+body.theme-green .btn-dark:hover,
+body.theme-green .btn-dark:focus {
+  color: #ffffff;
+}
+
+.btn-light,
+body.theme-green .btn-light {
+  color: #16a34a;
+}
+
+.btn-light:hover,
+.btn-light:focus,
+body.theme-green .btn-light:hover,
+body.theme-green .btn-light:focus {
+  color: #0b5b33;
+}
+
+.btn-success,
+body.theme-green .btn-success {
+  color: #ffffff;
+}
+
+.btn-success:hover,
+.btn-success:focus,
+body.theme-green .btn-success:hover,
+body.theme-green .btn-success:focus {
+  color: #ffffff;
+}
+
+body.theme-green .btn-outline-primary {
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.65);
+}
+
+body.theme-green .btn-outline-primary:hover,
+body.theme-green .btn-outline-primary:focus {
+  background-color: rgba(22, 163, 74, 0.12);
+  color: #0f3b23;
+  border-color: rgba(22, 163, 74, 0.85);
+}
+
+body.theme-green a {
+  color: #0f6d3a;
+}
+
+body.theme-green a:hover {
+  color: #0b5b33;
+}
+
 .ls-topbar {
   position: sticky;
   top: 0;
@@ -127,6 +261,18 @@ body {
   justify-content: center;
 }
 
+.ls-icon-btn--search {
+  background: rgba(22, 163, 74, 0.18);
+  border-color: rgba(22, 163, 74, 0.40);
+  color: rgba(215, 255, 89, 0.98);
+}
+
+.ls-icon-btn--search:hover {
+  background: rgba(22, 163, 74, 0.26);
+  border-color: rgba(22, 163, 74, 0.55);
+  color: rgba(215, 255, 89, 1);
+}
+
 .ls-icon-btn--left {
   margin-left: 8px;
   margin-right: 8px;
@@ -146,9 +292,17 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+body.theme-green .ls-drawer-link {
+  color: #ffffff;
+}
+
 .ls-drawer-link:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.06);
+}
+
+body.theme-green .ls-drawer-link:hover {
+  color: #ffffff;
 }
 
 .ls-drawer-button {
@@ -163,9 +317,17 @@ body {
   color: #ffffff;
 }
 
+body.theme-green .ls-drawer-button {
+  color: #ffffff;
+}
+
 .ls-drawer-button--line {
   background: #16a34a;
   border-color: rgba(0, 0, 0, 0.2);
+}
+
+.ls-user-name {
+  color: #ffffff;
 }
 
 
@@ -175,6 +337,10 @@ body {
   color: #fff;
   padding: 12px 16px 16px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+body.theme-green .app-header {
+  background: linear-gradient(135deg, #0b5b33, #16a34a);
 }
 
 .app-header-title {
@@ -812,6 +978,29 @@ body {
   border-radius: 8px;
   border: 1px solid #cfd8dc;
   font-size: 13px;
+}
+
+.tournament-form-input.is-invalid {
+  border-color: #e53935;
+  background: rgba(229, 57, 53, 0.06);
+}
+
+.form-control.is-invalid {
+  border-color: #e53935;
+  background: rgba(229, 57, 53, 0.06);
+}
+
+.tournament-form-error {
+  font-size: 11px;
+  color: #e53935;
+  margin-top: 2px;
+}
+
+.tournament-page-title {
+  font-size: clamp(18px, 3.4vw, 26px);
+  line-height: 1.15;
+  font-weight: 800;
+  color: #0b5b33;
 }
 
 /* ใช้กับช่องตัวเลขที่ไม่ควรยาวเกินไป เช่น จำนวนผู้เล่นต่อทีม */

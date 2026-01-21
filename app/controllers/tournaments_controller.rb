@@ -469,6 +469,11 @@ class TournamentsController < ApplicationController
   end
 
   def edit
+    # เติมช่องว่างสำหรับเพิ่มรุ่น (ไม่ใช้ JS) ให้แก้ไขภายหลังได้
+    max_divisions = 5
+    existing = @tournament.tournament_divisions.size
+    to_build = [max_divisions - existing, 0].max
+    to_build.times { @tournament.tournament_divisions.build }
   end
 
   def create
@@ -486,7 +491,7 @@ class TournamentsController < ApplicationController
         update_attrs[:line_id] = @tournament.line_id       if @tournament.line_id.present?
         current_user.update(update_attrs) if update_attrs.any?
       end
-      redirect_to mytournaments_path, notice: "#{I18n.t('tournaments.flash.create_success')} รหัสรายการ: #{@tournament.id}"
+      redirect_to tournament_path(@tournament), notice: "#{I18n.t('tournaments.flash.create_success')} รหัสรายการ: #{@tournament.id}"
     else
       render :new, status: :unprocessable_entity
     end
@@ -496,6 +501,8 @@ class TournamentsController < ApplicationController
     @tournament = Tournament.find(params[:id])
     permitted = tournament_params.to_h
 
+    ok = false
+
     # ถ้าไม่ได้เลือกไฟล์รูปใหม่ อย่าไปแตะ images เดิม
     if permitted.key?("images")
       images_val = permitted["images"]
@@ -504,9 +511,19 @@ class TournamentsController < ApplicationController
       end
     end
 
-    service = ::Tournaments::UpdateService.new(@tournament, permitted)
+    ActiveRecord::Base.transaction do
+      # มีการอัปโหลดรูปใหม่: แทนที่รูปเดิม (ระบบจำกัด 1 รูป)
+      if permitted.key?("images")
+        @tournament.images_attachments.destroy_all if @tournament.images.attached?
+      end
 
-    if service.call
+      service = ::Tournaments::UpdateService.new(@tournament, permitted)
+      ok = service.call
+
+      raise ActiveRecord::Rollback unless ok
+    end
+
+    if ok
       redirect_to @tournament, notice: I18n.t("tournaments.flash.update_success")
     else
       render :edit, status: :unprocessable_entity

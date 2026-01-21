@@ -66,7 +66,7 @@
       crossorigin="anonymous"></script>
   </head>
 
-  <body>
+  <body class="theme-green">
     <div style="max-width:960px;margin:0 auto;">
       <div class="ls-topbar">
         <button type="button" class="ls-icon-btn ls-icon-btn--left" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="เมนู">
@@ -79,7 +79,7 @@
           <%= image_tag "dernsai_ban.png", alt: "DERNSAI", class: "ls-brand-img" %>
         <% end %>
 
-        <button type="button" class="ls-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#searchDrawer" aria-controls="searchDrawer" aria-label="ค้นหา">
+        <button type="button" class="ls-icon-btn ls-icon-btn--search" data-bs-toggle="offcanvas" data-bs-target="#searchDrawer" aria-controls="searchDrawer" aria-label="ค้นหา">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
             <path d="M10.5 3a7.5 7.5 0 105.2 12.9l3.4 3.4 1.4-1.4-3.4-3.4A7.5 7.5 0 0010.5 3zm0 2a5.5 5.5 0 110 11 5.5 5.5 0 010-11z" fill="currentColor"/>
           </svg>
@@ -87,24 +87,43 @@
       </div>
 
       <% if defined?(@tournament) && @tournament.present? && @tournament.persisted? %>
+        <% can_manage_tournament = can_edit_tournament?(@tournament) %>
+        <% pro_enabled = admin? || @tournament.pro? || @tournament.competition_data_present? %>
+        <% has_teams = @tournament.team_registrations.exists? %>
+        <% has_groups = Group.joins(:tournament_division).where(tournament_divisions: { tournament_id: @tournament.id }).exists? %>
+        <% has_matches = Match.joins(:tournament_division).where(tournament_divisions: { tournament_id: @tournament.id }).exists? %>
+
         <nav class="ls-subnav" aria-label="Tournament navigation">
           <div class="ls-subnav-scroll">
-            <% pro_enabled = admin? || @tournament.pro? || @tournament.competition_data_present? %>
             <%= link_to "Info", tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(tournament_path(@tournament))}" %>
-            <%= link_to "Team", teams_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(teams_tournament_path(@tournament))}" %>
-            <% if pro_enabled %>
-              <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
-              <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
-              <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+
+            <% if can_manage_tournament || @tournament.free? || has_teams %>
+              <%= link_to "Team", teams_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(teams_tournament_path(@tournament))}" %>
+            <% end %>
+
+            <% if can_manage_tournament %>
+              <% if pro_enabled %>
+                <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
+                <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
+                <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+              <% else %>
+                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Group</a>
+                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Fixtures</a>
+                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Table</a>
+              <% end %>
             <% else %>
-              <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Group</a>
-              <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Fixtures</a>
-              <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Table</a>
+              <% if has_groups %>
+                <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
+              <% end %>
+              <% if has_matches %>
+                <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
+                <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+              <% end %>
             <% end %>
           </div>
         </nav>
 
-        <% unless pro_enabled %>
+        <% if can_manage_tournament && !pro_enabled %>
           <div class="modal fade" id="planUpgradeModal" tabindex="-1" aria-labelledby="planUpgradeModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
               <div class="modal-content" style="background:#111315;color:#ffffff;border:1px solid rgba(255,255,255,0.10);">
@@ -155,7 +174,7 @@
             <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
 
             <% if current_user %>
-              <div class="text-muted" style="font-size:12px;"> <%= current_user.name %> </div>
+              <div class="ls-user-name" style="font-size:12px;"> <%= current_user.name %> </div>
               <%= button_to "ออกจากระบบ", logout_path,
                     method: :delete,
                     form: { style: "margin:0;" },
@@ -192,7 +211,7 @@
                       class: "form-select" %>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100">ค้นหา</button>
+            <button type="submit" class="btn btn-success w-100">ค้นหา</button>
           <% end %>
           <div class="text-muted" style="font-size:12px;margin-top:10px;">ค้นหาจากชื่อรายการ</div>
         </div>

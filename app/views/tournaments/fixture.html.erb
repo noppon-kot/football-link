@@ -2,7 +2,7 @@
   <div class="container py-3" style="max-width:960px;">
     <div class="card shadow-sm" style="border-radius:14px;">
       <div class="card-body" style="padding:14px;">
-        <div class="fw-bold" style="font-size:16px;line-height:1.25;"><%= @tournament.title %></div>
+        <div class="tournament-page-title"><%= @tournament.title %></div>
         <div class="text-muted" style="font-size:12px;margin-top:6px;">
           <%= tournament_competition_date_label(@tournament) %>
         </div>
@@ -42,7 +42,7 @@
         </div>
 
         <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
-          <%= image_tag "logox.png", alt: "DERNSAI", style: "width:26px;height:34px;border-radius:6px;object-fit:cover;", crossorigin: "anonymous" %>
+          <%= image_tag "dernsai_ban.png", alt: "DERNSAI", style: "width:110px;height:34px;border-radius:6px;object-fit:contain;background:rgba(255,255,255,0.08);padding:2px 6px;", crossorigin: "anonymous" %>
           <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
         </div>
       </div>

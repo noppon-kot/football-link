@@ -1,87 +1,89 @@
-<div class="container py-3" style="max-width:720px;">
-  <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
-    <div class="fw-bold" style="font-size:16px;">รายการแข่งขัน</div>
-  </div>
+<div class="app-shell">
+  <div class="container py-3" style="max-width:960px;">
+    <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
+      <div class="fw-bold" style="font-size:16px;">รายการแข่งขัน</div>
+    </div>
 
-  <% if @tournaments.any? %>
-    <div class="d-flex flex-column" style="gap:10px;">
-      <% @tournaments.each do |tournament| %>
-        <%= link_to tournament_path(tournament), class: "card shadow-sm", style: "text-decoration:none;color:inherit;" do %>
-          <div class="card-body" style="padding:14px;">
-            <div class="d-flex justify-content-between" style="gap:10px;">
-              <div style="min-width:0;">
-                <div class="fw-semibold" style="font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  <%= tournament.title %>
+    <% if @tournaments.any? %>
+      <div class="d-flex flex-column" style="gap:10px;">
+        <% @tournaments.each do |tournament| %>
+          <%= link_to tournament_path(tournament), class: "card shadow-sm", style: "text-decoration:none;color:inherit;" do %>
+            <div class="card-body" style="padding:14px;">
+              <div class="d-flex justify-content-between" style="gap:10px;">
+                <div style="min-width:0;">
+                  <div class="fw-semibold" style="font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    <%= tournament.title %>
+                  </div>
+                  <div class="text-muted" style="font-size:12px;margin-top:4px;">
+                    วันที่แข่งขัน: <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
+                  </div>
+                  <div class="text-muted" style="font-size:12px;">
+                    <%= tournament.location_name %> · <%= tournament.province %>
+                  </div>
+                  <div class="text-muted" style="font-size:12px;margin-top:4px;">
+                    <% division_names = tournament.tournament_divisions.order(:position, :id).pluck(:name) %>
+                    <%= (division_names.presence || [tournament.age_category]).join(', ') %>
+                  </div>
                 </div>
-                <div class="text-muted" style="font-size:12px;margin-top:4px;">
-                  วันที่แข่งขัน: <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
+                <div class="text-muted" style="font-size:18px;line-height:1;flex:0 0 auto;align-self:center;">
+                  ›
                 </div>
-                <div class="text-muted" style="font-size:12px;">
-                  <%= tournament.location_name %> · <%= tournament.province %>
-                </div>
-                <div class="text-muted" style="font-size:12px;margin-top:4px;">
-                  <% division_names = tournament.tournament_divisions.order(:position, :id).pluck(:name) %>
-                  <%= (division_names.presence || [tournament.age_category]).join(', ') %>
-                </div>
-              </div>
-              <div class="text-muted" style="font-size:18px;line-height:1;flex:0 0 auto;align-self:center;">
-                ›
               </div>
             </div>
-          </div>
+          <% end %>
         <% end %>
-      <% end %>
-    </div>
-  <% else %>
-    <div class="alert alert-info" role="alert">ยังไม่มีรายการแข่งในจังหวัดนี้</div>
-  <% end %>
+      </div>
+    <% else %>
+      <div class="alert alert-info" role="alert">ยังไม่มีรายการแข่งในจังหวัดนี้</div>
+    <% end %>
 
-  <% if @total_pages > 1 %>
-    <div class="d-flex justify-content-center mt-3">
-      <nav aria-label="tournament-pages">
-        <ul class="pagination pagination-sm mb-0">
-          <% if @current_page > 1 %>
-            <li class="page-item">
-              <%= link_to "ก่อนหน้า", tournaments_path(request.query_parameters.merge(page: @current_page - 1)), class: "page-link" %>
-            </li>
-          <% end %>
-
-          <% max_pages = 7 %>
-          <% if @total_pages <= max_pages %>
-            <% start_page = 1; end_page = @total_pages %>
-          <% else %>
-            <% half_window = max_pages / 2 %>
-            <% start_page = @current_page - half_window %>
-            <% end_page   = @current_page + half_window %>
-
-            <% if start_page < 1 %>
-              <% end_page += (1 - start_page) %>
-              <% start_page = 1 %>
+    <% if @total_pages > 1 %>
+      <div class="d-flex justify-content-center mt-3">
+        <nav aria-label="tournament-pages">
+          <ul class="pagination pagination-sm mb-0">
+            <% if @current_page > 1 %>
+              <li class="page-item">
+                <%= link_to "ก่อนหน้า", tournaments_path(request.query_parameters.merge(page: @current_page - 1)), class: "page-link" %>
+              </li>
             <% end %>
 
-            <% if end_page > @total_pages %>
-              <% start_page -= (end_page - @total_pages) %>
-              <% end_page = @total_pages %>
-            <% end %>
-
-            <% start_page = 1 if start_page < 1 %>
-          <% end %>
-
-          <% (start_page..end_page).each do |page| %>
-            <% if page == @current_page %>
-              <li class="page-item active"><span class="page-link"><%= page %></span></li>
+            <% max_pages = 7 %>
+            <% if @total_pages <= max_pages %>
+              <% start_page = 1; end_page = @total_pages %>
             <% else %>
-              <li class="page-item"><%= link_to page, tournaments_path(request.query_parameters.merge(page: page)), class: "page-link" %></li>
-            <% end %>
-          <% end %>
+              <% half_window = max_pages / 2 %>
+              <% start_page = @current_page - half_window %>
+              <% end_page   = @current_page + half_window %>
 
-          <% if @current_page < @total_pages %>
-            <li class="page-item">
-              <%= link_to "ถัดไป", tournaments_path(request.query_parameters.merge(page: @current_page + 1)), class: "page-link" %>
-            </li>
-          <% end %>
-        </ul>
-      </nav>
-    </div>
-  <% end %>
+              <% if start_page < 1 %>
+                <% end_page += (1 - start_page) %>
+                <% start_page = 1 %>
+              <% end %>
+
+              <% if end_page > @total_pages %>
+                <% start_page -= (end_page - @total_pages) %>
+                <% end_page = @total_pages %>
+              <% end %>
+
+              <% start_page = 1 if start_page < 1 %>
+            <% end %>
+
+            <% (start_page..end_page).each do |page| %>
+              <% if page == @current_page %>
+                <li class="page-item active"><span class="page-link"><%= page %></span></li>
+              <% else %>
+                <li class="page-item"><%= link_to page, tournaments_path(request.query_parameters.merge(page: page)), class: "page-link" %></li>
+              <% end %>
+            <% end %>
+
+            <% if @current_page < @total_pages %>
+              <li class="page-item">
+                <%= link_to "ถัดไป", tournaments_path(request.query_parameters.merge(page: @current_page + 1)), class: "page-link" %>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+      </div>
+    <% end %>
+  </div>
 </div>
