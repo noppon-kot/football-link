@@ -183,11 +183,58 @@
         <% image = @tournament.images.first %>
         <div class="mt-3">
           <div class="fw-bold mb-1">รูปภาพรายการ</div>
-          <%= link_to url_for(image), target: "_blank", rel: "noopener" do %>
+          <a href="#"
+             class="d-inline-block js-tournament-image-lightbox"
+             data-full-url="<%= url_for(image) %>"
+             style="text-decoration:none;">
             <%= image_tag url_for(image), style: "width:96px;height:96px;object-fit:cover;display:block;border-radius:12px;border:1px solid rgba(0,0,0,0.12);background:#ffffff;" %>
-          <% end %>
+          </a>
         </div>
       <% end %>
+
+      <div id="tournament-image-lightbox" aria-hidden="true" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.86);z-index:2000;padding:16px;">
+        <button type="button" id="tournament-image-lightbox-close" aria-label="Close" style="position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.35);color:#ffffff;font-size:26px;line-height:36px;display:flex;align-items:center;justify-content:center;">
+          ×
+        </button>
+        <img id="tournament-image-lightbox-img" alt="tournament" style="max-width:min(980px, 100%);max-height:86vh;width:auto;height:auto;object-fit:contain;border-radius:14px;background:#000;" />
+      </div>
+
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+          var overlay = document.getElementById("tournament-image-lightbox");
+          var overlayImg = document.getElementById("tournament-image-lightbox-img");
+          var overlayClose = document.getElementById("tournament-image-lightbox-close");
+          if (!overlay || !overlayImg || !overlayClose) return;
+
+          function openLightbox(url) {
+            if (!url) return;
+            overlayImg.src = url;
+            overlay.style.display = "flex";
+            overlay.setAttribute("aria-hidden", "false");
+          }
+
+          function closeLightbox() {
+            overlay.style.display = "none";
+            overlay.setAttribute("aria-hidden", "true");
+            overlayImg.removeAttribute("src");
+          }
+
+          document.querySelectorAll(".js-tournament-image-lightbox").forEach(function(el) {
+            el.addEventListener("click", function(e) {
+              e.preventDefault();
+              openLightbox(el.getAttribute("data-full-url"));
+            });
+          });
+
+          overlayClose.addEventListener("click", function() { closeLightbox(); });
+          overlay.addEventListener("click", function(e) {
+            if (e.target === overlay) closeLightbox();
+          });
+          document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") closeLightbox();
+          });
+        });
+      </script>
         </div>
         </div>
       </div>

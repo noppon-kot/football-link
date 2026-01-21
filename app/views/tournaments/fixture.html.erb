@@ -125,6 +125,10 @@
           overflow: hidden;
         }
 
+        .fixture-match-link {
+          display: block;
+        }
+
         .fixture-match-card + .fixture-match-card {
           margin-top: 10px;
         }
@@ -149,6 +153,7 @@
           grid-template-columns: 1fr 72px 1fr;
           align-items: center;
           gap: 10px;
+          min-height: 44px;
         }
 
         .fixture-team {
@@ -337,7 +342,7 @@
                                  end %>
                 <% group_or_round = group_name.presence || round_title.presence || "-" %>
 
-                <%= link_to match_tournament_path(@tournament, match_id: match.id), style: "text-decoration:none;color:inherit;" do %>
+                <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-match-link", style: "text-decoration:none;color:inherit;" do %>
                   <div class="fixture-match-card">
                     <div class="fixture-match-card-header">
                       <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
