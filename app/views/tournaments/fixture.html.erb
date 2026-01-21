@@ -109,33 +109,6 @@
         </div>
       </div>
 
-      <script>
-        (function() {
-          function initAllMatchToggle() {
-            var toggle = document.getElementById("all-match-toggle");
-            var body = document.getElementById("all-match-body");
-            var arrow = document.getElementById("all-match-arrow");
-            if (!toggle || !body || !arrow) return;
-
-            function setOpen(open) {
-              body.style.display = open ? "block" : "none";
-              toggle.setAttribute("aria-expanded", open ? "true" : "false");
-              arrow.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
-            }
-
-            setOpen(false);
-
-            toggle.addEventListener("click", function() {
-              var isOpen = toggle.getAttribute("aria-expanded") === "true";
-              setOpen(!isOpen);
-            });
-          }
-
-          document.addEventListener("turbo:load", initAllMatchToggle);
-          document.addEventListener("DOMContentLoaded", initAllMatchToggle);
-        })();
-      </script>
-
     </div>
   </div>
 
@@ -157,7 +130,7 @@
             display: none !important;
           }
 
-          .fixture-page-wrap .fixture-match-list {
+          .fixture-mobile-only {
             display: none !important;
           }
         }
@@ -167,7 +140,7 @@
             display: none !important;
           }
 
-          .fixture-page-wrap .table-responsive {
+          .fixture-desktop-only {
             display: none !important;
           }
         }
@@ -179,6 +152,7 @@
           overflow: hidden;
           position: relative;
           box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+          width: 100%;
         }
 
         .fixture-match-card:before {
@@ -197,6 +171,12 @@
 
         .fixture-match-link {
           display: block;
+          width: 100%;
+        }
+
+        .fixture-match-list > * {
+          display: block;
+          width: 100%;
         }
 
         .fixture-match-list > * + * {
@@ -391,7 +371,7 @@
               </div>
             <% end %>
 
-            <div class="d-block d-md-none fixture-match-list">
+            <div class="d-block d-md-none fixture-match-list fixture-mobile-only">
               <% @next_day_matches_page.each_with_index do |match, idx| %>
                 <% match_no = ((@day_page - 1) * @day_per_page) + idx + 1 %>
                 <% group_name = match.group&.name.to_s.presence %>
@@ -464,7 +444,7 @@
               <% end %>
             </div>
 
-            <div class="table-responsive d-none d-md-block">
+            <div class="table-responsive d-none d-md-block fixture-desktop-only">
               <table class="table table-sm align-middle mb-0">
                 <thead class="table-light">
                   <tr>
@@ -631,17 +611,8 @@
       </script>
 
       <div class="card shadow-sm mb-3">
-        <div class="card-header" style="padding:0;">
-          <button type="button"
-                  class="btn w-100 text-start fw-bold d-flex align-items-center justify-content-between"
-                  id="all-match-toggle"
-                  aria-expanded="false"
-                  style="padding:12px 16px;background:transparent;border:0;">
-            <span>All Match</span>
-            <span id="all-match-arrow" style="display:inline-block;transition:transform 160ms ease;">▾</span>
-          </button>
-        </div>
-        <div class="card-body" id="all-match-body" style="display:none;">
+        <div class="card-header fw-bold">All Match</div>
+        <div class="card-body">
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
 
           <% if divisions.any? %>
@@ -759,7 +730,7 @@
                           <%= hidden_field_tag :day, submitted_day %>
                           <%= hidden_field_tag :page, (params[:page].presence || @day_page) %>
 
-                          <div class="d-block d-md-none fixture-match-list" data-fixture-scores-mobile>
+                          <div class="d-block d-md-none fixture-match-list fixture-mobile-only" data-fixture-scores-mobile>
                             <% matches.each_with_index do |match, idx| %>
                               <div class="fixture-match-card">
                                 <div class="fixture-match-card-header">
@@ -842,7 +813,7 @@
                             <% end %>
                           </div>
 
-                          <div class="table-responsive d-none d-md-block" data-fixture-scores-desktop>
+                          <div class="table-responsive d-none d-md-block fixture-desktop-only" data-fixture-scores-desktop>
                             <table class="table table-sm align-middle mb-0">
                               <thead class="table-light">
                                 <tr>
@@ -953,57 +924,59 @@
                           </div>
                         <% end %>
                       <% else %>
-                        <div class="d-block d-md-none fixture-match-list">
+                        <div class="d-block d-md-none fixture-match-list fixture-mobile-only">
                           <% matches.each_with_index do |match, idx| %>
                             <% hs = match.home_score; as = match.away_score %>
-                            <%= link_to match_tournament_path(@tournament, match_id: match.id), style: "text-decoration:none;color:inherit;" do %>
-                              <div class="fixture-match-card">
-                                <div class="fixture-match-card-header">
-                                  <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
-                                  <div><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></div>
+                            <div class="fixture-match-card">
+                              <div class="fixture-match-card-header">
+                                <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
+                                <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
+                                  <span><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></span>
+                                  <%= link_to "รายละเอียด", match_tournament_path(@tournament, match_id: match.id), class: "btn btn-sm btn-outline-secondary" %>
                                 </div>
-                                <div class="fixture-match-card-body">
-                                  <div class="fixture-teams-row">
-                                    <div class="fixture-team">
-                                      <% if match.home_team&.logo&.attached? %>
-                                        <%= image_tag match.home_team.logo, class: "fixture-logo" %>
-                                      <% else %>
-                                        <div class="fixture-logo"></div>
-                                      <% end %>
-                                      <div class="fixture-team-name"><%= match.home_name %></div>
-                                    </div>
+                              </div>
+                              <div class="fixture-match-card-body">
+                                <div class="fixture-teams-row">
+                                  <div class="fixture-team">
+                                    <% if match.home_team&.logo&.attached? %>
+                                      <%= image_tag match.home_team.logo, class: "fixture-logo" %>
+                                    <% else %>
+                                      <div class="fixture-logo"></div>
+                                    <% end %>
+                                    <div class="fixture-team-name"><%= match.home_name %></div>
+                                  </div>
 
-                                    <div class="fixture-score">
-                                      <% if match.home_score.present? && match.away_score.present? %>
-                                        <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
-                                          <% if match.penalty_winner_side == "home" %>
-                                            <div class="fixture-score-main">*<%= hs %> - <%= as %></div>
-                                          <% else %>
-                                            <div class="fixture-score-main"><%= hs %> - *<%= as %></div>
-                                          <% end %>
+                                  <div class="fixture-score">
+                                    <% if match.home_score.present? && match.away_score.present? %>
+                                      <% if div.respond_to?(:draw_mode) && div.draw_mode == "pk" && match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
+                                        <% if match.penalty_winner_side == "home" %>
+                                          <div class="fixture-score-main">*<%= hs %> - <%= as %></div>
                                         <% else %>
-                                          <div class="fixture-score-main"><%= hs %> - <%= as %></div>
+                                          <div class="fixture-score-main"><%= hs %> - *<%= as %></div>
                                         <% end %>
                                       <% else %>
-                                        <div class="fixture-score-main">VS</div>
+                                        <div class="fixture-score-main"><%= hs %> - <%= as %></div>
                                       <% end %>
-                                    </div>
+                                    <% else %>
+                                      <div class="fixture-score-main">VS</div>
+                                    <% end %>
+                                  </div>
 
-                                    <div class="fixture-team fixture-team--away">
-                                      <div class="fixture-team-name"><%= match.away_name %></div>
-                                      <% if match.away_team&.logo&.attached? %>
-                                        <%= image_tag match.away_team.logo, class: "fixture-logo" %>
-                                      <% else %>
-                                        <div class="fixture-logo"></div>
-                                      <% end %>
-                                    </div>
+                                  <div class="fixture-team fixture-team--away">
+                                    <div class="fixture-team-name"><%= match.away_name %></div>
+                                    <% if match.away_team&.logo&.attached? %>
+                                      <%= image_tag match.away_team.logo, class: "fixture-logo" %>
+                                    <% else %>
+                                      <div class="fixture-logo"></div>
+                                    <% end %>
                                   </div>
                                 </div>
                               </div>
-                            <% end %>
-                          </div>
+                            </div>
+                          <% end %>
+                        </div>
 
-                          <div class="table-responsive d-none d-md-block">
+                        <div class="table-responsive d-none d-md-block fixture-desktop-only">
                             <table class="table table-sm align-middle mb-0">
                               <thead class="table-light">
                                 <tr>
@@ -1069,7 +1042,6 @@
                               </tbody>
                             </table>
                           </div>
-                        <% end %>
                       <% end %>
                     </div>
                   <% end %>
