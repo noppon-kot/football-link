@@ -200,13 +200,13 @@
     <% tel_raw = @tournament.contact_phone.to_s %>
     <% tel_href = "tel:#{tel_raw.gsub(/[^0-9+]/, '')}" %>
 
-    <div style="position:fixed;left:12px;right:12px;bottom:16px;z-index:1040;max-width:520px;margin:0 auto;">
-      <div class="d-flex" style="gap:10px;">
+    <div class="tournament-show-bottom-bar" style="position:fixed;left:50%;transform:translateX(-50%);bottom:64px;z-index:1040;width:calc(100% - 24px);max-width:520px;">
+      <div class="d-flex justify-content-center" style="gap:10px;">
         <% if @tournament.line_id.present? %>
           <%= link_to "LINE: #{@tournament.line_id}",
                       line_deep_link,
                       class: "btn btn-success",
-                      style: "flex:1 1 0;background-color:#00c300;border-color:#00c300;color:#ffffff;box-shadow:0 6px 18px rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-size:14px;",
+                      style: "flex:1 1 0;max-width:255px;width:100%;background-color:#00c300;border-color:#00c300;color:#ffffff;box-shadow:0 6px 18px rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-size:14px;",
                       target: "_blank",
                       rel: "noopener",
                       data: { fallback_url: line_web_link } %>
@@ -216,7 +216,7 @@
           <%= link_to "โทร: #{@tournament.contact_phone}",
                       tel_href,
                       class: "btn btn-primary",
-                      style: "flex:1 1 0;box-shadow:0 6px 18px rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-size:14px;" %>
+                      style: "flex:1 1 0;max-width:255px;width:100%;box-shadow:0 6px 18px rgba(0,0,0,0.25);border-radius:8px;padding:10px 12px;font-size:14px;" %>
         <% end %>
       </div>
     </div>

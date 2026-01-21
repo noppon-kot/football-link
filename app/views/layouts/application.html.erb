@@ -79,11 +79,19 @@
           <%= image_tag "dernsai_ban.png", alt: "DERNSAI", class: "ls-brand-img" %>
         <% end %>
 
-        <button type="button" class="ls-icon-btn ls-icon-btn--search" data-bs-toggle="offcanvas" data-bs-target="#searchDrawer" aria-controls="searchDrawer" aria-label="ค้นหา">
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-            <path d="M10.5 3a7.5 7.5 0 105.2 12.9l3.4 3.4 1.4-1.4-3.4-3.4A7.5 7.5 0 0010.5 3zm0 2a5.5 5.5 0 110 11 5.5 5.5 0 010-11z" fill="currentColor"/>
-          </svg>
-        </button>
+        <div class="ls-topbar-actions" style="display:flex;align-items:center;gap:8px;">
+          <%= link_to new_tournament_path, class: "ls-icon-btn ls-icon-btn--add", aria: { label: "เพิ่มรายการแข่ง" } do %>
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+              <path d="M11 5h2v14h-2zM5 11h14v2H5z" fill="currentColor"/>
+            </svg>
+          <% end %>
+
+          <button type="button" class="ls-icon-btn ls-icon-btn--search" data-bs-toggle="offcanvas" data-bs-target="#searchDrawer" aria-controls="searchDrawer" aria-label="ค้นหา">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+              <path d="M10.5 3a7.5 7.5 0 105.2 12.9l3.4 3.4 1.4-1.4-3.4-3.4A7.5 7.5 0 0010.5 3zm0 2a5.5 5.5 0 110 11 5.5 5.5 0 010-11z" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <% if defined?(@tournament) && @tournament.present? && @tournament.persisted? %>
@@ -218,7 +226,7 @@
       </div>
 
       <% if flash.present? %>
-        <div id="flash-toast-container" style="position:fixed;left:50%;transform:translateX(-50%);bottom:72px;max-width:90%;z-index:1100;pointer-events:none;">
+        <div id="flash-toast-container" style="position:fixed;left:50%;transform:translateX(-50%);bottom:90px;max-width:90%;z-index:1100;pointer-events:none;">
           <% flash.each do |key, message| %>
             <% next if message.blank? %>
             <% bs_class = key.to_s == "notice" ? "alert-success" : "alert-danger" %>
@@ -231,11 +239,20 @@
 
       <%= yield %>
 
+      <div class="ls-footerbar" role="contentinfo">
+        <div class="ls-footerbar-inner">
+          <div class="ls-footerbar-left">© <%= Time.current.year %> DERNSAI</div>
+          <div class="ls-footerbar-right">
+            <%= link_to "ติดต่อเรา", new_admin_message_path, class: "ls-footerbar-link" %>
+          </div>
+        </div>
+      </div>
+
       <!-- Back to top button -->
       <button
         id="back-to-top-btn"
         type="button"
-        style="position:fixed;right:16px;bottom:16px;width:40px;height:40px;border-radius:50%;border:none;background:#1976d2;color:#ffffff;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);z-index:1050;font-size:18px;"
+        style="position:fixed;right:16px;bottom:60px;width:40px;height:40px;border-radius:50%;border:none;background:#1976d2;color:#ffffff;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);z-index:1050;font-size:18px;"
         aria-label="กลับขึ้นด้านบน">
         ↑
       </button>

@@ -164,11 +164,12 @@ body.theme-green a:hover {
   position: sticky;
   top: 0;
   z-index: 1030;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   height: 56px;
   background: #111315;
   color: #ffffff;
-  display: grid;
-  grid-template-columns: auto 1fr 56px;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -186,6 +187,11 @@ body.theme-green a:hover {
   height: 22px;
   width: auto;
   display: block;
+}
+
+.ls-brand {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .ls-subnav {
@@ -259,6 +265,14 @@ body.theme-green a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.ls-icon-btn--search {
+  flex: 0 0 auto;
+}
+
+.ls-icon-btn--add {
+  flex: 0 0 auto;
 }
 
 .ls-icon-btn--search {
@@ -1057,6 +1071,73 @@ body.theme-green .btn-light.tournament-view-toggle.is-active:focus {
   height: auto;
   display: block;
   object-fit: contain;
+}
+
+.app-shell {
+  padding-bottom: 124px;
+}
+
+.ls-footerbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0b0f12;
+  color: rgba(255, 255, 255, 0.82);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  z-index: 1040;
+}
+
+.ls-footerbar-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+
+.ls-footerbar-link {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.ls-footerbar-link:hover {
+  text-decoration: underline;
+}
+
+.ls-icon-btn--add {
+  background: #16a34a;
+  color: #0b0f12;
+}
+
+.ls-icon-btn--add:hover,
+.ls-icon-btn--add:focus {
+  background: #12853c;
+  color: #0b0f12;
+}
+
+.tournament-add-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #16a34a;
+  color: #ffffff;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.tournament-add-btn:hover,
+.tournament-add-btn:focus {
+  background: #12853c;
+  color: #ffffff;
+  text-decoration: none;
 }
 
 /* ใช้กับช่องตัวเลขที่ไม่ควรยาวเกินไป เช่น จำนวนผู้เล่นต่อทีม */
