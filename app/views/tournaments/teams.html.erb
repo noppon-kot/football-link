@@ -126,6 +126,15 @@
                                   form_class: "inline-form" %>
                           <% else %>
                             <div class="<%= badge_class %>"><%= label %></div>
+                            <% is_team_manager = current_user.present? && (
+                              reg.manager_user_id == current_user.id ||
+                              reg.team_registration_managers.where(user_id: current_user.id).exists?
+                            ) %>
+                            <% if is_team_manager %>
+                              <%= link_to "จัดการทีมของฉัน",
+                                    my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
+                                    class: "btn btn-sm btn-outline-success" %>
+                            <% end %>
                           <% end %>
                         </div>
                       </div>
@@ -205,6 +214,15 @@
                                 form_class: "inline-form" %>
                         <% else %>
                           <div class="<%= badge_class %>"><%= label %></div>
+                          <% is_team_manager = current_user.present? && (
+                            reg.manager_user_id == current_user.id ||
+                            reg.team_registration_managers.where(user_id: current_user.id).exists?
+                          ) %>
+                          <% if is_team_manager %>
+                            <%= link_to "จัดการทีมของฉัน",
+                                  my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
+                                  class: "btn btn-sm btn-outline-success" %>
+                          <% end %>
                         <% end %>
                       </div>
                     </div>

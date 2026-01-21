@@ -2,8 +2,6 @@
   <div class="tournament-show-body">
     <div class="container py-2">
       <% public_view = !!@public_view %>
-      <%= render "tournaments/nav_tabs", active: (public_view ? :teams : :my) %>
-
       <div class="d-flex justify-content-between align-items-center mb-2" style="gap:8px;">
         <div>
           <div style="font-size:18px;font-weight:bold;">นักกีฬา</div>
@@ -11,7 +9,7 @@
         </div>
         <div class="d-flex" style="gap:8px;">
           <%= link_to "กลับ",
-                      (public_view ? teams_tournament_path(@tournament) : my_tournament_path(@tournament)),
+                      teams_tournament_path(@tournament),
                       class: "btn btn-sm btn-outline-secondary" %>
           <% can_edit_roster = !public_view && ((!@entry.respond_to?(:roster_locked?) || !@entry.roster_locked?) || can_manage_registrations?(@tournament)) %>
           <% can_submit_roster = (@entry.respond_to?(:roster_locked?) && !@entry.roster_locked?) %>

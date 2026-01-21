@@ -24,7 +24,7 @@ class TeamRegistrationsController < ApplicationController
       if can_manage_registrations?(@tournament)
         redirect_to teams_tournament_path(@tournament), notice: "บันทึกข้อมูลทีมเรียบร้อยแล้ว"
       else
-        redirect_to my_tournament_path(@tournament), notice: "บันทึกข้อมูลทีมเรียบร้อยแล้ว"
+        redirect_to teams_tournament_path(@tournament), notice: "บันทึกข้อมูลทีมเรียบร้อยแล้ว"
       end
     else
       flash.now[:alert] = @team.errors.full_messages.to_sentence

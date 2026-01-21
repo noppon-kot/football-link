@@ -108,44 +108,123 @@
           <% end %>
         </div>
       </div>
+
+      <script>
+        (function() {
+          function initAllMatchToggle() {
+            var toggle = document.getElementById("all-match-toggle");
+            var body = document.getElementById("all-match-body");
+            var arrow = document.getElementById("all-match-arrow");
+            if (!toggle || !body || !arrow) return;
+
+            function setOpen(open) {
+              body.style.display = open ? "block" : "none";
+              toggle.setAttribute("aria-expanded", open ? "true" : "false");
+              arrow.style.transform = open ? "rotate(180deg)" : "rotate(0deg)";
+            }
+
+            setOpen(false);
+
+            toggle.addEventListener("click", function() {
+              var isOpen = toggle.getAttribute("aria-expanded") === "true";
+              setOpen(!isOpen);
+            });
+          }
+
+          document.addEventListener("turbo:load", initAllMatchToggle);
+          document.addEventListener("DOMContentLoaded", initAllMatchToggle);
+        })();
+      </script>
+
     </div>
   </div>
 
   <div class="tournament-show-body">
-    <div class="container py-2">
+    <div class="container py-2 fixture-page-wrap">
       <h2 style="font-size:18px;font-weight:bold;" class="mb-2">โปรแกรมแข่งขัน</h2>
       <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
       <hr>
 
       <style>
+        .fixture-page-wrap {
+          background: #f6f7f9;
+          border-radius: 14px;
+          padding: 10px 10px 14px 10px;
+        }
+
+        @media (min-width: 768px) {
+          [data-fixture-scores-mobile] {
+            display: none !important;
+          }
+
+          .fixture-page-wrap .fixture-match-list {
+            display: none !important;
+          }
+        }
+
+        @media (max-width: 767.98px) {
+          [data-fixture-scores-desktop] {
+            display: none !important;
+          }
+
+          .fixture-page-wrap .table-responsive {
+            display: none !important;
+          }
+        }
+
         .fixture-match-card {
-          border: 1px solid rgba(0,0,0,0.08);
+          border: 1px solid rgba(15, 23, 42, 0.10);
           border-radius: 14px;
           background: #ffffff;
           overflow: hidden;
+          position: relative;
+          box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+        }
+
+        .fixture-match-card:before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: rgba(22, 163, 74, 0.18);
+        }
+
+        .fixture-match-list > *:nth-child(even) .fixture-match-card {
+          background: #f3f4f6;
         }
 
         .fixture-match-link {
           display: block;
         }
 
-        .fixture-match-card + .fixture-match-card {
+        .fixture-match-list > * + * {
           margin-top: 10px;
         }
 
         .fixture-match-card-header {
           padding: 10px 12px;
-          background: #f8f9fa;
-          border-bottom: 1px solid rgba(0,0,0,0.06);
+          background: #f3f5f7;
+          border-bottom: 1px solid rgba(15, 23, 42, 0.07);
           font-size: 12px;
-          color: #546e7a;
+          color: #64748b;
           display: flex;
           justify-content: space-between;
           gap: 10px;
         }
 
+        .fixture-match-list > *:nth-child(odd) .fixture-match-card-header {
+          background: rgba(22, 163, 74, 0.10);
+        }
+
+        .fixture-match-list > *:nth-child(even) .fixture-match-card-header {
+          background: rgba(59, 130, 246, 0.10);
+        }
+
         .fixture-match-card-body {
           padding: 12px;
+          min-height: 70px;
         }
 
         .fixture-teams-row {
@@ -312,7 +391,7 @@
               </div>
             <% end %>
 
-            <div class="d-block d-md-none">
+            <div class="d-block d-md-none fixture-match-list">
               <% @next_day_matches_page.each_with_index do |match, idx| %>
                 <% match_no = ((@day_page - 1) * @day_per_page) + idx + 1 %>
                 <% group_name = match.group&.name.to_s.presence %>
@@ -552,8 +631,17 @@
       </script>
 
       <div class="card shadow-sm mb-3">
-        <div class="card-header fw-bold">โปรแกรมแข่งขัน</div>
-        <div class="card-body">
+        <div class="card-header" style="padding:0;">
+          <button type="button"
+                  class="btn w-100 text-start fw-bold d-flex align-items-center justify-content-between"
+                  id="all-match-toggle"
+                  aria-expanded="false"
+                  style="padding:12px 16px;background:transparent;border:0;">
+            <span>All Match</span>
+            <span id="all-match-arrow" style="display:inline-block;transition:transform 160ms ease;">▾</span>
+          </button>
+        </div>
+        <div class="card-body" id="all-match-body" style="display:none;">
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
 
           <% if divisions.any? %>
@@ -667,10 +755,11 @@
 
                       <% if can_manage_registrations?(@tournament) %>
                         <%= form_with url: update_scores_tournament_path(@tournament), method: :patch, local: true do |f| %>
-                          <%= hidden_field_tag :day, (@selected_day&.strftime("%Y-%m-%d")) if @selected_day.present? %>
-                          <%= hidden_field_tag :page, @day_page if @day_page.present? %>
+                          <% submitted_day = params[:day].presence || (@selected_day&.strftime("%Y-%m-%d")) %>
+                          <%= hidden_field_tag :day, submitted_day %>
+                          <%= hidden_field_tag :page, (params[:page].presence || @day_page) %>
 
-                          <div class="d-block d-md-none">
+                          <div class="d-block d-md-none fixture-match-list" data-fixture-scores-mobile>
                             <% matches.each_with_index do |match, idx| %>
                               <div class="fixture-match-card">
                                 <div class="fixture-match-card-header">
@@ -753,7 +842,7 @@
                             <% end %>
                           </div>
 
-                          <div class="table-responsive d-none d-md-block">
+                          <div class="table-responsive d-none d-md-block" data-fixture-scores-desktop>
                             <table class="table table-sm align-middle mb-0">
                               <thead class="table-light">
                                 <tr>
@@ -833,12 +922,38 @@
                               </tbody>
                             </table>
                           </div>
+
+                          <script>
+                            (function() {
+                              function setDisabled(container, disabled) {
+                                if (!container) return;
+                                container.querySelectorAll('input, select, textarea, button').forEach(function(el) {
+                                  if (el.type === 'hidden') return;
+                                  el.disabled = disabled;
+                                });
+                              }
+
+                              function syncFixtureScoreInputs() {
+                                var isDesktop = window.matchMedia('(min-width: 768px)').matches;
+                                document.querySelectorAll('[data-fixture-scores-mobile]').forEach(function(el) {
+                                  setDisabled(el, isDesktop);
+                                });
+                                document.querySelectorAll('[data-fixture-scores-desktop]').forEach(function(el) {
+                                  setDisabled(el, !isDesktop);
+                                });
+                              }
+
+                              document.addEventListener('turbo:load', syncFixtureScoreInputs);
+                              document.addEventListener('DOMContentLoaded', syncFixtureScoreInputs);
+                              window.addEventListener('resize', syncFixtureScoreInputs);
+                            })();
+                          </script>
                           <div class="mt-2 text-end">
                             <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกสกอร์<%= submit_suffix %></button>
                           </div>
                         <% end %>
                       <% else %>
-                        <div class="d-block d-md-none">
+                        <div class="d-block d-md-none fixture-match-list">
                           <% matches.each_with_index do |match, idx| %>
                             <% hs = match.home_score; as = match.away_score %>
                             <%= link_to match_tournament_path(@tournament, match_id: match.id), style: "text-decoration:none;color:inherit;" do %>

@@ -3,14 +3,7 @@ class TournamentMyController < ApplicationController
   before_action :set_tournament
 
   def show
-    @entries = @tournament.team_registrations
-                         .left_joins(:team_registration_managers)
-                         .where("team_registration_managers.user_id = ? OR team_registrations.manager_user_id = ?", current_user.id, current_user.id)
-                         .left_joins(:tournament_players)
-                         .select("team_registrations.*, COUNT(tournament_players.id) AS players_count")
-                         .includes(:team, :tournament_division)
-                         .group("team_registrations.id")
-                         .order(created_at: :desc)
+    redirect_to teams_tournament_path(@tournament)
   end
 
   private
