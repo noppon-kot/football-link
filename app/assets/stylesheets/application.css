@@ -1110,14 +1110,16 @@ body.theme-green .btn-light.tournament-view-toggle.is-active:focus {
 }
 
 .ls-icon-btn--add {
-  background: #16a34a;
-  color: #0b0f12;
+  background: rgba(22, 163, 74, 0.18);
+  border-color: rgba(22, 163, 74, 0.40);
+  color: rgba(215, 255, 89, 0.98);
 }
 
 .ls-icon-btn--add:hover,
 .ls-icon-btn--add:focus {
-  background: #12853c;
-  color: #0b0f12;
+  background: rgba(22, 163, 74, 0.26);
+  border-color: rgba(22, 163, 74, 0.55);
+  color: rgba(215, 255, 89, 1);
 }
 
 .tournament-add-btn {

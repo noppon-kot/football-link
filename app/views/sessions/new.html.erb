@@ -1,13 +1,4 @@
 <div class="app-shell">
-  <header class="app-header">
-    <div class="app-top-nav">
-      <%= link_to "←", root_path, class: "app-top-nav-left", style: "text-decoration:none;" %>
-      <div class="app-top-nav-center"><%= t('sessions.form.header') %></div>
-      <div class="app-top-nav-right"></div>
-    </div>
-    <div class="app-header-title"><%= t('sessions.form.header') %></div>
-  </header>
-
   <% if params[:admin].present? %>
     <div class="tournament-form">
       <%= form_with url: login_path, scope: :session, local: true do |f| %>
