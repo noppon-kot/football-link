@@ -1003,6 +1003,62 @@ body.theme-green .app-header {
   color: #0b5b33;
 }
 
+.tournament-view-toggle.is-active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+body.theme-green .btn-light.tournament-view-toggle.is-active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff !important;
+}
+
+body.theme-green .btn-light.tournament-view-toggle.is-active:hover,
+body.theme-green .btn-light.tournament-view-toggle.is-active:focus {
+  background: #12853c;
+  border-color: #12853c;
+  color: #ffffff !important;
+}
+
+.tournament-grid {
+  column-count: 2;
+  column-gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .tournament-grid {
+    column-count: 3;
+  }
+}
+
+.tournament-grid-item {
+  display: inline-block;
+  width: 100%;
+  break-inside: avoid;
+  margin: 0 0 8px;
+}
+
+.tournament-grid-media {
+  width: 100%;
+  background: #f3f4f6;
+}
+
+.tournament-grid-media--empty {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tournament-grid-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
 /* ใช้กับช่องตัวเลขที่ไม่ควรยาวเกินไป เช่น จำนวนผู้เล่นต่อทีม */
 .tournament-form-input--narrow {
   max-width: 120px;

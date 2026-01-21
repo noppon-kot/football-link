@@ -26,7 +26,7 @@ module Tournaments
                    end
 
       tournaments = base_scope
-                      .includes(:field, :organizer, :team_registrations)
+                      .includes(:field, :organizer, :team_registrations, :tournament_divisions, images_attachments: :blob)
                       .order(created_at: :desc)
 
       if @params[:q].present?

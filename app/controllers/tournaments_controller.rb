@@ -466,6 +466,8 @@ class TournamentsController < ApplicationController
       @tournament.contact_phone ||= current_user.phone
       @tournament.line_id       ||= current_user.line_id
     end
+
+    @tournament.tournament_divisions.build if @tournament.tournament_divisions.empty?
   end
 
   def edit

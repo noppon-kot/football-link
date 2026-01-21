@@ -1,38 +1,116 @@
 <div class="app-shell">
   <div class="container py-3" style="max-width:960px;">
-    <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
+    <div class="d-flex justify-content-between align-items-center mb-1" style="gap:8px;">
       <div class="fw-bold" style="font-size:16px;">รายการแข่งขัน</div>
+
+      <div class="btn-group btn-group-sm" role="group" aria-label="view toggle">
+        <button type="button" class="btn btn-light tournament-view-toggle is-active" data-view="list">List</button>
+        <button type="button" class="btn btn-light tournament-view-toggle" data-view="grid">รูป</button>
+      </div>
     </div>
 
     <% if @tournaments.any? %>
-      <div class="d-flex flex-column" style="gap:10px;">
-        <% @tournaments.each do |tournament| %>
-          <%= link_to tournament_path(tournament), class: "card shadow-sm", style: "text-decoration:none;color:inherit;" do %>
-            <div class="card-body" style="padding:14px;">
-              <div class="d-flex justify-content-between" style="gap:10px;">
-                <div style="min-width:0;">
-                  <div class="fw-semibold" style="font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      <div id="tournament-index" data-view="list">
+        <div id="tournament-index-list" class="d-flex flex-column" style="gap:6px;">
+          <% @tournaments.each do |tournament| %>
+            <%= link_to tournament_path(tournament), class: "card shadow-sm", style: "text-decoration:none;color:inherit;" do %>
+              <div class="card-body" style="padding:10px 12px;">
+                <div class="d-flex justify-content-between" style="gap:10px;">
+                  <div style="min-width:0;">
+                    <div class="fw-semibold" style="font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                      <%= tournament.title %>
+                    </div>
+                    <div class="text-muted" style="font-size:12px;margin-top:4px;">
+                      วันที่แข่งขัน: <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
+                    </div>
+                    <div class="text-muted" style="font-size:12px;">
+                      <%= tournament.location_name %> · <%= tournament.province %>
+                    </div>
+                    <div class="text-muted" style="font-size:12px;margin-top:4px;">
+                      <% division_names = tournament.tournament_divisions.sort_by { |d| [d.position || 999, d.id] }.map(&:name) %>
+                      <%= (division_names.presence || [tournament.age_category]).join(', ') %>
+                    </div>
+                  </div>
+                  <div class="text-muted" style="font-size:18px;line-height:1;flex:0 0 auto;align-self:center;">
+                    ›
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+
+        <div id="tournament-index-grid" class="tournament-grid d-none">
+          <% @tournaments.each do |tournament| %>
+            <%= link_to tournament_path(tournament), class: "tournament-grid-item", style: "text-decoration:none;color:inherit;" do %>
+              <div class="card shadow-sm" style="border-radius:14px;overflow:hidden;">
+                <% if tournament.images.attached? %>
+                  <% image = tournament.images.first %>
+                  <div class="tournament-grid-media">
+                    <%= image_tag url_for(image), class: "tournament-grid-img", loading: "lazy" %>
+                  </div>
+                <% else %>
+                  <div class="tournament-grid-media tournament-grid-media--empty">
+                    <div class="text-muted" style="font-size:12px;">ไม่มีรูป</div>
+                  </div>
+                <% end %>
+
+                <div class="card-body" style="padding:10px 10px;">
+                  <div class="fw-semibold" style="font-size:14px;line-height:1.25;">
                     <%= tournament.title %>
                   </div>
                   <div class="text-muted" style="font-size:12px;margin-top:4px;">
-                    วันที่แข่งขัน: <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
+                    <%= tournament.competition_date&.strftime("%Y-%m-%d") || "-" %>
                   </div>
                   <div class="text-muted" style="font-size:12px;">
                     <%= tournament.location_name %> · <%= tournament.province %>
                   </div>
-                  <div class="text-muted" style="font-size:12px;margin-top:4px;">
-                    <% division_names = tournament.tournament_divisions.order(:position, :id).pluck(:name) %>
-                    <%= (division_names.presence || [tournament.age_category]).join(', ') %>
-                  </div>
-                </div>
-                <div class="text-muted" style="font-size:18px;line-height:1;flex:0 0 auto;align-self:center;">
-                  ›
                 </div>
               </div>
-            </div>
+            <% end %>
           <% end %>
-        <% end %>
+        </div>
       </div>
+
+      <script>
+        (function() {
+          var root = document.getElementById('tournament-index');
+          if (!root) return;
+
+          var listEl = document.getElementById('tournament-index-list');
+          var gridEl = document.getElementById('tournament-index-grid');
+          var buttons = document.querySelectorAll('.tournament-view-toggle');
+
+          var applyView = function(view) {
+            root.setAttribute('data-view', view);
+            if (view === 'grid') {
+              if (listEl) listEl.classList.add('d-none');
+              if (gridEl) gridEl.classList.remove('d-none');
+            } else {
+              if (listEl) listEl.classList.remove('d-none');
+              if (gridEl) gridEl.classList.add('d-none');
+            }
+
+            buttons.forEach(function(b) {
+              var isActive = b.getAttribute('data-view') === view;
+              if (isActive) b.classList.add('is-active');
+              else b.classList.remove('is-active');
+            });
+          };
+
+          var saved = null;
+          try { saved = localStorage.getItem('tournamentIndexView'); } catch (e) {}
+          applyView(saved === 'grid' ? 'grid' : 'list');
+
+          buttons.forEach(function(b) {
+            b.addEventListener('click', function() {
+              var view = b.getAttribute('data-view') || 'list';
+              applyView(view);
+              try { localStorage.setItem('tournamentIndexView', view); } catch (e) {}
+            });
+          });
+        })();
+      </script>
     <% else %>
       <div class="alert alert-info" role="alert">ยังไม่มีรายการแข่งในจังหวัดนี้</div>
     <% end %>

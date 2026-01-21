@@ -26,10 +26,10 @@
         if defined?(@tournament) && @tournament.present? && @tournament.respond_to?(:images) && @tournament.images.attached?
           rails_blob_url(@tournament.images.first, host: request.base_url)
         else
-          URI.join(request.base_url, asset_path("logo.png")).to_s
+          URI.join(request.base_url, asset_path("dernsai_icon.png")).to_s
         end
       rescue
-        URI.join(request.base_url, asset_path("logo.png")).to_s
+        URI.join(request.base_url, asset_path("dernsai_icon.png")).to_s
       end %>
 
     <meta property="og:type" content="website">

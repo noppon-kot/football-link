@@ -149,7 +149,9 @@
             <div class="tournament-form-error"><%= @tournament.errors[:google_maps_url].first %></div>
           <% end %>
         </div>
+      <% end %>
 
+      <% if @tournament.persisted? %>
         <div class="tournament-form-group">
           <label>รุ่นที่เปิดแข่ง (เพิ่มได้สูงสุด 5 รุ่น)</label>
           <div id="division-list" style="display:flex;flex-direction:column;gap:10px;">
@@ -251,6 +253,48 @@
               refresh();
             })();
           </script>
+        </div>
+      <% else %>
+        <div class="tournament-form-group">
+          <label>รุ่นที่เปิดแข่ง (อย่างน้อย 1 รุ่น)</label>
+          <%= f.fields_for :tournament_divisions do |df| %>
+            <div class="card" style="border-radius:12px;">
+              <div class="card-body" style="padding:12px;">
+                <div class="mb-2">
+                  <label style="font-size:12px;">ชื่อรุ่น</label>
+                  <%= df.text_field :name, class: "tournament-form-input#{' is-invalid' if df.object.errors[:name].present?}", placeholder: "เช่น U12 / U15 / Open" %>
+                  <% if df.object.errors[:name].present? %>
+                    <div class="tournament-form-error"><%= df.object.errors[:name].first %></div>
+                  <% end %>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <div>
+                    <label style="font-size:12px;">ค่าสมัคร</label>
+                    <%= df.number_field :entry_fee, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if df.object.errors[:entry_fee].present?}", min: 0 %>
+                    <% if df.object.errors[:entry_fee].present? %>
+                      <div class="tournament-form-error"><%= df.object.errors[:entry_fee].first %></div>
+                    <% end %>
+                  </div>
+                  <div>
+                    <label style="font-size:12px;">เงินรางวัล</label>
+                    <%= df.number_field :prize_amount, class: "tournament-form-input tournament-form-input--medium#{' is-invalid' if df.object.errors[:prize_amount].present?}", min: 0 %>
+                    <% if df.object.errors[:prize_amount].present? %>
+                      <div class="tournament-form-error"><%= df.object.errors[:prize_amount].first %></div>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="mt-2">
+                  <label style="font-size:12px;">รูปแบบแข่ง</label>
+                  <%= df.select :match_format,
+                        options_for_select([['เตะนัดเดียว', 'single_leg'], ['เหย้า-เยือน', 'home_away']], df.object.match_format),
+                        { include_blank: false },
+                        class: "tournament-form-input" %>
+                </div>
+              </div>
+            </div>
+          <% end %>
         </div>
       <% end %>
 
