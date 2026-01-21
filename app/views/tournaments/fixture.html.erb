@@ -616,10 +616,7 @@
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
 
           <% if divisions.any? %>
-            <% all_matches = Match.where(tournament_division_id: divisions.map(&:id))
-                                .left_joins(:group)
-                                .includes(:group, :home_team, :away_team)
-                                .order('matches.stage ASC, groups.name ASC NULLS LAST, matches.round_number ASC NULLS LAST, matches.position ASC NULLS LAST, matches.id ASC') %>
+            <% all_matches = @all_matches_for_all_match || [] %>
 
             <% if all_matches.any? %>
               <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>

@@ -164,6 +164,11 @@ class TournamentsController < ApplicationController
     @all_matches_total_pages = (@all_matches_total.to_f / @all_per_page).ceil
     all_offset = (@all_page - 1) * @all_per_page
     @all_matches_page = all_matches_base.offset(all_offset).limit(@all_per_page)
+
+    @all_matches_for_all_match = Match.where(tournament_division_id: divisions)
+                                  .left_joins(:group)
+                                  .includes(:group, :home_team, :away_team, :tournament_division)
+                                  .order(Arel.sql("matches.stage ASC, groups.name ASC NULLS LAST, matches.round_number ASC NULLS LAST, matches.position ASC NULLS LAST, matches.id ASC"))
   end
 
   def table
