@@ -23,7 +23,6 @@ class Tournament < ApplicationRecord
             :province,
             :contact_phone,
             :competition_date,
-            :line_id,
             presence: true
 
   validate :registration_dates_must_be_in_order
