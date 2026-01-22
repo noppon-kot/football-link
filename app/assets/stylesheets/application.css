@@ -1107,13 +1107,13 @@ body.theme-green a.tournament-grid-item:hover .tournament-index-title {
 }
 
 .tournament-grid {
-  column-count: 2;
+  column-width: 220px;
   column-gap: 8px;
 }
 
 @media (min-width: 768px) {
   .tournament-grid {
-    column-count: 3;
+    column-width: 260px;
   }
 }
 
@@ -1140,7 +1140,6 @@ body.theme-green a.tournament-grid-item:hover .tournament-index-title {
   width: 100%;
   height: auto;
   display: block;
-  object-fit: contain;
 }
 
 .app-shell {
