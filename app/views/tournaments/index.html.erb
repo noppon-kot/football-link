@@ -5,8 +5,16 @@
 
       <div class="d-flex align-items-center" style="gap:8px;">
         <div class="btn-group btn-group-sm" role="group" aria-label="view toggle">
-          <button type="button" class="btn btn-light tournament-view-toggle is-active" data-view="list">List</button>
-          <button type="button" class="btn btn-light tournament-view-toggle" data-view="grid">รูป</button>
+          <button type="button" class="btn btn-light tournament-view-toggle is-active" data-view="list" title="รายการ" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="รายการ" style="line-height:1;padding:6px 8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+              <path d="M4 6h3v3H4V6zm5 1h11v1H9V7zm-5 6h3v3H4v-3zm5 1h11v1H9v-1zm-5 6h3v3H4v-3zm5 1h11v1H9v-1z" fill="currentColor"/>
+            </svg>
+          </button>
+          <button type="button" class="btn btn-light tournament-view-toggle" data-view="grid" title="รูปภาพ" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="รูปภาพ" style="line-height:1;padding:6px 8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+              <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" fill="currentColor"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>

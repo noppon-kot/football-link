@@ -103,29 +103,29 @@
 
         <nav class="ls-subnav" aria-label="Tournament navigation">
           <div class="ls-subnav-scroll">
-            <%= link_to "Info", tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(tournament_path(@tournament))}" %>
+            <%= link_to "ข้อมูล", tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(tournament_path(@tournament))}" %>
 
             <% if can_manage_tournament || @tournament.free? || has_teams %>
-              <%= link_to "Team", teams_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(teams_tournament_path(@tournament))}" %>
+              <%= link_to "ทีม", teams_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(teams_tournament_path(@tournament))}" %>
             <% end %>
 
             <% if can_manage_tournament %>
               <% if pro_enabled %>
-                <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
-                <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
-                <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+                <%= link_to "แบ่งสาย", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
+                <%= link_to "โปรแกรม", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
+                <%= link_to "คะแนน", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
               <% else %>
-                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Group</a>
-                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Fixtures</a>
-                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">Table</a>
+                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">แบ่งสาย</a>
+                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">โปรแกรม</a>
+                <a class="ls-subnav-link is-disabled" href="#" data-bs-toggle="modal" data-bs-target="#planUpgradeModal">คะแนน</a>
               <% end %>
             <% else %>
               <% if has_groups %>
-                <%= link_to "Group", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
+                <%= link_to "แบ่งสาย", groups_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(groups_tournament_path(@tournament))}" %>
               <% end %>
               <% if has_matches %>
-                <%= link_to "Fixtures", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
-                <%= link_to "Table", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
+                <%= link_to "โปรแกรม", fixture_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(fixture_tournament_path(@tournament))}" %>
+                <%= link_to "คะแนน", table_tournament_path(@tournament), class: "ls-subnav-link #{'is-active' if current_page?(table_tournament_path(@tournament))}" %>
               <% end %>
             <% end %>
           </div>
