@@ -1,0 +1,39 @@
+<div class="app-shell">
+  <div class="container py-3" style="max-width:520px;">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">ตั้งรหัสผ่านใหม่</h5>
+
+        <%= form_with url: password_reset_path, method: :patch, local: true do %>
+          <%= hidden_field_tag :username, @username %>
+
+          <div class="mb-3">
+            <label class="form-label">คำถาม</label>
+            <div class="form-control" style="background:#f8f9fa;"> <%= @user.security_question.presence || "-" %> </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">คำตอบ</label>
+            <%= password_field_tag :security_answer, nil, class: "form-control", autocomplete: "off" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Password ใหม่</label>
+            <%= password_field_tag :password, nil, class: "form-control", autocomplete: "new-password" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Confirm Password</label>
+            <%= password_field_tag :password_confirmation, nil, class: "form-control", autocomplete: "new-password" %>
+          </div>
+
+          <%= submit_tag "บันทึกรหัสผ่านใหม่", class: "btn btn-dark w-100" %>
+        <% end %>
+
+        <div class="text-center" style="margin-top:12px;">
+          <%= link_to "กลับไปหน้า login", login_path, class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

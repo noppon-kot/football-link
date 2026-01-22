@@ -7,6 +7,28 @@ module Sessions
     end
 
     def call
+      if @params.dig(:session, :username).present?
+        return login_with_username_password
+      end
+
+      login_with_user_id
+    end
+
+    private
+
+    def login_with_username_password
+      username = @params.dig(:session, :username).to_s.strip.downcase
+      password = @params.dig(:session, :password).to_s
+
+      user = User.find_by(username: username)
+      return failure([I18n.t("sessions.flash.login_failed")]) unless user
+
+      return failure([I18n.t("sessions.flash.login_failed")]) unless user.authenticate(password)
+
+      Result.new(success?: true, user: user, errors: [])
+    end
+
+    def login_with_user_id
       user = User.find_by(id: @params.dig(:session, :user_id))
       return failure([I18n.t("sessions.flash.login_failed")]) unless user
 
@@ -16,8 +38,6 @@ module Sessions
 
       Result.new(success?: true, user: user, errors: [])
     end
-
-    private
 
     def organizer_with_wrong_password?(user)
       user.respond_to?(:organizer?) &&

@@ -8,6 +8,13 @@ Rails.application.routes.draw do
   post "login"  => "sessions#create"
   delete "logout" => "sessions#destroy"
 
+  get  "signup" => "registrations#new"
+  post "signup" => "registrations#create"
+
+  get  "password_reset" => "password_resets#new"
+  post "password_reset" => "password_resets#create"
+  patch "password_reset" => "password_resets#update"
+
   if Rails.env.development?
     get  "dev/impersonate/:id", to: "sessions#impersonate"
     post "dev/impersonate/:id", to: "sessions#impersonate", as: :dev_impersonate

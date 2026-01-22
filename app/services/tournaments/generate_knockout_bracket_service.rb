@@ -77,7 +77,7 @@ module Tournaments
 
     def create_matches!
       # ลบแมตช์น็อคเอาท์เดิมทั้งหมดของรุ่นนี้ก่อน เพื่อไม่ให้ซ้ำซ้อน
-      @division.matches.knockout.delete_all
+      @division.matches.knockout.destroy_all
 
       labels = ROUND_LABELS[@bracket_size]
       total_rounds = labels.size

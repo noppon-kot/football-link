@@ -26,13 +26,31 @@
   <% else %>
     <div class="container py-3" style="max-width:520px;">
       <div class="card shadow-sm">
-        <div class="card-body">
-          <%= link_to "เข้าสู่ระบบด้วย LINE", line_login_path,
-                      class: "btn w-100",
-                      style: "background:#00c300;border-color:#00c300;color:#ffffff;font-weight:800;padding:12px 14px;" %>
+        <div class="card-body d-flex flex-column" style="min-height:320px;">
+          <%= form_with url: login_path, scope: :session, local: true do |f| %>
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <%= f.text_field :username, class: "form-control", autocomplete: "username" %>
+            </div>
 
-          <div class="text-center" style="margin-top:12px;">
-            <%= link_to "Admin login", login_path(admin: 1), class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <%= f.password_field :password, class: "form-control", autocomplete: "current-password" %>
+            </div>
+
+            <%= f.submit "Login", class: "btn btn-dark w-100" %>
+          <% end %>
+
+          <%= link_to "Login ด้วย LINE", line_login_path,
+                      class: "btn w-100",
+                      style: "background:#00c300;border-color:#00c300;color:#ffffff;font-weight:800;padding:12px 14px;margin-top:10px;" %>
+
+          <div class="text-center" style="margin-top:auto;padding-top:12px;">
+            <%= link_to "สมัครสมาชิก", signup_path, class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
+            <span class="text-muted" style="font-size:12px;"> | </span>
+            <%= link_to "ลืมรหัสผ่าน", password_reset_path, class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
+            <span class="text-muted" style="font-size:12px;"> | </span>
+            <%= link_to "admin", login_path(admin: 1), class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
           </div>
         </div>
       </div>

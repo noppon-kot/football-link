@@ -99,6 +99,8 @@ class TournamentsController < ApplicationController
                       .pluck(Arel.sql("DATE(matches.kickoff_at)"))
                       .map { |d| d.is_a?(Date) ? d : d.to_date }
 
+    @available_days = available_days
+
     upcoming = all_dated
                 .where("kickoff_at >= ?", today_start)
                 .order(:kickoff_at, :id)
@@ -221,8 +223,8 @@ class TournamentsController < ApplicationController
       end
 
       # ล้างข้อมูลรอบแบ่งกลุ่มเดิมทิ้งทั้งหมดของรุ่นนี้ (ถ้ามี) แล้วสร้างสาย A/B ใหม่
-      division.matches.group_stage.delete_all
-      division.groups.delete_all
+      division.matches.group_stage.destroy_all
+      division.groups.destroy_all
 
       group_a = division.groups.create!(name: "A")
       group_b = division.groups.create!(name: "B")

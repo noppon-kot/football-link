@@ -73,6 +73,15 @@ body.theme-green .ls-subnav-link.is-active {
   border-color: rgba(255, 255, 255, 0.95);
 }
 
+body.theme-green .ls-tournament-strip {
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+body.theme-green .ls-tournament-strip-title {
+  color: #0b5b33;
+}
+
 body.theme-green .page-link {
   background: #ffffff;
   border-color: rgba(0, 0, 0, 0.12);
@@ -200,6 +209,34 @@ body.theme-green a:hover {
   z-index: 1029;
   background: #0f1113;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ls-tournament-strip {
+  position: sticky;
+  top: 98px;
+  z-index: 1028;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ls-tournament-strip-inner {
+  padding: 8px 12px;
+}
+
+.ls-tournament-strip-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.90);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ls-tournament-strip-meta {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.62);
+  line-height: 1.25;
 }
 
 .ls-subnav-scroll {
@@ -1034,6 +1071,15 @@ body.theme-green .btn-light.tournament-view-toggle.is-active:focus {
   background: #12853c;
   border-color: #12853c;
   color: #ffffff !important;
+}
+
+body.theme-green .tournament-index-title {
+  color: #16a34a;
+}
+
+body.theme-green a.card:hover .tournament-index-title,
+body.theme-green a.tournament-grid-item:hover .tournament-index-title {
+  color: #12853c;
 }
 
 .tournament-grid {

@@ -1,18 +1,4 @@
 <div class="app-shell">
-  <div class="container py-3" style="max-width:960px;">
-    <div class="card shadow-sm" style="border-radius:14px;">
-      <div class="card-body" style="padding:14px;">
-        <div class="tournament-page-title"><%= @tournament.title %></div>
-        <div class="text-muted" style="font-size:12px;margin-top:6px;">
-          <%= tournament_competition_date_label(@tournament) %>
-        </div>
-        <div class="text-muted" style="font-size:12px;">
-          <%= @tournament.location_name %>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="tournament-show-body">
     <div class="container py-2">
       <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ตารางคะแนน</h2>
@@ -115,45 +101,77 @@
             <% pk_loss_pts = sample_div.respond_to?(:points_pk_loss) && sample_div.points_pk_loss.present? ? sample_div.points_pk_loss : draw_pts %>
 
             <% if can_manage_registrations?(@tournament) %>
-              <div class="mb-3 p-3 rounded" style="background-color:#e3f2fd;border:1px solid #64b5f6;">
-                <div class="d-flex flex-column" style="gap:4px;">
-                  <div class="d-flex align-items-center justify-content-between" style="gap:8px;flex-wrap:wrap;">
-                    <div style="font-size:12px;font-weight:bold;color:#0d47a1;">กำหนดคะแนน ชนะ/เสมอ/แพ้ และกติกาเสมอ (ใช้ร่วมกันทุกรุ่น)</div>
-                    <%= form_with url: update_points_tournament_path(@tournament), method: :patch, local: true, class: "d-flex align-items-end flex-wrap" do |f| %>
-                      <div class="me-2" style="font-size:12px;">
-                        <label class="form-label mb-0" style="font-size:11px;">ชนะ</label>
-                        <input type="number" name="division[points_win]" min="0" max="10" class="form-control form-control-sm" value="<%= win_pts %>">
-                      </div>
-                      <div class="me-2" style="font-size:12px;">
-                        <label class="form-label mb-0" style="font-size:11px;">เสมอ</label>
-                        <input type="number" name="division[points_draw]" min="0" max="10" class="form-control form-control-sm" value="<%= draw_pts %>">
-                      </div>
-                      <div class="me-2" style="font-size:12px;">
-                        <label class="form-label mb-0" style="font-size:11px;">แพ้</label>
-                        <input type="number" name="division[points_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= loss_pts %>">
-                      </div>
-                      <div class="me-2" style="font-size:12px;min-width:160px;">
-                        <label class="form-label mb-0" style="font-size:11px;">กติกากรณีเสมอ</label>
-                        <select name="division[draw_mode]" class="form-select form-select-sm">
-                          <option value="normal" <%= "selected" if draw_mode == "normal" %>>เสมอธรรมดา (ทีมละ <%= draw_pts %> แต้ม)</option>
-                          <option value="pk" <%= "selected" if draw_mode == "pk" %>>เสมอแล้วยิงจุดโทษ</option>
-                        </select>
-                      </div>
-                      <div class="me-2" style="font-size:12px;">
-                        <label class="form-label mb-0" style="font-size:11px;">แต้มชนะจุดโทษ</label>
-                        <input type="number" name="division[points_pk_win]" min="0" max="10" class="form-control form-control-sm" value="<%= pk_win_pts %>">
-                      </div>
-                      <div class="me-2" style="font-size:12px;">
-                        <label class="form-label mb-0" style="font-size:11px;">แต้มแพ้จุดโทษ</label>
-                        <input type="number" name="division[points_pk_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= pk_loss_pts %>">
-                      </div>
+              <div class="d-flex align-items-center justify-content-between mb-2" style="gap:8px;">
+                <div style="font-size:12px;color:#78909c;">ตั้งค่าคะแนน (ใช้ร่วมกันทุกรุ่น)</div>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#pointsSettingsModal"
+                        aria-label="ตั้งค่าคะแนน"
+                        style="line-height:1;padding:6px 8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                    <path d="M19.4 13.5c.04-.5.04-1 0-1.5l2.1-1.6c.2-.2.25-.5.12-.7l-2-3.5c-.13-.23-.4-.33-.65-.25l-2.5 1c-.4-.3-.8-.5-1.3-.7l-.4-2.7c-.04-.26-.26-.46-.53-.46h-4c-.27 0-.5.2-.54.46l-.4 2.7c-.45.18-.9.42-1.3.7l-2.5-1c-.25-.1-.52.02-.65.25l-2 3.5c-.13.22-.08.5.12.7l2.1 1.6c-.04.5-.04 1 0 1.5l-2.1 1.6c-.2.2-.25.5-.12.7l2 3.5c.13.23.4.33.65.25l2.5-1c.4.3.8.5 1.3.7l.4 2.7c.04.26.27.46.54.46h4c.27 0 .5-.2.53-.46l.4-2.7c.45-.18.9-.42 1.3-.7l2.5 1c.25.1.52-.02.65-.25l2-3.5c.13-.22.08-.5-.12-.7l-2.1-1.6ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="modal fade" id="pointsSettingsModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-content">
+                    <div class="modal-header">
                       <div>
-                        <button type="submit" class="btn btn-sm btn-outline-primary">บันทึก</button>
+                        <div class="fw-bold">กำหนดคะแนน</div>
+                        <div class="text-muted" style="font-size:12px;">ชนะ/เสมอ/แพ้ และกติกาเสมอ (ใช้ร่วมกันทุกรุ่น)</div>
                       </div>
-                    <% end %>
-                  </div>
-                  <div style="font-size:11px;color:#90a4ae;">
-                    ถ้าเลือก "เสมอแล้วยิงจุดโทษ" ให้ไปเลือกทีมที่ชนะจุดโทษในหน้าตารางแข่งขันของแต่ละนัดด้วย
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                      <%= form_with url: update_points_tournament_path(@tournament), method: :patch, local: true do |f| %>
+                        <div class="row g-2 align-items-end">
+                          <div class="col-4 col-md-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">ชนะ</label>
+                            <input type="number" name="division[points_win]" min="0" max="10" class="form-control form-control-sm" value="<%= win_pts %>">
+                          </div>
+                          <div class="col-4 col-md-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">เสมอ</label>
+                            <input type="number" name="division[points_draw]" min="0" max="10" class="form-control form-control-sm" value="<%= draw_pts %>">
+                          </div>
+                          <div class="col-4 col-md-2" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">แพ้</label>
+                            <input type="number" name="division[points_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= loss_pts %>">
+                          </div>
+
+                          <div class="col-12 col-md-6" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">กติกากรณีเสมอ</label>
+                            <select name="division[draw_mode]" class="form-select form-select-sm">
+                              <option value="normal" <%= "selected" if draw_mode == "normal" %>>เสมอธรรมดา (ทีมละ <%= draw_pts %> แต้ม)</option>
+                              <option value="pk" <%= "selected" if draw_mode == "pk" %>>เสมอแล้วยิงจุดโทษ</option>
+                            </select>
+                          </div>
+
+                          <div class="col-6 col-md-3" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">แต้มชนะจุดโทษ</label>
+                            <input type="number" name="division[points_pk_win]" min="0" max="10" class="form-control form-control-sm" value="<%= pk_win_pts %>">
+                          </div>
+                          <div class="col-6 col-md-3" style="font-size:12px;">
+                            <label class="form-label mb-0" style="font-size:11px;">แต้มแพ้จุดโทษ</label>
+                            <input type="number" name="division[points_pk_loss]" min="0" max="10" class="form-control form-control-sm" value="<%= pk_loss_pts %>">
+                          </div>
+
+                          <div class="col-12">
+                            <div class="text-muted" style="font-size:12px;">
+                              ถ้าเลือก "เสมอแล้วยิงจุดโทษ" ให้ไปเลือกทีมที่ชนะจุดโทษในหน้าตารางแข่งขันของแต่ละนัดด้วย
+                            </div>
+                          </div>
+
+                          <div class="col-12 d-flex justify-content-end" style="gap:8px;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                            <button type="submit" class="btn btn-sm btn-primary">บันทึก</button>
+                          </div>
+                        </div>
+                      <% end %>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -189,7 +207,9 @@
                                 class="btn btn-sm btn-success js-standings-export"
                                 data-target="<%= card_id %>"
                                 data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>_group_<%= group.name %>.png">
-                          ดาวน์โหลดตารางคะแนน
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                            <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                          </svg>
                         </button>
                       </div>
 
@@ -411,7 +431,9 @@
                             class="btn btn-sm btn-success js-standings-export"
                             data-target="<%= card_id %>"
                             data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>.png">
-                      ดาวน์โหลดตารางคะแนน
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                        <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                      </svg>
                     </button>
                   </div>
                   <div class="table-responsive">

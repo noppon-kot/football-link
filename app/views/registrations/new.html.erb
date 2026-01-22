@@ -1,0 +1,47 @@
+<div class="app-shell">
+  <div class="container py-3" style="max-width:520px;">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">สมัครสมาชิก</h5>
+
+        <%= form_with model: @user, url: signup_path, local: true do |f| %>
+          <div class="mb-3">
+            <label class="form-label">ชื่อ</label>
+            <%= f.text_field :name, class: "form-control", autocomplete: "name" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <%= f.text_field :username, class: "form-control", autocomplete: "username" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <%= f.password_field :password, class: "form-control", autocomplete: "new-password" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Confirm Password</label>
+            <%= f.password_field :password_confirmation, class: "form-control", autocomplete: "new-password" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">คำถามสำหรับลืมรหัสผ่าน</label>
+            <%= f.text_field :security_question, class: "form-control" %>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">คำตอบ</label>
+            <%= f.password_field :security_answer, class: "form-control", autocomplete: "off" %>
+          </div>
+
+          <%= f.submit "สมัครสมาชิก", class: "btn btn-dark w-100" %>
+        <% end %>
+
+        <div class="text-center" style="margin-top:12px;">
+          <%= link_to "กลับไปหน้า login", login_path, class: "text-muted", style: "font-size:12px;text-decoration:none;" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

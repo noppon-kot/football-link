@@ -1,18 +1,4 @@
 <div class="app-shell">
-  <div class="container py-3" style="max-width:960px;">
-    <div class="card shadow-sm" style="border-radius:14px;">
-      <div class="card-body" style="padding:14px;">
-        <div class="tournament-page-title"><%= @tournament.title %></div>
-        <div class="text-muted" style="font-size:12px;margin-top:6px;">
-          <%= tournament_competition_date_label(@tournament) %>
-        </div>
-        <div class="text-muted" style="font-size:12px;">
-          <%= @tournament.location_name %>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="tournament-show-body">
     <div class="container py-2">
       <h2 style="font-size:18px;font-weight:bold;" class="mb-2">สายการแข่งขัน</h2>
@@ -30,112 +16,137 @@
           <% color_class = color_classes[idx % color_classes.size] %>
 
           <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
-            <div class="d-flex align-items-center mb-2" style="gap:8px;">
-              <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
-              <div>
-                <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
-                <div style="font-size:11px;color:#78909c;">จำนวนทีมในรุ่นนี้ <%= regs.count %> ทีม</div>
+            <div class="d-flex align-items-center justify-content-between mb-2" style="gap:8px;">
+              <div class="d-flex align-items-center" style="gap:8px;">
+                <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
+                <div>
+                  <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
+                  <div style="font-size:11px;color:#78909c;">จำนวนทีมในรุ่นนี้ <%= regs.count %> ทีม</div>
+                </div>
               </div>
+
+              <% if can_manage_registrations?(@tournament) %>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#divisionSettingsModal_<%= div.id %>"
+                        aria-label="ตั้งค่าการแบ่งสาย"
+                        style="line-height:1;padding:6px 8px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                    <path d="M19.4 13.5c.04-.5.04-1 0-1.5l2.1-1.6c.2-.2.25-.5.12-.7l-2-3.5c-.13-.23-.4-.33-.65-.25l-2.5 1c-.4-.3-.8-.5-1.3-.7l-.4-2.7c-.04-.26-.26-.46-.53-.46h-4c-.27 0-.5.2-.54.46l-.4 2.7c-.45.18-.9.42-1.3.7l-2.5 1c-.25.1-.52.02-.65.25l-2 3.5c-.13.22-.08.5.12.7l2.1 1.6c-.04.5-.04 1 0 1.5l-2.1 1.6c-.2.2-.25.5-.12.7l2 3.5c.13.23.4.33.65.25l2.5-1c.4.3.8.5 1.3.7l.4 2.7c.04.26.27.46.54.46h4c.27 0 .5-.2.53-.46l.4-2.7c.45-.18.9-.42 1.3-.7l2.5 1c.25.1.52-.02.65-.25l2-3.5c.13-.22.08-.5-.12-.7l-2.1-1.6ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/>
+                  </svg>
+                </button>
+              <% end %>
             </div>
 
             <% if can_manage_registrations?(@tournament) %>
-              <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#ffffff;border:1px dashed #cfd8dc;">
-                <div class="fw-bold mb-1" style="font-size:13px;">แบ่งสายการแข่งขันสำหรับรุ่นนี้</div>
-                <p class="mb-2" style="font-size:12px;color:#78909c;">
-                  กำหนดจำนวนสาย และจำนวนทีมต่อสาย จากนั้นระบบจะสร้างคู่แข่งขันแบบพบกันหมดในแต่ละสายให้โดยอัตโนมัติ
-                </p>
+              <div class="modal fade" id="divisionSettingsModal_<%= div.id %>" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <div>
+                        <div class="fw-bold">แบ่งสายการแข่งขัน</div>
+                        <div class="text-muted" style="font-size:12px;">รุ่น <%= div.name %></div>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
 
-                <% existing_group_count = div.groups.count if div.groups.loaded? ? div.groups.any? : div.groups.exists? %>
-                <% existing_slots_per_group = nil %>
-                <% if div.groups.any? && div.matches.any? %>
-                  <% sample_group = div.groups.order(:name).first %>
-                  <% group_slots = (div.matches.where(group: sample_group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq) %>
-                  <% existing_slots_per_group = group_slots.size if group_slots.any? %>
-                <% end %>
+                    <div class="modal-body">
+                      <p class="mb-2" style="font-size:12px;color:#78909c;">
+                        กำหนดจำนวนสาย และจำนวนทีมต่อสาย จากนั้นระบบจะสร้างคู่แข่งขันแบบพบกันหมดในแต่ละสายให้โดยอัตโนมัติ
+                      </p>
 
-                <%= form_with url: generate_mock_schedule_tournament_path(@tournament), method: :post, local: true, class: "row g-2 align-items-end js-division-form", data: { total_teams: regs.count } do |f| %>
-                  <%= hidden_field_tag :division_id, div.id %>
+                      <% existing_group_count = div.groups.count if div.groups.loaded? ? div.groups.any? : div.groups.exists? %>
+                      <% existing_slots_per_group = nil %>
+                      <% if div.groups.any? && div.matches.any? %>
+                        <% sample_group = div.groups.order(:name).first %>
+                        <% group_slots = (div.matches.where(group: sample_group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq) %>
+                        <% existing_slots_per_group = group_slots.size if group_slots.any? %>
+                      <% end %>
 
-                  <% has_group_matches   = div.matches.group_stage.exists? %>
-                  <% has_knockout_match = div.matches.knockout.exists? %>
-                  <% default_mode = if has_group_matches && has_knockout_match
-                                      "group_with_knockout"
-                                    elsif has_knockout_match && !has_group_matches
-                                      "knockout_only"
-                                    elsif has_group_matches && !has_knockout_match
-                                      "league_only"
-                                    else
-                                      "group_with_knockout"
-                                    end %>
+                      <%= form_with url: generate_mock_schedule_tournament_path(@tournament), method: :post, local: true, class: "row g-2 align-items-end js-division-form", data: { total_teams: regs.count } do |f| %>
+                        <%= hidden_field_tag :division_id, div.id %>
 
-                  <div class="col-12 mb-1">
-                    <label class="form-label d-block" style="font-size:12px;">รูปแบบการแข่งขัน</label>
-                    <div class="btn-group btn-group-sm js-competition-mode-group" role="group" aria-label="รูปแบบการแข่งขัน">
-                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_group_with_knockout_<%= div.id %>" value="group_with_knockout" autocomplete="off" <%= "checked" if default_mode == "group_with_knockout" %>>
-                      <label class="btn btn-outline-primary" for="mode_group_with_knockout_<%= div.id %>">ระบบแบ่งกลุ่ม</label>
+                        <% has_group_matches   = div.matches.group_stage.exists? %>
+                        <% has_knockout_match = div.matches.knockout.exists? %>
+                        <% default_mode = if has_group_matches && has_knockout_match
+                                            "group_with_knockout"
+                                          elsif has_knockout_match && !has_group_matches
+                                            "knockout_only"
+                                          elsif has_group_matches && !has_knockout_match
+                                            "league_only"
+                                          else
+                                            "group_with_knockout"
+                                          end %>
 
-                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_knockout_only_<%= div.id %>" value="knockout_only" autocomplete="off" <%= "checked" if default_mode == "knockout_only" %>>
-                      <label class="btn btn-outline-primary" for="mode_knockout_only_<%= div.id %>">ระบบน็อคเอาท์</label>
+                        <div class="col-12 mb-1">
+                          <label class="form-label d-block" style="font-size:12px;">รูปแบบการแข่งขัน</label>
+                          <div class="btn-group btn-group-sm js-competition-mode-group" role="group" aria-label="รูปแบบการแข่งขัน">
+                            <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_group_with_knockout_<%= div.id %>" value="group_with_knockout" autocomplete="off" <%= "checked" if default_mode == "group_with_knockout" %>>
+                            <label class="btn btn-outline-primary" for="mode_group_with_knockout_<%= div.id %>">ระบบแบ่งกลุ่ม</label>
 
-                      <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_league_only_<%= div.id %>" value="league_only" autocomplete="off" <%= "checked" if default_mode == "league_only" %>>
-                      <label class="btn btn-outline-primary" for="mode_league_only_<%= div.id %>">ระบบลีก</label>
+                            <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_knockout_only_<%= div.id %>" value="knockout_only" autocomplete="off" <%= "checked" if default_mode == "knockout_only" %>>
+                            <label class="btn btn-outline-primary" for="mode_knockout_only_<%= div.id %>">ระบบน็อคเอาท์</label>
+
+                            <input type="radio" class="btn-check js-competition-mode" name="competition_mode[<%= div.id %>]" id="mode_league_only_<%= div.id %>" value="league_only" autocomplete="off" <%= "checked" if default_mode == "league_only" %>>
+                            <label class="btn btn-outline-primary" for="mode_league_only_<%= div.id %>">ระบบลีก</label>
+                          </div>
+                        </div>
+
+                        <div class="col-6 col-md-3 js-field-group-count">
+                          <label class="form-label" style="font-size:12px;">จำนวนสาย</label>
+                          <input type="number" name="group_count" min="1" class="form-control form-control-sm js-group-count" value="<%= existing_group_count || 2 %>">
+                        </div>
+                        <%= hidden_field_tag :slots_per_group, (existing_slots_per_group || 2), class: "js-slots-per-group" %>
+
+                        <div class="col-6 col-md-3 js-field-match-format">
+                          <label class="form-label" style="font-size:12px;">รูปแบบแข่ง</label>
+                          <select name="match_format" class="form-select form-select-sm js-match-format">
+                            <option value="single_leg">นัดเดียว</option>
+                            <option value="home_away">เหย้า-เยือน</option>
+                          </select>
+                        </div>
+
+                        <div class="col-6 col-md-3 js-field-knockout-size">
+                          <label class="form-label" style="font-size:12px;">จำนวนทีมในรอบน็อคเอาท์</label>
+                          <select name="knockout_bracket_size" class="form-select form-select-sm js-knockout-size">
+                            <option value="4" selected>4 ทีม</option>
+                            <option value="8">8 ทีม</option>
+                            <option value="16">16 ทีม</option>
+                            <option value="32">32 ทีม</option>
+                            <option value="64">64 ทีม</option>
+                          </select>
+                        </div>
+
+                        <div class="col-6 col-md-3 js-field-third-place">
+                          <label class="form-label" style="font-size:12px;">แมตช์ชิงที่ 3</label>
+                          <select name="include_third_place" class="form-select form-select-sm js-include-third-place">
+                            <option value="">ไม่มี</option>
+                            <option value="1">มี</option>
+                          </select>
+                        </div>
+
+                        <div class="col-12 d-flex justify-content-end" style="gap:8px;">
+                          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                          <button type="submit" class="btn btn-sm btn-primary">แบ่งสาย+สร้างโปรแกรมแข่งขัน</button>
+                        </div>
+                      <% end %>
                     </div>
                   </div>
-
-                  <div class="col-6 col-md-3 js-field-group-count">
-                    <label class="form-label" style="font-size:12px;">จำนวนสาย</label>
-                    <input type="number" name="group_count" min="1" class="form-control form-control-sm js-group-count" value="<%= existing_group_count || 2 %>">
-                  </div>
-
-                  <%= hidden_field_tag :slots_per_group, (existing_slots_per_group || 2), class: "js-slots-per-group" %>
-
-                  <div class="col-6 col-md-3 js-field-match-format">
-                    <label class="form-label" style="font-size:12px;">รูปแบบแข่ง</label>
-                    <select name="match_format" class="form-select form-select-sm js-match-format">
-                      <option value="single_leg">นัดเดียว</option>
-                      <option value="home_away">เหย้า-เยือน</option>
-                    </select>
-                  </div>
-
-                  <% total_teams_in_division = regs.count %>
-
-                  <div class="col-6 col-md-3 js-field-knockout-size">
-                    <label class="form-label" style="font-size:12px;">จำนวนทีมในรอบน็อคเอาท์</label>
-                    <select name="knockout_bracket_size" class="form-select form-select-sm js-knockout-size">
-                      <option value="4" selected>4 ทีม</option>
-                      <option value="8">8 ทีม</option>
-                      <option value="16">16 ทีม</option>
-                      <option value="32">32 ทีม</option>
-                      <option value="64">64 ทีม</option>
-                    </select>
-                  </div>
-
-                  <div class="col-6 col-md-3 js-field-third-place">
-                    <label class="form-label" style="font-size:12px;">แมตช์ชิงที่ 3</label>
-                    <select name="include_third_place" class="form-select form-select-sm js-include-third-place">
-                      <option value="">ไม่มี</option>
-                      <option value="1">มี</option>
-                    </select>
-                  </div>
-                  <div class="col-12 col-md-3 d-grid ms-auto">
-                    <button type="submit" class="btn btn-sm btn-primary">แบ่งสาย+สร้างโปรแกรมแข่งขัน</button>
-                  </div>
-                <% end %>
+                </div>
               </div>
 
-              <% if div.groups.any? && div.matches.any? %>
-                <% has_played_matches = div.matches.where.not(home_score: nil, away_score: nil).exists? %>
+              <% has_played_matches = div.matches.where.not(home_score: nil, away_score: nil).exists? %>
+              <% knockout_only_mode = div.matches.knockout.exists? && !div.matches.group_stage.exists? && div.groups.count == 2 %>
+              <% knockout_only_bracket_size = nil %>
+              <% knockout_only_side_size = nil %>
+              <% if knockout_only_mode %>
+                <% first_round_count = div.matches.knockout.where(round_number: 1).count %>
+                <% knockout_only_bracket_size = first_round_count * 2 if first_round_count.positive? %>
+                <% knockout_only_side_size = (knockout_only_bracket_size / 2) if knockout_only_bracket_size.to_i > 0 %>
+              <% end %>
 
-                <% knockout_only_mode = div.matches.knockout.exists? && !div.matches.group_stage.exists? && div.groups.count == 2 %>
-                <% knockout_only_bracket_size = nil %>
-                <% knockout_only_side_size = nil %>
-                <% if knockout_only_mode %>
-                  <% first_round_count = div.matches.knockout.where(round_number: 1).count %>
-                  <% knockout_only_bracket_size = first_round_count * 2 if first_round_count.positive? %>
-                  <% knockout_only_side_size = (knockout_only_bracket_size / 2) if knockout_only_bracket_size.to_i > 0 %>
-                <% end %>
-
-                <% if has_played_matches %>
+              <% if has_played_matches %>
                   <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
                     <p class="mb-2" style="font-size:12px;color:#e53935;">
                       มีการแข่งขันบางนัดแล้ว ไม่สามารถแก้ไขสายได้อีก สามารถดูตำแหน่งทีมในสายได้จากตารางด้านล่าง
@@ -279,7 +290,6 @@
                     <% end %>
                   </div>
                 <% end %>
-              <% end %>
 
             <% else %>
               <% if div.groups.any? && div.matches.any? %>
