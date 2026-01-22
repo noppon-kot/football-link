@@ -1,6 +1,7 @@
 <div class="app-shell">
   <div class="tournament-show-body">
     <div class="container py-2">
+      <% can_view_match_private_details = can_manage_registrations?(@tournament) %>
       <div class="d-flex justify-content-between align-items-center mb-2" style="gap:8px;">
         <div>
           <div style="font-size:18px;font-weight:bold;">รายละเอียดการแข่งขัน</div>
@@ -42,7 +43,7 @@
 		  <% home_events = (@match_events || []).select { |e| e.tournament_player&.team_registration_id == home_entry_id } %>
 		  <% away_events = (@match_events || []).select { |e| e.tournament_player&.team_registration_id == away_entry_id } %>
 
-		  <% if (@match_events || []).any? %>
+		  <% if can_view_match_private_details && (@match_events || []).any? %>
 			<hr />
 			<div class="row g-2" style="font-size:12px;">
 			  <div class="col-6" style="min-width:0;">
@@ -117,268 +118,271 @@
         </div>
       </div>
 
-      <div class="row g-3">
-        <div class="col-12 col-lg-6">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
-                <div>
-                  <div class="fw-bold">รายชื่อทีมเหย้า</div>
-                  <div class="text-muted" style="font-size:12px;">
-                    <% if @home_entry.present? %>
-                      สถานะ: <%= @home_lineup.locked? ? "ส่งแล้ว" : "ยังไม่ส่ง" %>
-                    <% else %>
-                      ยังไม่สามารถส่งได้ (ยังไม่กำหนดทีม)
-                    <% end %>
-                  </div>
-                </div>
-                <% if can_manage_registrations?(@tournament) && @home_lineup.locked? %>
-                  <%= button_to "ปลดล็อก",
-                                match_lineup_unlock_tournament_path(@tournament, match_id: @match.id, side: "home"),
-                                method: :patch,
-                                class: "btn btn-sm btn-outline-danger" %>
-                <% end %>
-              </div>
 
-              <% if @home_entry.present? %>
-                <hr />
-                <%= form_with url: match_lineup_tournament_path(@tournament, match_id: @match.id, side: "home"), method: :patch, local: true do %>
-                  <% disabled = @home_lineup.locked? %>
-                  <% roster_ready = @home_entry.respond_to?(:roster_locked?) && @home_entry.roster_locked? %>
-                  <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
-                    <div class="text-muted" style="font-size:12px;">
-                      <% if disabled %>
-                        ยืนยันแล้ว (ล็อก)
-                      <% elsif !roster_ready && !can_manage_registrations?(@tournament) %>
-                        กรุณาไปที่หน้า “นักกีฬา” เพื่อส่งรายชื่อนักกีฬาก่อน
-                      <% elsif @home_players.any? %>
-                        เลือกตัวจริง/สำรอง แล้วกดยืนยันนักเตะ
-                      <% else %>
-                        ยังไม่มีนักเตะในทีมนี้
-                      <% end %>
-                    </div>
-                    <div>
-                      <% if !roster_ready && !can_manage_registrations?(@tournament) %>
-                        <%= link_to "ไปที่หน้านักกีฬา",
-                                my_entry_players_tournament_path(@tournament, team_registration_id: @home_entry.id),
-                                class: "btn btn-sm btn-outline-secondary" %>
-                      <% else %>
-                        <% if @home_lineup.locked? %>
-                          <button type="button" class="btn btn-sm btn-secondary" disabled>ยืนยันแล้ว</button>
-                        <% else %>
-                          <%= submit_tag "ยืนยันนักเตะ", class: "btn btn-sm btn-primary", disabled: (disabled || !@home_players.any?) %>
-                        <% end %>
-                      <% end %>
-                    </div>
-                  </div>
-
-                  <% unless !roster_ready && !can_manage_registrations?(@tournament) %>
-
-                  <div class="mb-2 fw-bold" style="font-size:13px;">ตัวจริง</div>
-                  <div class="d-flex flex-column" style="gap:6px;">
-                    <% @home_players.each do |p| %>
-                      <label class="d-flex align-items-center" style="gap:8px;">
-                        <%= check_box_tag "lineup[starter_ids][]", p.id, @home_starter_ids.include?(p.id), disabled: disabled %>
-                        <span style="font-size:13px;"><%= p.full_name %></span>
-                      </label>
-                    <% end %>
-                  </div>
-
-                  <hr />
-
-                  <div class="mb-2 fw-bold" style="font-size:13px;">สำรอง</div>
-                  <div class="d-flex flex-column" style="gap:6px;">
-                    <% @home_players.each do |p| %>
-                      <label class="d-flex align-items-center" style="gap:8px;">
-                        <%= check_box_tag "lineup[sub_ids][]", p.id, @home_sub_ids.include?(p.id), disabled: disabled %>
-                        <span style="font-size:13px;"><%= p.full_name %></span>
-                      </label>
-                    <% end %>
-                  </div>
-                  <% end %>
-                <% end %>
-              <% end %>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-12 col-lg-6">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
-                <div>
-                  <div class="fw-bold">รายชื่อทีมเยือน</div>
-                  <div class="text-muted" style="font-size:12px;">
-                    <% if @away_entry.present? %>
-                      สถานะ: <%= @away_lineup.locked? ? "ยืนยันแล้ว" : "ยังไม่ส่ง" %>
-                    <% else %>
-                      ยังไม่สามารถส่งได้ (ยังไม่กำหนดทีม)
-                    <% end %>
-                  </div>
-                </div>
-                <% if can_manage_registrations?(@tournament) && @away_lineup.locked? %>
-                  <%= button_to "ปลดล็อก",
-                                match_lineup_unlock_tournament_path(@tournament, match_id: @match.id, side: "away"),
-                                method: :patch,
-                                class: "btn btn-sm btn-outline-danger" %>
-                <% end %>
-              </div>
-
-              <% if @away_entry.present? %>
-                <hr />
-                <%= form_with url: match_lineup_tournament_path(@tournament, match_id: @match.id, side: "away"), method: :patch, local: true do %>
-                  <% disabled = @away_lineup.locked? %>
-                  <% roster_ready = @away_entry.respond_to?(:roster_locked?) && @away_entry.roster_locked? %>
-                  <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
-                    <div class="text-muted" style="font-size:12px;">
-                      <% if disabled %>
-                        ยืนยันแล้ว (ล็อก)
-                      <% elsif !roster_ready && !can_manage_registrations?(@tournament) %>
-                        กรุณาไปที่หน้า “นักกีฬา” เพื่อส่งรายชื่อนักกีฬาก่อน
-                      <% elsif @away_players.any? %>
-                        เลือกตัวจริง/สำรอง แล้วกดยืนยันนักเตะ
-                      <% else %>
-                        ยังไม่มีนักเตะในทีมนี้
-                      <% end %>
-                    </div>
-                    <div>
-                      <% if !roster_ready && !can_manage_registrations?(@tournament) %>
-                        <%= link_to "ไปที่หน้านักกีฬา",
-                                my_entry_players_tournament_path(@tournament, team_registration_id: @away_entry.id),
-                                class: "btn btn-sm btn-outline-secondary" %>
-                      <% else %>
-                        <% if @away_lineup.locked? %>
-                          <button type="button" class="btn btn-sm btn-secondary" disabled>ยืนยันแล้ว</button>
-                        <% else %>
-                          <%= submit_tag "ยืนยันนักเตะ", class: "btn btn-sm btn-primary", disabled: (disabled || !@away_players.any?) %>
-                        <% end %>
-                      <% end %>
-                    </div>
-                  </div>
-
-                  <% unless !roster_ready && !can_manage_registrations?(@tournament) %>
-
-                  <div class="mb-2 fw-bold" style="font-size:13px;">ตัวจริง</div>
-                  <div class="d-flex flex-column" style="gap:6px;">
-                    <% @away_players.each do |p| %>
-                      <label class="d-flex align-items-center" style="gap:8px;">
-                        <%= check_box_tag "lineup[starter_ids][]", p.id, @away_starter_ids.include?(p.id), disabled: disabled %>
-                        <span style="font-size:13px;"><%= p.full_name %></span>
-                      </label>
-                    <% end %>
-                  </div>
-
-                  <hr />
-
-                  <div class="mb-2 fw-bold" style="font-size:13px;">สำรอง</div>
-                  <div class="d-flex flex-column" style="gap:6px;">
-                    <% @away_players.each do |p| %>
-                      <label class="d-flex align-items-center" style="gap:8px;">
-                        <%= check_box_tag "lineup[sub_ids][]", p.id, @away_sub_ids.include?(p.id), disabled: disabled %>
-                        <span style="font-size:13px;"><%= p.full_name %></span>
-                      </label>
-                    <% end %>
-                  </div>
-                  <% end %>
-                <% end %>
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card shadow-sm mt-3">
-        <div class="card-body">
-          <div class="fw-bold mb-1">เหตุการณ์ (Goals / Cards)</div>
-
-          <% if can_manage_registrations?(@tournament) %>
-            <%= form_with url: match_events_tournament_path(@tournament, match_id: @match.id), method: :post, local: true do %>
-              <div class="row g-2 align-items-end">
-                <div class="col-12 col-md-4">
-                  <label class="form-label" style="font-size:12px;">ประเภท</label>
-                  <%= select_tag "match_event[event_type]",
-                              options_for_select([
-                                ["ประตู", "goal"],
-                                ["ใบเหลือง", "yellow_card"],
-                                ["ใบแดง", "red_card"]
-                              ]),
-                              class: "form-select form-select-sm" %>
-                </div>
-                <div class="col-12 col-md-6">
-                  <label class="form-label" style="font-size:12px;">นักเตะ</label>
-                  <% home_team_name = @match.home_name %>
-                  <% away_team_name = @match.away_name %>
-                  <%= select_tag "match_event[tournament_player_id]",
-                              grouped_options_for_select({
-                                "ทีมเหย้า (#{home_team_name})" => @home_players.map { |p| [p.full_name, p.id] },
-                                "ทีมเยือน (#{away_team_name})" => @away_players.map { |p| [p.full_name, p.id] }
-                              }),
-                              include_blank: "-",
-                              class: "form-select form-select-sm" %>
-                </div>
-                <div class="col-12 col-md-2 text-end">
-                  <%= submit_tag "เพิ่ม", class: "btn btn-sm btn-outline-primary" %>
-                </div>
-              </div>
-            <% end %>
-          <% end %>
-
-          <hr />
-
-          <% if @match_events&.any? %>
-            <div class="d-flex flex-column" style="gap:8px;">
-              <% @match_events.each do |e| %>
-                <% label = case e.event_type
-                          when "goal" then "ประตู"
-                          when "yellow_card" then "ใบเหลือง"
-                          when "red_card" then "ใบแดง"
-                          else e.event_type
-                          end %>
-                <% team = e.tournament_player&.team_registration&.team %>
+      <% if can_view_match_private_details %>
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+              <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
-                  <div style="min-width:0;">
-                    <div class="d-flex align-items-center" style="gap:8px;">
-                      <div style="display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 auto;">
-                        <% if e.event_type == "goal" %>
-                          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#111827" stroke-width="1.5"></circle>
-                            <path d="M12 6 L16 9 L14.5 14 L9.5 14 L8 9 Z" fill="#111827"></path>
-                            <path d="M8 9 L6.5 12 L9.5 14" fill="none" stroke="#111827" stroke-width="1.2"></path>
-                            <path d="M16 9 L17.5 12 L14.5 14" fill="none" stroke="#111827" stroke-width="1.2"></path>
-                          </svg>
-                        <% elsif e.event_type == "yellow_card" %>
-                          <div style="width:14px;height:18px;border-radius:3px;background:#facc15;border:1px solid rgba(0,0,0,0.25);"></div>
-                        <% elsif e.event_type == "red_card" %>
-                          <div style="width:14px;height:18px;border-radius:3px;background:#ef4444;border:1px solid rgba(0,0,0,0.25);"></div>
+                  <div>
+                    <div class="fw-bold">รายชื่อทีมเหย้า</div>
+                    <div class="text-muted" style="font-size:12px;">
+                      <% if @home_entry.present? %>
+                        สถานะ: <%= @home_lineup.locked? ? "ส่งแล้ว" : "ยังไม่ส่ง" %>
+                      <% else %>
+                        ยังไม่สามารถส่งได้ (ยังไม่กำหนดทีม)
+                      <% end %>
+                    </div>
+                  </div>
+                  <% if can_manage_registrations?(@tournament) && @home_lineup.locked? %>
+                    <%= button_to "ปลดล็อก",
+                                  match_lineup_unlock_tournament_path(@tournament, match_id: @match.id, side: "home"),
+                                  method: :patch,
+                                  class: "btn btn-sm btn-outline-danger" %>
+                  <% end %>
+                </div>
+
+                <% if @home_entry.present? %>
+                  <hr />
+                  <%= form_with url: match_lineup_tournament_path(@tournament, match_id: @match.id, side: "home"), method: :patch, local: true do %>
+                    <% disabled = @home_lineup.locked? %>
+                    <% roster_ready = @home_entry.respond_to?(:roster_locked?) && @home_entry.roster_locked? %>
+                    <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
+                      <div class="text-muted" style="font-size:12px;">
+                        <% if disabled %>
+                          ยืนยันแล้ว (ล็อก)
+                        <% elsif !roster_ready && !can_manage_registrations?(@tournament) %>
+                          กรุณาไปที่หน้า “นักกีฬา” เพื่อส่งรายชื่อนักกีฬาก่อน
+                        <% elsif @home_players.any? %>
+                          เลือกตัวจริง/สำรอง แล้วกดยืนยันนักเตะ
+                        <% else %>
+                          ยังไม่มีนักเตะในทีมนี้
                         <% end %>
                       </div>
-                      <div style="min-width:0;">
-                        <div class="fw-bold" style="font-size:13px;"><%= label %></div>
-                        <div class="d-flex align-items-center text-muted" style="gap:6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                          <% if team&.logo&.attached? %>
-                            <%= image_tag team.logo, style: "width:16px;height:16px;border-radius:999px;object-fit:cover;background:rgba(0,0,0,0.06);flex:0 0 auto;" %>
+                      <div>
+                        <% if !roster_ready && !can_manage_registrations?(@tournament) %>
+                          <%= link_to "ไปที่หน้านักกีฬา",
+                                  my_entry_players_tournament_path(@tournament, team_registration_id: @home_entry.id),
+                                  class: "btn btn-sm btn-outline-secondary" %>
+                        <% else %>
+                          <% if @home_lineup.locked? %>
+                            <button type="button" class="btn btn-sm btn-secondary" disabled>ยืนยันแล้ว</button>
+                          <% else %>
+                            <%= submit_tag "ยืนยันนักเตะ", class: "btn btn-sm btn-primary", disabled: (disabled || !@home_players.any?) %>
                           <% end %>
-                          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;"><%= e.tournament_player&.full_name %></span>
+                        <% end %>
+                      </div>
+                    </div>
+
+                    <% unless !roster_ready && !can_manage_registrations?(@tournament) %>
+
+                    <div class="mb-2 fw-bold" style="font-size:13px;">ตัวจริง</div>
+                    <div class="d-flex flex-column" style="gap:6px;">
+                      <% @home_players.each do |p| %>
+                        <label class="d-flex align-items-center" style="gap:8px;">
+                          <%= check_box_tag "lineup[starter_ids][]", p.id, @home_starter_ids.include?(p.id), disabled: disabled %>
+                          <span style="font-size:13px;"><%= p.full_name %></span>
+                        </label>
+                      <% end %>
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-2 fw-bold" style="font-size:13px;">สำรอง</div>
+                    <div class="d-flex flex-column" style="gap:6px;">
+                      <% @home_players.each do |p| %>
+                        <label class="d-flex align-items-center" style="gap:8px;">
+                          <%= check_box_tag "lineup[sub_ids][]", p.id, @home_sub_ids.include?(p.id), disabled: disabled %>
+                          <span style="font-size:13px;"><%= p.full_name %></span>
+                        </label>
+                      <% end %>
+                    </div>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                  <div>
+                    <div class="fw-bold">รายชื่อทีมเยือน</div>
+                    <div class="text-muted" style="font-size:12px;">
+                      <% if @away_entry.present? %>
+                        สถานะ: <%= @away_lineup.locked? ? "ยืนยันแล้ว" : "ยังไม่ส่ง" %>
+                      <% else %>
+                        ยังไม่สามารถส่งได้ (ยังไม่กำหนดทีม)
+                      <% end %>
+                    </div>
+                  </div>
+                  <% if can_manage_registrations?(@tournament) && @away_lineup.locked? %>
+                    <%= button_to "ปลดล็อก",
+                                  match_lineup_unlock_tournament_path(@tournament, match_id: @match.id, side: "away"),
+                                  method: :patch,
+                                  class: "btn btn-sm btn-outline-danger" %>
+                  <% end %>
+                </div>
+
+                <% if @away_entry.present? %>
+                  <hr />
+                  <%= form_with url: match_lineup_tournament_path(@tournament, match_id: @match.id, side: "away"), method: :patch, local: true do %>
+                    <% disabled = @away_lineup.locked? %>
+                    <% roster_ready = @away_entry.respond_to?(:roster_locked?) && @away_entry.roster_locked? %>
+                    <div class="d-flex justify-content-between align-items-center mb-2" style="gap:10px;">
+                      <div class="text-muted" style="font-size:12px;">
+                        <% if disabled %>
+                          ยืนยันแล้ว (ล็อก)
+                        <% elsif !roster_ready && !can_manage_registrations?(@tournament) %>
+                          กรุณาไปที่หน้า “นักกีฬา” เพื่อส่งรายชื่อนักกีฬาก่อน
+                        <% elsif @away_players.any? %>
+                          เลือกตัวจริง/สำรอง แล้วกดยืนยันนักเตะ
+                        <% else %>
+                          ยังไม่มีนักเตะในทีมนี้
+                        <% end %>
+                      </div>
+                      <div>
+                        <% if !roster_ready && !can_manage_registrations?(@tournament) %>
+                          <%= link_to "ไปที่หน้านักกีฬา",
+                                  my_entry_players_tournament_path(@tournament, team_registration_id: @away_entry.id),
+                                  class: "btn btn-sm btn-outline-secondary" %>
+                        <% else %>
+                          <% if @away_lineup.locked? %>
+                            <button type="button" class="btn btn-sm btn-secondary" disabled>ยืนยันแล้ว</button>
+                          <% else %>
+                            <%= submit_tag "ยืนยันนักเตะ", class: "btn btn-sm btn-primary", disabled: (disabled || !@away_players.any?) %>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </div>
+
+                    <% unless !roster_ready && !can_manage_registrations?(@tournament) %>
+
+                    <div class="mb-2 fw-bold" style="font-size:13px;">ตัวจริง</div>
+                    <div class="d-flex flex-column" style="gap:6px;">
+                      <% @away_players.each do |p| %>
+                        <label class="d-flex align-items-center" style="gap:8px;">
+                          <%= check_box_tag "lineup[starter_ids][]", p.id, @away_starter_ids.include?(p.id), disabled: disabled %>
+                          <span style="font-size:13px;"><%= p.full_name %></span>
+                        </label>
+                      <% end %>
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-2 fw-bold" style="font-size:13px;">สำรอง</div>
+                    <div class="d-flex flex-column" style="gap:6px;">
+                      <% @away_players.each do |p| %>
+                        <label class="d-flex align-items-center" style="gap:8px;">
+                          <%= check_box_tag "lineup[sub_ids][]", p.id, @away_sub_ids.include?(p.id), disabled: disabled %>
+                          <span style="font-size:13px;"><%= p.full_name %></span>
+                        </label>
+                      <% end %>
+                    </div>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm mt-3">
+          <div class="card-body">
+            <div class="fw-bold mb-1">เหตุการณ์ (Goals / Cards)</div>
+
+            <% if can_manage_registrations?(@tournament) %>
+              <%= form_with url: match_events_tournament_path(@tournament, match_id: @match.id), method: :post, local: true do %>
+                <div class="row g-2 align-items-end">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" style="font-size:12px;">ประเภท</label>
+                    <%= select_tag "match_event[event_type]",
+                                options_for_select([
+                                  ["ประตู", "goal"],
+                                  ["ใบเหลือง", "yellow_card"],
+                                  ["ใบแดง", "red_card"]
+                                ]),
+                                class: "form-select form-select-sm" %>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" style="font-size:12px;">นักเตะ</label>
+                    <% home_team_name = @match.home_name %>
+                    <% away_team_name = @match.away_name %>
+                    <%= select_tag "match_event[tournament_player_id]",
+                                grouped_options_for_select({
+                                  "ทีมเหย้า (#{home_team_name})" => @home_players.map { |p| [p.full_name, p.id] },
+                                  "ทีมเยือน (#{away_team_name})" => @away_players.map { |p| [p.full_name, p.id] }
+                                }),
+                                include_blank: "-",
+                                class: "form-select form-select-sm" %>
+                  </div>
+                  <div class="col-12 col-md-2 text-end">
+                    <%= submit_tag "เพิ่ม", class: "btn btn-sm btn-outline-primary" %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+
+            <hr />
+
+            <% if @match_events&.any? %>
+              <div class="d-flex flex-column" style="gap:8px;">
+                <% @match_events.each do |e| %>
+                  <% label = case e.event_type
+                            when "goal" then "ประตู"
+                            when "yellow_card" then "ใบเหลือง"
+                            when "red_card" then "ใบแดง"
+                            else e.event_type
+                            end %>
+                  <% team = e.tournament_player&.team_registration&.team %>
+                  <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                    <div style="min-width:0;">
+                      <div class="d-flex align-items-center" style="gap:8px;">
+                        <div style="display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 auto;">
+                          <% if e.event_type == "goal" %>
+                            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                              <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#111827" stroke-width="1.5"></circle>
+                              <path d="M12 6 L16 9 L14.5 14 L9.5 14 L8 9 Z" fill="#111827"></path>
+                              <path d="M8 9 L6.5 12 L9.5 14" fill="none" stroke="#111827" stroke-width="1.2"></path>
+                              <path d="M16 9 L17.5 12 L14.5 14" fill="none" stroke="#111827" stroke-width="1.2"></path>
+                            </svg>
+                          <% elsif e.event_type == "yellow_card" %>
+                            <div style="width:14px;height:18px;border-radius:3px;background:#facc15;border:1px solid rgba(0,0,0,0.25);"></div>
+                          <% elsif e.event_type == "red_card" %>
+                            <div style="width:14px;height:18px;border-radius:3px;background:#ef4444;border:1px solid rgba(0,0,0,0.25);"></div>
+                          <% end %>
+                        </div>
+                        <div style="min-width:0;">
+                          <div class="fw-bold" style="font-size:13px;"><%= label %></div>
+                          <div class="d-flex align-items-center text-muted" style="gap:6px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <% if team&.logo&.attached? %>
+                              <%= image_tag team.logo, style: "width:16px;height:16px;border-radius:999px;object-fit:cover;background:rgba(0,0,0,0.06);flex:0 0 auto;" %>
+                            <% end %>
+                            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;"><%= e.tournament_player&.full_name %></span>
+                          </div>
                         </div>
                       </div>
                     </div>
+                    <div>
+                      <% if can_manage_registrations?(@tournament) %>
+                        <%= button_to "ลบ",
+                                      match_event_tournament_path(@tournament, match_id: @match.id, event_id: e.id),
+                                      method: :delete,
+                                      class: "btn btn-sm btn-outline-danger" %>
+                      <% end %>
+                    </div>
                   </div>
-                  <div>
-                    <% if can_manage_registrations?(@tournament) %>
-                      <%= button_to "ลบ",
-                                    match_event_tournament_path(@tournament, match_id: @match.id, event_id: e.id),
-                                    method: :delete,
-                                    class: "btn btn-sm btn-outline-danger" %>
-                    <% end %>
-                  </div>
-                </div>
-              <% end %>
-            </div>
-          <% else %>
-            <div class="text-muted" style="font-size:12px;">ยังไม่มีเหตุการณ์</div>
-          <% end %>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="text-muted" style="font-size:12px;">ยังไม่มีเหตุการณ์</div>
+            <% end %>
+          </div>
         </div>
-      </div>
+      <% end %>
     </div>
   </div>
 </div>

@@ -616,16 +616,29 @@
         })();
       </script>
 
+      <script>
+        (function() {
+          if (window.__fixtureMatchCardNavInitialized) return;
+          document.addEventListener('click', function(e) {
+            var card = e.target.closest && e.target.closest('[data-match-href]');
+            if (!card) return;
+            if (e.target.closest('a, button, input, select, textarea, label')) return;
+            var href = card.getAttribute('data-match-href');
+            if (href) window.location.href = href;
+          });
+          window.__fixtureMatchCardNavInitialized = true;
+        })();
+      </script>
+
       <div class="card shadow-sm mb-3">
         <div class="card-header fw-bold">All Match</div>
         <div class="card-body">
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
 
-          <% if divisions.any? %>
-            <% all_matches = @all_matches_for_all_match || [] %>
+          <% all_matches = @all_matches_for_all_match || [] %>
 
-            <% if all_matches.any? %>
-              <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
+          <% if divisions.any? && all_matches.any? %>
+            <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
 
               <% divisions.each_with_index do |div, idx| %>
                 <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
@@ -894,14 +907,6 @@
 
                           <script>
                             (function() {
-                              document.addEventListener('click', function(e) {
-                                var card = e.target.closest && e.target.closest('[data-match-href]');
-                                if (!card) return;
-                                if (e.target.closest('a, button, input, select, textarea, label')) return;
-                                var href = card.getAttribute('data-match-href');
-                                if (href) window.location.href = href;
-                              });
-
                               function setDisabled(container, disabled) {
                                 if (!container) return;
                                 container.querySelectorAll('input, select, textarea, button').forEach(function(el) {
@@ -933,12 +938,11 @@
                         <div class="d-block d-md-none fixture-match-list fixture-mobile-only">
                           <% matches.each_with_index do |match, idx| %>
                             <% hs = match.home_score; as = match.away_score %>
-                            <div class="fixture-match-card">
+                            <div class="fixture-match-card" data-match-href="<%= match_tournament_path(@tournament, match_id: match.id) %>">
                               <div class="fixture-match-card-header">
                                 <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
                                 <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
                                   <span><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></span>
-                                  <%= link_to "รายละเอียด", match_tournament_path(@tournament, match_id: match.id), class: "btn btn-sm btn-outline-secondary" %>
                                 </div>
                               </div>
                               <div class="fixture-match-card-body">
@@ -1049,13 +1053,16 @@
                             </table>
                           </div>
                       <% end %>
-                    </div>
+                    <% end %>
+
                   <% end %>
                 </div>
-              <% end %>
-            <% else %>
+
+
+          <% elsif divisions.any? %>
+            <div class="alert alert-info" role="alert">
               <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการสร้างโปรแกรมแข่งขันสำหรับรุ่นใดเลย</p>
-            <% end %>
+            </div>
           <% else %>
             <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการกำหนดรุ่นการแข่งขันสำหรับรายการนี้</p>
           <% end %>
