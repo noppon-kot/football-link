@@ -302,18 +302,20 @@
         <div class="card-header d-flex align-items-center justify-content-between" style="gap:10px;">
           <div class="fw-bold">Match Day</div>
           <div class="d-flex align-items-center" style="gap:8px;">
-            <button type="button"
-                    class="btn btn-sm btn-outline-secondary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#fixtureDayModal"
-                    aria-label="เลือกวันแข่งขัน"
-                    style="line-height:1;padding:6px 8px;">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1Zm0 4H5a1 1 0 0 0-1 1v2h16V7a1 1 0 0 0-1-1h-2v1a1 1 0 1 1-2 0V6H8v1a1 1 0 1 1-2 0V6Zm13 5H4v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8Z" fill="currentColor"/>
-              </svg>
-            </button>
+            <span title="เลือกวันแข่งขัน" data-bs-toggle="tooltip" data-bs-placement="top" style="display:inline-block;">
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#fixtureDayModal"
+                      aria-label="เลือกวันแข่งขัน"
+                      style="line-height:1;padding:6px 8px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                  <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1Zm0 4H5a1 1 0 0 0-1 1v2h16V7a1 1 0 0 0-1-1h-2v1a1 1 0 1 1-2 0V6H8v1a1 1 0 1 1-2 0V6Zm13 5H4v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8Z" fill="currentColor"/>
+                </svg>
+              </button>
+            </span>
 
-            <button type="button" id="fixture-export" class="btn btn-sm btn-success" aria-label="ดาวน์โหลดรูปแข่งหน้านี้" style="line-height:1;padding:6px 8px;">
+            <button type="button" id="fixture-export" class="btn btn-sm btn-success" title="ดาวน์โหลดรูปแข่งหน้านี้" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="ดาวน์โหลดรูปแข่งหน้านี้" style="line-height:1;padding:6px 8px;">
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                 <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
               </svg>
