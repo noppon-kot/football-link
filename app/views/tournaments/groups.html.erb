@@ -1,10 +1,6 @@
 <div class="app-shell">
   <div class="tournament-show-body">
     <div class="container py-2">
-      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">สายการแข่งขัน</h2>
-      <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
-      <hr>
-
       <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
       <% status_order = { "confirmed" => 0, "paid" => 0, "applied" => 1, "interested" => 1 } %>
 

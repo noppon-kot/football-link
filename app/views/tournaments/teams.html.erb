@@ -1,18 +1,6 @@
 <div class="app-shell">
   <div class="tournament-show-body">
     <div class="container py-2">
-      <h2 style="font-size:18px;font-weight:bold;" class="mb-2">ทีมที่สนใจ / สมัคร</h2>
-      <p class="text-muted" style="font-size:13px;">รายการ: <%= @tournament.title %></p>
-      <hr>
-
-      <% unless can_manage_registrations?(@tournament) %>
-        <div class="mb-3">
-          <%= link_to "สมัครเข้าแข่งขัน",
-                      new_tournament_team_registration_path(@tournament),
-                      class: "btn btn-success w-100" %>
-        </div>
-      <% end %>
-
       <div class="team-list-card card shadow-sm">
         <div class="team-list-header d-flex justify-content-between align-items-center">
           <span>ทีมที่สนใจ / สมัคร</span>
