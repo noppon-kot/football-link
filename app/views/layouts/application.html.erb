@@ -321,27 +321,40 @@
       <button
         id="back-to-top-btn"
         type="button"
-        style="position:fixed;right:16px;bottom:60px;width:40px;height:40px;border-radius:50%;border:none;background:#1976d2;color:#ffffff;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);z-index:1050;font-size:18px;"
+        style="position:fixed;right:16px;bottom:76px;width:40px;height:40px;border-radius:50%;border:none;background:#1976d2;color:#ffffff;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);z-index:2000;font-size:18px;"
         aria-label="กลับขึ้นด้านบน">
         ↑
       </button>
 
       <script>
         (function() {
-          var btn = document.getElementById('back-to-top-btn');
-          if (btn) {
-            window.addEventListener('scroll', function() {
+          function initBackToTop() {
+            var btn = document.getElementById('back-to-top-btn');
+            if (!btn) return;
+            if (btn.__backToTopInitialized) return;
+
+            function updateVisibility() {
               if (window.scrollY > 200) {
                 btn.style.display = 'flex';
               } else {
                 btn.style.display = 'none';
               }
-            });
+            }
+
+            window.addEventListener('scroll', updateVisibility, { passive: true });
+            window.addEventListener('pageshow', updateVisibility);
+            updateVisibility();
 
             btn.addEventListener('click', function() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             });
+
+            btn.__backToTopInitialized = true;
           }
+
+          document.addEventListener('turbo:load', initBackToTop);
+          document.addEventListener('DOMContentLoaded', initBackToTop);
+          initBackToTop();
 
           // auto hide flash messages after a short delay
           var flashes = document.querySelectorAll('.js-flash-auto-hide');

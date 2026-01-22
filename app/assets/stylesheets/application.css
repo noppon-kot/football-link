@@ -170,6 +170,7 @@ body.theme-green a:hover {
 }
 
 .ls-topbar {
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 1030;
@@ -204,6 +205,7 @@ body.theme-green a:hover {
 }
 
 .ls-subnav {
+  position: -webkit-sticky;
   position: sticky;
   top: 56px;
   z-index: 1029;
@@ -212,6 +214,7 @@ body.theme-green a:hover {
 }
 
 .ls-tournament-strip {
+  position: -webkit-sticky;
   position: sticky;
   top: 98px;
   z-index: 1028;
@@ -841,6 +844,16 @@ body.theme-green .app-header {
   font-size: 13px;
   line-height: 1.5;
   white-space: normal;
+}
+
+@media (max-width: 576px) {
+  .ls-clamp-4-mobile {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    overflow: hidden;
+  }
 }
 
 .team-list-card {
