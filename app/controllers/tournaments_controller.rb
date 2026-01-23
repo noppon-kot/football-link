@@ -174,7 +174,21 @@ class TournamentsController < ApplicationController
   end
 
   def table
-    # ใช้ @tournament จาก set_tournament และภายหลังจะเพิ่ม logic คำนวณตารางคะแนน
+    top = MatchEvent
+          .joins(:tournament_player, match: :tournament_division)
+          .where(event_type: :goal)
+          .where(tournament_divisions: { tournament_id: @tournament.id })
+          .group(:tournament_player_id)
+          .order(Arel.sql("COUNT(*) DESC"))
+          .limit(3)
+          .count
+
+    player_ids = top.keys
+    players_by_id = TournamentPlayer
+                    .includes(team_registration: :team)
+                    .where(id: player_ids)
+                    .index_by(&:id)
+    @top_scorers = top.map { |pid, goals| [players_by_id[pid], goals] }.select { |p, _| p.present? }
   end
 
   def knockout

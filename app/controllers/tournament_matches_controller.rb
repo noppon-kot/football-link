@@ -7,13 +7,22 @@ class TournamentMatchesController < ApplicationController
   before_action :set_lineups
 
   def show
-    @home_players = @home_entry ? @home_entry.tournament_players.order(:full_name, :id) : TournamentPlayer.none
-    @away_players = @away_entry ? @away_entry.tournament_players.order(:full_name, :id) : TournamentPlayer.none
+    @can_manage_tournament = can_manage_registrations?(@tournament)
 
-    @home_starter_ids = @home_lineup.match_lineup_players.starter.pluck(:tournament_player_id)
-    @home_sub_ids = @home_lineup.match_lineup_players.substitute.pluck(:tournament_player_id)
-    @away_starter_ids = @away_lineup.match_lineup_players.starter.pluck(:tournament_player_id)
-    @away_sub_ids = @away_lineup.match_lineup_players.substitute.pluck(:tournament_player_id)
+    @home_roster_submitted = @home_entry&.respond_to?(:roster_locked?) && @home_entry.roster_locked?
+    @away_roster_submitted = @away_entry&.respond_to?(:roster_locked?) && @away_entry.roster_locked?
+
+    @home_players = if @can_manage_tournament && @home_entry && @home_roster_submitted
+                      @home_entry.tournament_players.order(:full_name, :id)
+                    else
+                      TournamentPlayer.none
+                    end
+
+    @away_players = if @can_manage_tournament && @away_entry && @away_roster_submitted
+                      @away_entry.tournament_players.order(:full_name, :id)
+                    else
+                      TournamentPlayer.none
+                    end
 
     @match_events = @match.match_events.includes(tournament_player: :team_registration).order(:id)
   end

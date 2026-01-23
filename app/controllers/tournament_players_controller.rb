@@ -6,17 +6,33 @@ class TournamentPlayersController < ApplicationController
   before_action :require_roster_unlocked, only: [:new, :create, :edit, :update, :destroy]
   before_action :set_player, only: [:edit, :update, :destroy]
 
+  before_action :set_player, only: [:clear_yellow_cards, :clear_red_cards]
+
+  before_action :require_manage_tournament, only: [:clear_yellow_cards, :clear_red_cards]
+
   skip_before_action :require_login, only: [:public_index]
   skip_before_action :require_entry_permission, only: [:public_index]
 
   def index
     @players = @entry.tournament_players.order(:full_name, :id)
+    load_event_summaries
   end
 
   def public_index
     @public_view = true
     @players = @entry.tournament_players.order(:full_name, :id)
+    load_event_summaries
     render :index
+  end
+
+  def clear_yellow_cards
+    events_scope_for_player(event_type: :yellow_card).destroy_all
+    redirect_back fallback_location: team_players_tournament_path(@tournament, team_registration_id: @entry.id), notice: "ล้างใบเหลืองเรียบร้อยแล้ว"
+  end
+
+  def clear_red_cards
+    events_scope_for_player(event_type: :red_card).destroy_all
+    redirect_back fallback_location: team_players_tournament_path(@tournament, team_registration_id: @entry.id), notice: "ล้างใบแดงเรียบร้อยแล้ว"
   end
 
   def new
@@ -70,6 +86,32 @@ class TournamentPlayersController < ApplicationController
 
   def set_player
     @player = @entry.tournament_players.find(params[:id])
+  end
+
+  def require_manage_tournament
+    return if can_manage_registrations?(@tournament)
+    redirect_to teams_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+  end
+
+  def load_event_summaries
+    player_ids = @players.map(&:id)
+    @player_events = MatchEvent
+                   .joins(match: :tournament_division)
+                   .includes(:match, :tournament_player)
+                   .where(tournament_player_id: player_ids)
+                   .where(event_type: [:goal, :yellow_card, :red_card])
+                   .where(tournament_divisions: { tournament_id: @tournament.id })
+                   .order("matches.kickoff_at ASC NULLS LAST", "matches.id ASC", "match_events.id ASC")
+
+    @events_by_player = @player_events.group_by(&:tournament_player_id)
+  end
+
+  def events_scope_for_player(event_type:)
+    MatchEvent
+      .joins(match: :tournament_division)
+      .where(tournament_player_id: @player.id)
+      .where(event_type: event_type)
+      .where(tournament_divisions: { tournament_id: @tournament.id })
   end
 
   def require_entry_permission

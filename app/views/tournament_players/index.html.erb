@@ -55,6 +55,10 @@
           <% if @players.any? %>
             <div class="d-flex flex-column" style="gap:10px;">
               <% @players.each do |p| %>
+                <% player_events = (@events_by_player && @events_by_player[p.id]) || [] %>
+                <% goal_events = player_events.select { |e| e.event_type == "goal" } %>
+                <% yellow_events = player_events.select { |e| e.event_type == "yellow_card" } %>
+                <% red_events = player_events.select { |e| e.event_type == "red_card" } %>
                 <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
                   <div class="d-flex align-items-center" style="gap:10px;min-width:0;">
                     <% if p.photo.attached? %>
@@ -65,6 +69,50 @@
                       <div class="text-muted" style="font-size:12px;">
                         วันเกิด: <%= p.birth_date&.strftime("%d/%m/%Y") || "-" %> · เบอร์: <%= p.jersey_number.presence || "-" %>
                       </div>
+
+                      <div class="text-muted" style="font-size:12px;margin-top:4px;">
+                        <span class="d-inline-flex align-items-center" style="gap:4px;">
+                          <%= image_tag "football.png", alt: "goal", style: "width:14px;height:14px;object-fit:contain;display:block;" %>
+                          <span>ประตู: <%= goal_events.size %></span>
+                        </span>
+                        <span style="margin:0 6px;">·</span>
+                        <span class="d-inline-flex align-items-center" style="gap:4px;">
+                          <span style="width:10px;height:14px;border-radius:3px;background:#facc15;border:1px solid rgba(0,0,0,0.25);display:inline-block;"></span>
+                          <span>ใบเหลือง: <%= yellow_events.size %></span>
+                        </span>
+                        <span style="margin:0 6px;">·</span>
+                        <span class="d-inline-flex align-items-center" style="gap:4px;">
+                          <span style="width:10px;height:14px;border-radius:3px;background:#ef4444;border:1px solid rgba(0,0,0,0.25);display:inline-block;"></span>
+                          <span>ใบแดง: <%= red_events.size %></span>
+                        </span>
+                      </div>
+
+                      <% if goal_events.any? || yellow_events.any? || red_events.any? %>
+                        <div class="text-muted" style="font-size:12px;margin-top:2px;">
+                          <% (goal_events + yellow_events + red_events).group_by(&:match_id).each do |mid, evs| %>
+                            <% m = evs.first.match %>
+                            <% g = evs.count { |e| e.event_type == "goal" } %>
+                            <% y = evs.count { |e| e.event_type == "yellow_card" } %>
+                            <% r = evs.count { |e| e.event_type == "red_card" } %>
+                            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                              <%= link_to(
+                                    "นัด #{m&.kickoff_at&.strftime('%d/%m/%Y %H:%M') || m&.id}",
+                                    match_tournament_path(@tournament, match_id: m.id),
+                                    class: "text-decoration-none"
+                                  ) %>
+                              <% if g > 0 %>
+                                · ประตู x<%= g %>
+                              <% end %>
+                              <% if y > 0 %>
+                                · ใบเหลือง x<%= y %>
+                              <% end %>
+                              <% if r > 0 %>
+                                · ใบแดง x<%= r %>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
                     </div>
                   </div>
 
@@ -82,6 +130,23 @@
                     </div>
                   <% end %>
                 </div>
+
+                <% if can_manage_registrations?(@tournament) %>
+                  <div class="d-flex justify-content-end" style="gap:6px;margin-top:-4px;">
+                    <%= button_to "ล้างใบเหลือง",
+                                  team_player_clear_yellow_cards_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
+                                  method: :patch,
+                                  data: { turbo_confirm: "ล้างใบเหลืองของนักเตะคนนี้?" },
+                                  class: "btn btn-sm btn-outline-warning",
+                                  form_class: "inline-form" %>
+                    <%= button_to "ล้างใบแดง",
+                                  team_player_clear_red_cards_tournament_path(@tournament, team_registration_id: @entry.id, id: p.id),
+                                  method: :patch,
+                                  data: { turbo_confirm: "ล้างใบแดงของนักเตะคนนี้?" },
+                                  class: "btn btn-sm btn-outline-danger",
+                                  form_class: "inline-form" %>
+                  </div>
+                <% end %>
               <% end %>
             </div>
           <% else %>

@@ -59,14 +59,10 @@
                         <%= image_tag team.logo, class: "rounded-circle", style: "width:32px;height:32px;object-fit:cover;flex:0 0 auto;" %>
                       <% end %>
                       <div style="min-width:0;flex:1;">
-                        <% if can_manage_registrations?(@tournament) %>
-                          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></div>
-                        <% else %>
-                          <%= link_to team.name,
-                                team_players_tournament_path(@tournament, team_registration_id: reg.id),
-                                class: "text-decoration-none",
-                                style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
-                        <% end %>
+                        <%= link_to team.name,
+                              team_players_tournament_path(@tournament, team_registration_id: reg.id),
+                              class: "text-decoration-none",
+                              style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
                         <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
                         <% if can_manage_registrations?(@tournament) %>
                           <div class="text-muted" style="font-size:12px;">
@@ -204,14 +200,10 @@
                       <%= image_tag team.logo, class: "rounded-circle", style: "width:32px;height:32px;object-fit:cover;flex:0 0 auto;" %>
                     <% end %>
                     <div style="min-width:0;flex:1;">
-                      <% if can_manage_registrations?(@tournament) %>
-                        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></div>
-                      <% else %>
-                        <%= link_to team.name,
-                              team_players_tournament_path(@tournament, team_registration_id: reg.id),
-                              class: "text-decoration-none",
-                              style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
-                      <% end %>
+                      <%= link_to team.name,
+                            team_players_tournament_path(@tournament, team_registration_id: reg.id),
+                            class: "text-decoration-none",
+                            style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
                       <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
 
                       <% status_btn_class = (display_state == :confirmed ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-secondary") %>
