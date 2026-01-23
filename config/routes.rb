@@ -49,6 +49,7 @@ Rails.application.routes.draw do
       patch :staff, to: "tournament_staffs#update"
       get "matches/:match_id", to: "tournament_matches#show", as: :match
       patch "matches/:match_id/score", to: "tournament_matches#update_score", as: :match_score
+      patch "matches/:match_id/images", to: "tournament_matches#update_images", as: :match_images
       patch "matches/:match_id/lineups/:side", to: "tournament_matches#submit_lineup", as: :match_lineup
       patch "matches/:match_id/lineups/:side/unlock", to: "tournament_matches#unlock_lineup", as: :match_lineup_unlock
       post "matches/:match_id/events", to: "tournament_matches#create_event", as: :match_events

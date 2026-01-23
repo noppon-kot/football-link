@@ -4,11 +4,15 @@ class Match < ApplicationRecord
   belongs_to :home_team, class_name: "Team", optional: true
   belongs_to :away_team, class_name: "Team", optional: true
 
+  has_many_attached :images, dependent: :purge_later
+
   has_many :match_lineups, dependent: :destroy
   has_many :match_events, dependent: :destroy
 
   enum status: { scheduled: 0, finished: 1 }
   enum stage: { group_stage: 0, knockout: 1 }
+
+  validate :images_must_be_valid
 
   def winner
     return nil unless finished? && home_score.present? && away_score.present?
@@ -23,5 +27,25 @@ class Match < ApplicationRecord
 
   def away_name
     away_team&.name.presence || away_slot_label.presence || "-"
+  end
+
+  private
+
+  def images_must_be_valid
+    return unless images.attached?
+
+    if images.attachments.size > 2
+      errors.add(:images, "สามารถอัปโหลดได้ไม่เกิน 2 รูป")
+    end
+
+    images.each do |image|
+      if image.blob.byte_size > 10.megabytes
+        errors.add(:images, "ขนาดไฟล์ต้องไม่เกิน 10MB")
+      end
+
+      unless image.blob.content_type&.start_with?("image/")
+        errors.add(:images, "ต้องเป็นไฟล์รูปภาพเท่านั้น")
+      end
+    end
   end
 end

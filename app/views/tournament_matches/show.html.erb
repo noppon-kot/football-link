@@ -36,6 +36,89 @@
             </div>
           </div>
 
+          <% if @match.images.attached? %>
+            <hr />
+            <div class="row row-cols-2 g-2">
+              <% @match.images.first(2).each do |img| %>
+                <div class="col">
+                  <a href="#"
+                     class="d-block js-match-image-lightbox"
+                     data-full-url="<%= url_for(img) %>"
+                     style="text-decoration:none;">
+                    <%= image_tag url_for(img), style: "width:100%;aspect-ratio: 4 / 3;height:auto;object-fit:cover;display:block;border-radius:12px;border:1px solid rgba(0,0,0,0.12);background:rgba(0,0,0,0.04);" %>
+                  </a>
+                </div>
+              <% end %>
+            </div>
+
+            <div id="match-image-lightbox" aria-hidden="true" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.86);z-index:2000;padding:16px;">
+              <button type="button" id="match-image-lightbox-close" aria-label="Close" style="position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.35);color:#ffffff;font-size:26px;line-height:36px;display:flex;align-items:center;justify-content:center;">
+                ×
+              </button>
+              <img id="match-image-lightbox-img" alt="match" style="max-width:min(980px, 100%);max-height:86vh;width:auto;height:auto;object-fit:contain;border-radius:14px;background:#000;" />
+            </div>
+
+            <script>
+              function openMatchLightbox(url) {
+                if (!url) return;
+                var overlay = document.getElementById("match-image-lightbox");
+                var overlayImg = document.getElementById("match-image-lightbox-img");
+                if (!overlay || !overlayImg) return;
+
+                overlayImg.src = url;
+                overlay.style.display = "flex";
+                overlay.setAttribute("aria-hidden", "false");
+              }
+
+              function closeMatchLightbox() {
+                var overlay = document.getElementById("match-image-lightbox");
+                var overlayImg = document.getElementById("match-image-lightbox-img");
+                if (!overlay || !overlayImg) return;
+
+                overlay.style.display = "none";
+                overlay.setAttribute("aria-hidden", "true");
+                overlayImg.removeAttribute("src");
+              }
+
+              function initMatchImageLightbox() {
+                if (document.documentElement.dataset.matchLightboxBound === "1") return;
+
+                document.addEventListener("click", function(e) {
+                  var trigger = e.target.closest && e.target.closest(".js-match-image-lightbox");
+                  if (trigger) {
+                    e.preventDefault();
+                    openMatchLightbox(trigger.getAttribute("data-full-url"));
+                    return;
+                  }
+
+                  if (e.target && e.target.id === "match-image-lightbox-close") {
+                    e.preventDefault();
+                    closeMatchLightbox();
+                    return;
+                  }
+
+                  var overlay = document.getElementById("match-image-lightbox");
+                  if (overlay && e.target === overlay) {
+                    closeMatchLightbox();
+                  }
+                });
+
+                document.addEventListener("keydown", function(e) {
+                  if (e.key === "Escape") closeMatchLightbox();
+                });
+
+                document.addEventListener("turbo:before-cache", function() {
+                  closeMatchLightbox();
+                });
+
+                document.documentElement.dataset.matchLightboxBound = "1";
+              }
+
+              document.addEventListener("turbo:load", initMatchImageLightbox);
+              document.addEventListener("DOMContentLoaded", initMatchImageLightbox);
+            </script>
+          <% end %>
+
 		  <% home_team = @match.home_team %>
 		  <% away_team = @match.away_team %>
 		  <% home_entry_id = @home_entry&.id %>
@@ -111,6 +194,20 @@
                 </div>
                 <div class="col-12 text-end">
                   <%= submit_tag "บันทึกสกอร์", class: "btn btn-sm btn-outline-primary" %>
+                </div>
+              </div>
+            <% end %>
+
+            <hr />
+            <%= form_with url: match_images_tournament_path(@tournament, match_id: @match.id), method: :patch, local: true, multipart: true do %>
+              <div class="row g-2 align-items-end">
+                <div class="col-12">
+                  <label class="form-label" style="font-size:12px;">อัปโหลดรูปแมตช์ (ได้สูงสุด 2 รูป)</label>
+                  <%= file_field_tag "match[images][]", multiple: true, accept: "image/*", class: "form-control form-control-sm" %>
+                  <div class="text-muted" style="font-size:12px;margin-top:4px;">อัปโหลดใหม่จะเป็นการแทนที่รูปเดิม</div>
+                </div>
+                <div class="col-12 text-end">
+                  <%= submit_tag "อัปโหลดรูป", class: "btn btn-sm btn-outline-primary" %>
                 </div>
               </div>
             <% end %>

@@ -5,15 +5,20 @@
         <div class="col-12">
           <div class="tournament-info-card card shadow-sm" style="font-size:16px;">
       <% if @tournament.images.attached? %>
-        <% image = @tournament.images.first %>
         <div class="mb-3">
           <div class="fw-bold mb-1">รูปภาพรายการ</div>
-          <a href="#"
-             class="d-inline-block js-tournament-image-lightbox"
-             data-full-url="<%= url_for(image) %>"
-             style="text-decoration:none;">
-            <%= image_tag url_for(image), style: "width:220px;max-width:100%;height:auto;object-fit:cover;display:block;border-radius:14px;border:1px solid rgba(0,0,0,0.12);background:#ffffff;" %>
-          </a>
+          <div class="row row-cols-2 g-2">
+            <% @tournament.images.each do |image| %>
+              <div class="col">
+                <a href="#"
+                   class="d-block js-tournament-image-lightbox"
+                   data-full-url="<%= url_for(image) %>"
+                   style="text-decoration:none;">
+                  <%= image_tag url_for(image), style: "width:100%;aspect-ratio: 4 / 3;height:auto;object-fit:cover;display:block;border-radius:14px;border:1px solid rgba(0,0,0,0.12);background:#ffffff;" %>
+                </a>
+              </div>
+            <% end %>
+          </div>
         </div>
       <% end %>
 
@@ -108,42 +113,59 @@
       </div>
 
       <script>
-        function initTournamentImageLightbox() {
-          if (window.__tournamentLightboxInitialized) return;
-
+        function openTournamentLightbox(url) {
+          if (!url) return;
           var overlay = document.getElementById("tournament-image-lightbox");
           var overlayImg = document.getElementById("tournament-image-lightbox-img");
-          var overlayClose = document.getElementById("tournament-image-lightbox-close");
-          if (!overlay || !overlayImg || !overlayClose) return;
+          if (!overlay || !overlayImg) return;
 
-          function openLightbox(url) {
-            if (!url) return;
-            overlayImg.src = url;
-            overlay.style.display = "flex";
-            overlay.setAttribute("aria-hidden", "false");
-          }
+          overlayImg.src = url;
+          overlay.style.display = "flex";
+          overlay.setAttribute("aria-hidden", "false");
+        }
 
-          function closeLightbox() {
-            overlay.style.display = "none";
-            overlay.setAttribute("aria-hidden", "true");
-            overlayImg.removeAttribute("src");
-          }
+        function closeTournamentLightbox() {
+          var overlay = document.getElementById("tournament-image-lightbox");
+          var overlayImg = document.getElementById("tournament-image-lightbox-img");
+          if (!overlay || !overlayImg) return;
+
+          overlay.style.display = "none";
+          overlay.setAttribute("aria-hidden", "true");
+          overlayImg.removeAttribute("src");
+        }
+
+        function initTournamentImageLightbox() {
+          if (document.documentElement.dataset.tournamentLightboxBound === "1") return;
 
           document.addEventListener("click", function(e) {
-            var el = e.target.closest && e.target.closest(".js-tournament-image-lightbox");
-            if (!el) return;
-            e.preventDefault();
-            openLightbox(el.getAttribute("data-full-url"));
+            var trigger = e.target.closest && e.target.closest(".js-tournament-image-lightbox");
+            if (trigger) {
+              e.preventDefault();
+              openTournamentLightbox(trigger.getAttribute("data-full-url"));
+              return;
+            }
+
+            if (e.target && e.target.id === "tournament-image-lightbox-close") {
+              e.preventDefault();
+              closeTournamentLightbox();
+              return;
+            }
+
+            var overlay = document.getElementById("tournament-image-lightbox");
+            if (overlay && e.target === overlay) {
+              closeTournamentLightbox();
+            }
           });
 
-          overlayClose.addEventListener("click", function() { closeLightbox(); });
-          overlay.addEventListener("click", function(e) {
-            if (e.target === overlay) closeLightbox();
-          });
           document.addEventListener("keydown", function(e) {
-            if (e.key === "Escape") closeLightbox();
+            if (e.key === "Escape") closeTournamentLightbox();
           });
-          window.__tournamentLightboxInitialized = true;
+
+          document.addEventListener("turbo:before-cache", function() {
+            closeTournamentLightbox();
+          });
+
+          document.documentElement.dataset.tournamentLightboxBound = "1";
         }
 
         document.addEventListener("turbo:load", initTournamentImageLightbox);

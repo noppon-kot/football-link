@@ -33,6 +33,40 @@ class TournamentMatchesController < ApplicationController
     end
   end
 
+  def update_images
+    require_login
+    unless can_manage_registrations?(@tournament)
+      return redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    permitted = params.require(:match).permit(images: []).to_h
+
+    # ถ้าไม่ได้เลือกไฟล์รูปใหม่ อย่าไปแตะ images เดิม
+    if permitted.key?("images")
+      images_val = permitted["images"]
+      if images_val.blank? || (images_val.is_a?(Array) && images_val.all?(&:blank?))
+        permitted.delete("images")
+      end
+    end
+
+    ok = false
+    ActiveRecord::Base.transaction do
+      # มีการอัปโหลดรูปใหม่: แทนที่รูปเดิม
+      if permitted.key?("images")
+        @match.images_attachments.destroy_all if @match.images.attached?
+      end
+
+      ok = @match.update(permitted)
+      raise ActiveRecord::Rollback unless ok
+    end
+
+    if ok
+      redirect_to match_tournament_path(@tournament, match_id: @match.id), notice: "อัปโหลดรูปเรียบร้อยแล้ว"
+    else
+      redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: @match.errors.full_messages.join(", ")
+    end
+  end
+
   def submit_lineup
     require_login
 
