@@ -174,21 +174,30 @@ class TournamentsController < ApplicationController
   end
 
   def table
-    top = MatchEvent
-          .joins(:tournament_player, match: :tournament_division)
-          .where(event_type: :goal)
-          .where(tournament_divisions: { tournament_id: @tournament.id })
-          .group(:tournament_player_id)
-          .order(Arel.sql("COUNT(*) DESC"))
-          .limit(3)
-          .count
+    counts = MatchEvent
+             .joins(:tournament_player, match: :tournament_division)
+             .where(event_type: :goal)
+             .where(tournament_divisions: { tournament_id: @tournament.id })
+             .group("tournament_divisions.id", "match_events.tournament_player_id")
+             .count
 
-    player_ids = top.keys
+    player_ids = counts.keys.map { |(_div_id, pid)| pid }.uniq
     players_by_id = TournamentPlayer
                     .includes(team_registration: :team)
                     .where(id: player_ids)
                     .index_by(&:id)
-    @top_scorers = top.map { |pid, goals| [players_by_id[pid], goals] }.select { |p, _| p.present? }
+
+    grouped = Hash.new { |h, k| h[k] = [] }
+    counts.each do |(div_id, pid), goals|
+      player = players_by_id[pid]
+      next unless player
+      grouped[div_id] << [player, goals]
+    end
+
+    @top_scorers_by_division = {}
+    grouped.each do |div_id, arr|
+      @top_scorers_by_division[div_id] = arr.sort_by { |(_p, g)| -g }.first(3)
+    end
   end
 
   def knockout

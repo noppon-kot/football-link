@@ -240,12 +240,12 @@
                               <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.9);font-weight:900;font-size:15px;letter-spacing:0.6px;">
                                 <div style="width:60px;text-align:center;">NO</div>
                                 <div style="flex:1;">CLUB</div>
-                                <div style="width:60px;text-align:center;">P</div>
-                                <div style="width:60px;text-align:center;">W</div>
-                                <div style="width:60px;text-align:center;">D</div>
-                                <div style="width:60px;text-align:center;">L</div>
-                                <div style="width:70px;text-align:center;">GD</div>
-                                <div style="width:80px;text-align:center;">PTS</div>
+                                <div style="width:80px;text-align:center;">แต้ม</div>
+                                <div style="width:60px;text-align:center;">แข่ง</div>
+                                <div style="width:60px;text-align:center;">ชนะ</div>
+                                <div style="width:60px;text-align:center;">แพ้</div>
+                                <div style="width:60px;text-align:center;">เสมอ</div>
+                                <div style="width:70px;text-align:center;">ประตู</div>
                               </div>
 
                               <% if team_ids.any? %>
@@ -305,12 +305,12 @@
                                       <% end %>
                                       <div style="font-size:24px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></div>
                                     </div>
+                                    <div style="width:80px;text-align:center;color:#ffffff;font-weight:900;font-size:24px;"><%= s[:pts] %></div>
                                     <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:played] %></div>
                                     <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:won] %></div>
-                                    <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:draw] %></div>
                                     <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:lost] %></div>
-                                    <div style="width:70px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= gd %></div>
-                                    <div style="width:80px;text-align:center;color:#ffffff;font-weight:900;font-size:24px;"><%= s[:pts] %></div>
+                                    <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:draw] %></div>
+                                    <div style="width:70px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:gf] %></div>
                                   </div>
                                 <% end %>
                               <% else %>
@@ -327,14 +327,12 @@
                             <tr>
                               <th scope="col" class="text-start standings-sticky-rank" style="width:28px;font-size:12px;">#</th>
                               <th scope="col" class="standings-sticky-team" style="width:140px;">ทีม</th>
-                              <th scope="col" class="text-center standings-col-pts" style="width:56px;">PTS</th>
-                              <th scope="col" class="text-center" style="width:44px;">P</th>
-                              <th scope="col" class="text-center" style="width:44px;">W</th>
-                              <th scope="col" class="text-center" style="width:44px;">D</th>
-                              <th scope="col" class="text-center" style="width:44px;">L</th>
-                              <th scope="col" class="text-center" style="width:56px;">GF</th>
-                              <th scope="col" class="text-center" style="width:74px;">F/A</th>
-                              <th scope="col" class="text-center" style="width:56px;">GD</th>
+                              <th scope="col" class="text-center standings-col-pts" style="width:56px;">แต้ม</th>
+                              <th scope="col" class="text-center" style="width:44px;">แข่ง</th>
+                              <th scope="col" class="text-center" style="width:44px;">ชนะ</th>
+                              <th scope="col" class="text-center" style="width:44px;">แพ้</th>
+                              <th scope="col" class="text-center" style="width:44px;">เสมอ</th>
+                              <th scope="col" class="text-center" style="width:56px;">ประตู</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -402,16 +400,14 @@
                                   <td class="text-center standings-col-pts"><%= s[:pts] %></td>
                                   <td class="text-center"><%= s[:played] %></td>
                                   <td class="text-center"><%= s[:won] %></td>
-                                  <td class="text-center"><%= s[:draw] %></td>
                                   <td class="text-center"><%= s[:lost] %></td>
+                                  <td class="text-center"><%= s[:draw] %></td>
                                   <td class="text-center"><%= s[:gf] %></td>
-                                  <td class="text-center"><%= s[:gf] %>/<%= s[:ga] %></td>
-                                  <td class="text-center"><%= gd %></td>
                                 </tr>
                               <% end %>
                             <% else %>
                               <tr>
-                                <td colspan="10" class="text-center text-muted" style="font-size:13px;">
+                                <td colspan="8" class="text-center text-muted" style="font-size:13px;">
                                   ยังไม่มีทีมในสายนี้ (หรือยังไม่ได้จัดทีมลงสาย)
                                 </td>
                               </tr>
@@ -440,24 +436,51 @@
                       <thead class="table-light">
                         <tr>
                           <th scope="col">ทีม</th>
+                          <th scope="col" class="text-center">แต้ม</th>
                           <th scope="col" class="text-center">แข่ง</th>
                           <th scope="col" class="text-center">ชนะ</th>
-                          <th scope="col" class="text-center">เสมอ</th>
                           <th scope="col" class="text-center">แพ้</th>
-                          <th scope="col" class="text-center">ได้</th>
-                          <th scope="col" class="text-center">เสีย</th>
-                          <th scope="col" class="text-center">ผลต่าง</th>
-                          <th scope="col" class="text-center">คะแนน</th>
+                          <th scope="col" class="text-center">เสมอ</th>
+                          <th scope="col" class="text-center">ประตู</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          <td colspan="9" class="text-center text-muted" style="font-size:13px;">
+                          <td colspan="7" class="text-center text-muted" style="font-size:13px;">
                             ยังไม่มีการแบ่งสายสำหรับรุ่นนี้
                           </td>
                         </tr>
                       </tbody>
                       </table>
+                    </div>
+                  </div>
+                <% end %>
+
+                <% top_scorers = (@top_scorers_by_division && @top_scorers_by_division[div.id]) || [] %>
+                <% if top_scorers.any? %>
+                  <div class="card shadow-sm mt-3">
+                    <div class="card-header fw-bold">ดาวซัลโว (Top 3)</div>
+                    <div class="card-body">
+                      <div class="d-flex flex-column" style="gap:8px;">
+                        <% top_scorers.each_with_index do |(player, goals), idx| %>
+                          <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                            <div style="min-width:0;">
+                              <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                <%= idx + 1 %>. <%= player.full_name %>
+                              </div>
+                              <div class="text-muted" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                <%= player.team_registration&.team&.name %>
+                              </div>
+                            </div>
+                            <div class="d-flex align-items-center" style="gap:6px;flex:0 0 auto;">
+                              <%= image_tag "football.png", alt: "goal", style: "width:16px;height:16px;object-fit:contain;display:block;" %>
+                              <div style="font-weight:900;">
+                                <%= goals %>
+                              </div>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
                     </div>
                   </div>
                 <% end %>
@@ -467,33 +490,6 @@
             <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการกำหนดรุ่นการแข่งขันสำหรับรายการนี้</p>
           <% end %>
         </div>
-        <% if @top_scorers.present? && @top_scorers.any? %>
-          <div class="card shadow-sm mt-3">
-            <div class="card-header fw-bold">ดาวซัลโว (Top 3)</div>
-            <div class="card-body">
-              <div class="d-flex flex-column" style="gap:8px;">
-                <% @top_scorers.each_with_index do |(player, goals), idx| %>
-                  <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
-                    <div style="min-width:0;">
-                      <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        <%= idx + 1 %>. <%= player.full_name %>
-                      </div>
-                      <div class="text-muted" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        <%= player.team_registration&.team&.name %>
-                      </div>
-                    </div>
-                    <div class="d-flex align-items-center" style="gap:6px;flex:0 0 auto;">
-                      <%= image_tag "football.png", alt: "goal", style: "width:16px;height:16px;object-fit:contain;display:block;" %>
-                      <div style="font-weight:900;">
-                        <%= goals %>
-                      </div>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        <% end %>
       </div>
     </div>
   </div>
