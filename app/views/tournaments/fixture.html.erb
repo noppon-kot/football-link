@@ -549,7 +549,14 @@
             modal.innerHTML = '' +
               '<div style="min-height:100%;display:flex;align-items:center;justify-content:center;">' +
               '  <div style="position:relative;max-width:min(1080px, 96vw);width:100%;">' +
-              '    <button type="button" data-fixture-export-close style="position:absolute;top:-10px;right:-10px;width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;font-size:22px;line-height:1;">×</button>' +
+              '    <div style="position:absolute;top:-10px;right:-10px;display:flex;gap:8px;">' +
+              '      <button type="button" data-fixture-export-download title="Save" aria-label="Save" style="width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;line-height:1;display:flex;align-items:center;justify-content:center;">' +
+              '        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+              '          <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm-5 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6ZM6 8V5h9v3H6Z" fill="currentColor"/>' +
+              '        </svg>' +
+              '      </button>' +
+              '      <button type="button" data-fixture-export-close style="width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;font-size:22px;line-height:1;">×</button>' +
+              '    </div>' +
               '    <img data-fixture-export-modal-img alt="Matchday" style="width:100%;height:auto;border-radius:14px;display:block;background:#fff;" />' +
               '  </div>' +
               '</div>';
@@ -564,6 +571,24 @@
             modal.querySelector('[data-fixture-export-close]').addEventListener('click', function() {
               modal.style.display = 'none';
             });
+
+            modal.querySelector('[data-fixture-export-download]').addEventListener('click', function() {
+              var img = modal.querySelector('[data-fixture-export-modal-img]');
+              if (!img || !img.src) return;
+
+              var filename = modal.getAttribute('data-filename') || 'fixture.png';
+              if (img.src.indexOf('data:image') === 0) {
+                var a = document.createElement('a');
+                a.href = img.src;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              } else {
+                window.open(img.src, '_blank');
+              }
+            });
+
             document.addEventListener('keydown', function(e) {
               if (e.key === 'Escape') {
                 modal.style.display = 'none';
@@ -577,6 +602,11 @@
             var modal = ensureModal();
             var img = modal.querySelector('[data-fixture-export-modal-img]');
             img.src = src;
+            var day = '<%= j(@selected_day&.strftime("%Y-%m-%d") || "") %>';
+            var title = '<%= j(@tournament.title.to_s.gsub(" ", "_")) %>';
+            var page = '<%= j(@day_page.to_s) %>';
+            var filename = (title ? title : 'fixture') + (day ? ('_' + day) : '') + (page ? ('_p' + page) : '') + '.png';
+            modal.setAttribute('data-filename', filename);
             modal.style.display = 'block';
           }
 
