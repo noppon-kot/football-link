@@ -10,11 +10,24 @@ class TeamRegistrationsController < ApplicationController
 
   def edit_team
     @team = @registration.team
+    @divisions = @tournament.tournament_divisions.order(:position, :id)
   end
 
   def update_team
     @team = @registration.team
+    @divisions = @tournament.tournament_divisions.order(:position, :id)
     permitted = params.require(:team).permit(:name, :contact_name, :contact_phone, :line_id, :logo)
+
+    submitted_division_id = params.dig(:team_registration, :tournament_division_id).presence
+
+    if submitted_division_id.present? && @divisions.size > 1
+      unless locked_registration?(@registration)
+        division = @divisions.find_by(id: submitted_division_id)
+        if division
+          @registration.update(tournament_division_id: division.id)
+        end
+      end
+    end
 
     if permitted[:logo].present?
       @team.replace_logo!(permitted[:logo])
@@ -111,7 +124,7 @@ class TeamRegistrationsController < ApplicationController
       end
       redirect_to teams_tournament_path(@tournament), notice: I18n.t("team_registrations.flash.create_success")
     else
-      flash.now[:alert] = "กรุณากรอกข้อมูลทีมและข้อมูลผู้ติดต่อให้ครบถ้วน"
+      flash.now[:alert] = result.errors.present? ? result.errors.join(", ") : "กรุณาตรวจสอบข้อมูลการสมัครทีม"
       render :new, status: :unprocessable_entity
     end
   end

@@ -140,13 +140,12 @@ class TournamentsController < ApplicationController
                           Match.none
                         end
 
-    @day_per_page = 6
-    @day_page = params[:page].to_i
-    @day_page = 1 if @day_page <= 0
+    # แสดงทุกคู่ของวันนั้น (ไม่แบ่งหน้า)
     @next_day_matches_total = @next_day_matches.count
-    @next_day_matches_total_pages = (@next_day_matches_total.to_f / @day_per_page).ceil
-    offset = (@day_page - 1) * @day_per_page
-    @next_day_matches_page = @next_day_matches.offset(offset).limit(@day_per_page)
+    @day_per_page = @next_day_matches_total
+    @day_page = 1
+    @next_day_matches_total_pages = 1
+    @next_day_matches_page = @next_day_matches
 
     all_matches_base = Match.where(tournament_division_id: divisions)
                            .includes(:home_team, :away_team, :group, :tournament_division)
@@ -449,7 +448,7 @@ class TournamentsController < ApplicationController
           end
         end
 
-        # สกอร์: ต้องกรอกทั้งสองฝั่งถึงจะบันทึก
+        # สกอร์: ต้องกรอกทั้งสองฝั่งถึงจะบันทึก และต้องเปลี่ยนจริงเท่านั้นถึงจะนับว่าเปลี่ยน
         home_score = permitted[:home_score]
         away_score = permitted[:away_score]
         scores_changed = false
@@ -457,9 +456,11 @@ class TournamentsController < ApplicationController
         if home_score.present? || away_score.present?
           next if home_score.blank? || away_score.blank?
 
-          update_attrs[:home_score] = home_score
-          update_attrs[:away_score] = away_score
-          scores_changed = true
+          if match.home_score.to_s != home_score.to_s || match.away_score.to_s != away_score.to_s
+            update_attrs[:home_score] = home_score
+            update_attrs[:away_score] = away_score
+            scores_changed = true
+          end
         end
 
         # จุดโทษ: เชื่อค่าจาก dropdown โดยตรง
@@ -473,6 +474,7 @@ class TournamentsController < ApplicationController
         if update_attrs.any?
           match.update!(update_attrs)
           affected_division_ids << match.tournament_division_id
+
         end
       end
     end
@@ -485,6 +487,7 @@ class TournamentsController < ApplicationController
     redirect_params = {}
     redirect_params[:day] = (last_kickoff_day || (params[:day].presence && Date.parse(params[:day])) rescue nil)&.strftime("%Y-%m-%d")
     redirect_params[:page] = params[:page] if params[:page].present?
+
     redirect_to fixture_tournament_path(@tournament, redirect_params), notice: notice_msg
   rescue ActiveRecord::RecordInvalid => e
     redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")

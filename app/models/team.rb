@@ -4,7 +4,7 @@ class Team < ApplicationRecord
 
   has_one_attached :logo, dependent: :purge_later
 
-  validates :name, :contact_name, :contact_phone, presence: true
+  validates :name, presence: true
 
   def replace_logo!(attachable)
     transaction do

@@ -6,8 +6,13 @@
   <% title_accent = day_has_result ? "#8ecbff" : "#d7ff59" %>
   <% label_accent = day_has_result ? "rgba(142,203,255,0.95)" : "rgba(215,255,89,0.95)" %>
 
-  <div id="fixture-share-card" style="position:fixed;left:-10000px;top:0;width:1080px;height:1350px;overflow:hidden;">
-    <div data-theme-root style="position:relative;width:1080px;height:1350px;background:#071b14;">
+  <% share_count = (@next_day_matches_page || []).size %>
+  <% share_base_height = 1350 %>
+  <% share_extra_matches = share_count > 6 ? (share_count - 6) : 0 %>
+  <% share_card_height = share_base_height + (share_extra_matches * 190) %>
+
+  <div id="fixture-share-card" style="position:fixed;left:-10000px;top:0;width:1080px;height:<%= share_card_height %>px;overflow:hidden;">
+    <div data-theme-root style="position:relative;width:1080px;height:<%= share_card_height %>px;background:#071b14;">
       <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
       <div data-theme-gradient style="position:absolute;inset:0;background:linear-gradient(135deg, <%= theme_primary %>e0 0%, <%= theme_secondary %>c7 45%, <%= theme_primary %>e0 100%);"></div>
 
@@ -26,14 +31,9 @@
             <% end %>
           </div>
         </div>
-
-        <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
-          <%= image_tag "dernsai_ban.png", alt: "DERNSAI", style: "width:110px;height:24px;border-radius:6px;object-fit:contain;background:rgba(255,255,255,0.08);padding:2px 6px;", crossorigin: "anonymous" %>
-          <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.com</span>
-        </div>
       </div>
 
-      <div style="position:absolute;left:80px;right:80px;top:250px;bottom:48px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
+      <div style="position:absolute;left:80px;right:80px;top:250px;bottom:120px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
         <div style="padding:14px 16px;">
           <% if @next_day_matches_page.any? %>
             <% @next_day_matches_page.each do |match| %>
@@ -92,6 +92,13 @@
           <% else %>
             <div style="padding:26px 0;color:rgba(255,255,255,0.85);font-size:18px;font-weight:700;">ยังไม่มีข้อมูลสำหรับวันที่นี้</div>
           <% end %>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:80px;right:80px;bottom:48px;display:flex;justify-content:flex-end;">
+        <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
+          <%= image_tag "dernsai_icon.png", alt: "DERNSAI", style: "width:28px;height:28px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.08);padding:4px;", crossorigin: "anonymous" %>
+          <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.com</span>
         </div>
       </div>
 
@@ -357,24 +364,6 @@
               <%= @next_match_day.strftime("%d/%m/%Y") %>
             </div>
 
-            <% if @next_day_matches_total_pages > 1 %>
-              <div class="d-flex align-items-center justify-content-between mb-2" style="gap:8px;">
-                <div class="text-muted" style="font-size:12px;">หน้า <%= @day_page %> / <%= @next_day_matches_total_pages %></div>
-                <div class="d-flex" style="gap:6px;">
-                  <% if @day_page > 1 %>
-                    <%= link_to "ก่อนหน้า",
-                                fixture_tournament_path(@tournament, day: @selected_day&.strftime("%Y-%m-%d"), page: @day_page - 1),
-                                class: "btn btn-sm btn-outline-secondary" %>
-                  <% end %>
-                  <% if @day_page < @next_day_matches_total_pages %>
-                    <%= link_to "ถัดไป",
-                                fixture_tournament_path(@tournament, day: @selected_day&.strftime("%Y-%m-%d"), page: @day_page + 1),
-                                class: "btn btn-sm btn-outline-secondary" %>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-
             <div class="d-block d-md-none fixture-match-list fixture-mobile-only">
               <% @next_day_matches_page.each_with_index do |match, idx| %>
                 <% match_no = ((@day_page - 1) * @day_per_page) + idx + 1 %>
@@ -543,6 +532,54 @@
       <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
       <script>
         (function() {
+          function ensureModal() {
+            var existing = document.getElementById('fixture-export-modal');
+            if (existing) return existing;
+
+            var modal = document.createElement('div');
+            modal.id = 'fixture-export-modal';
+            modal.style.display = 'none';
+            modal.style.position = 'fixed';
+            modal.style.inset = '0';
+            modal.style.zIndex = '1055';
+            modal.style.background = 'rgba(0,0,0,0.72)';
+            modal.style.padding = '16px';
+            modal.style.overflow = 'auto';
+
+            modal.innerHTML = '' +
+              '<div style="min-height:100%;display:flex;align-items:center;justify-content:center;">' +
+              '  <div style="position:relative;max-width:min(1080px, 96vw);width:100%;">' +
+              '    <button type="button" data-fixture-export-close style="position:absolute;top:-10px;right:-10px;width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;font-size:22px;line-height:1;">×</button>' +
+              '    <img data-fixture-export-modal-img alt="Matchday" style="width:100%;height:auto;border-radius:14px;display:block;background:#fff;" />' +
+              '  </div>' +
+              '</div>';
+
+            document.body.appendChild(modal);
+
+            modal.addEventListener('click', function(e) {
+              if (e.target === modal) {
+                modal.style.display = 'none';
+              }
+            });
+            modal.querySelector('[data-fixture-export-close]').addEventListener('click', function() {
+              modal.style.display = 'none';
+            });
+            document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') {
+                modal.style.display = 'none';
+              }
+            });
+
+            return modal;
+          }
+
+          function setModalImage(src) {
+            var modal = ensureModal();
+            var img = modal.querySelector('[data-fixture-export-modal-img]');
+            img.src = src;
+            modal.style.display = 'block';
+          }
+
           function randomExportTheme() {
             var themes = [
               { name: 'green', primary: '#063a2a', secondary: '#0b4a33', title: '#d7ff59', label: 'rgba(215,255,89,0.95)' },
@@ -574,7 +611,6 @@
             var oldText = buttonEl.innerText;
             try {
               buttonEl.disabled = true;
-              buttonEl.innerText = 'กำลังสร้างรูป...';
 
               applyExportTheme(targetEl);
 
@@ -585,15 +621,7 @@
               });
 
               var dataUrl = canvas.toDataURL('image/png');
-              var a = document.createElement('a');
-              var day = '<%= j(@selected_day&.strftime("%Y-%m-%d") || "") %>';
-              var title = '<%= j(@tournament.title.to_s.gsub(" ", "_")) %>';
-              a.href = dataUrl;
-              var page = '<%= j(@day_page.to_s) %>';
-              a.download = (filePrefix ? filePrefix : (title ? title : 'export')) + (day ? ('_' + day) : '') + (page ? ('_p' + page) : '') + '.png';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
+              setModalImage(dataUrl);
             } catch (e) {
               console.error(e);
               alert('สร้างรูปไม่สำเร็จ');

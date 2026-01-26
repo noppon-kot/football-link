@@ -58,6 +58,7 @@ Rails.application.routes.draw do
       get "teams/:team_registration_id/players", to: "tournament_players#public_index", as: :team_players
       patch "teams/:team_registration_id/players/:id/clear_yellow_cards", to: "tournament_players#clear_yellow_cards", as: :team_player_clear_yellow_cards
       patch "teams/:team_registration_id/players/:id/clear_red_cards", to: "tournament_players#clear_red_cards", as: :team_player_clear_red_cards
+
       patch "my/entries/:team_registration_id/roster/submit", to: "tournament_my_entries#submit_roster", as: :my_entry_roster_submit
       patch "my/entries/:team_registration_id/roster/unlock", to: "tournament_my_entries#unlock_roster", as: :my_entry_roster_unlock
       get "my/entries/:team_registration_id/players", to: "tournament_players#index", as: :my_entry_players

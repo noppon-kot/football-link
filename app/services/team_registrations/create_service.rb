@@ -17,6 +17,10 @@ module TeamRegistrations
                       @params.dig(:registration, :tournament_division_id)
                     end
 
+      if divisions.size > 1 && division_id.blank?
+        return Result.new(success?: false, tournament: @tournament, registration: nil, errors: ["กรุณาเลือกรุ่น"])
+      end
+
       team_params = @params.require(:registration).permit(:team_name, :contact_name, :contact_phone, :line_id, :logo)
 
       registration = nil

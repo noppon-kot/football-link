@@ -194,23 +194,33 @@
                   <% groups.each do |group| %>
                     <% group_matches = div_matches.select { |m| m.group_id == group.id } %>
                     <% team_ids = (group_matches.map(&:home_team_id) + group_matches.map(&:away_team_id)).compact.uniq %>
+                    <% next if team_ids.empty? %>
 
                     <div class="mb-2">
                       <% card_id = "standings-card-#{div.id}-#{group.id}" %>
+                      <% export_team_count = [team_ids.length, 10].min %>
+                      <% export_base_height = 980 %>
+                      <% export_row_height = 80 %>
+                      <% export_max_height = 1350 %>
+                      <% export_card_height = [export_base_height + (export_team_count * export_row_height), export_max_height].min %>
                       <div class="d-flex align-items-center justify-content-between mb-1" style="gap:8px;">
                         <div style="font-size:12px;color:#546e7a;">สาย <%= group.name %></div>
-                        <button type="button"
-                                class="btn btn-sm btn-success js-standings-export"
-                                data-target="<%= card_id %>"
-                                data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>_group_<%= group.name %>.png">
-                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                            <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
-                          </svg>
-                        </button>
+                        <% if team_ids.any? %>
+                          <button type="button"
+                                  class="btn btn-sm btn-success js-standings-export"
+                                  data-target="<%= card_id %>"
+                                  data-division-id="<%= div.id %>"
+                                  data-group-id="<%= group.id %>"
+                                  data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>_group_<%= group.name %>.png">
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                              <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                            </svg>
+                          </button>
+                        <% end %>
                       </div>
 
-                      <div id="<%= card_id %>" style="position:fixed;left:-10000px;top:0;width:1080px;height:1350px;overflow:hidden;">
-                        <div data-theme-root style="position:relative;width:1080px;height:1350px;background:#071b14;">
+                      <div id="<%= card_id %>" style="position:fixed;left:-10000px;top:0;width:1080px;height:<%= export_card_height %>px;overflow:hidden;">
+                        <div data-theme-root style="position:relative;width:1080px;height:<%= export_card_height %>px;background:#071b14;">
                           <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
                           <div data-theme-gradient style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(6,58,42,0.88) 0%, rgba(11,74,51,0.78) 45%, rgba(10,47,34,0.88) 100%);"></div>
 
@@ -228,14 +238,9 @@
                                 <% end %>
                               </div>
                             </div>
-
-                            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
-                              <%= image_tag "dernsai_ban.png", alt: "DERNSAI", style: "width:110px;height:34px;border-radius:6px;object-fit:contain;background:rgba(255,255,255,0.08);padding:2px 6px;", crossorigin: "anonymous" %>
-                              <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
-                            </div>
                           </div>
 
-                          <div style="position:absolute;left:54px;right:54px;top:260px;bottom:54px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
+                          <div style="position:absolute;left:54px;right:54px;top:260px;bottom:120px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
                             <div style="padding:18px 20px;">
                               <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.9);font-weight:900;font-size:15px;letter-spacing:0.6px;">
                                 <div style="width:60px;text-align:center;">NO</div>
@@ -316,6 +321,13 @@
                               <% else %>
                                 <div style="padding:26px 0;color:rgba(255,255,255,0.85);font-size:18px;font-weight:700;">ยังไม่มีข้อมูลตารางคะแนน</div>
                               <% end %>
+                            </div>
+                          </div>
+
+                          <div style="position:absolute;left:54px;right:54px;bottom:54px;display:flex;justify-content:flex-end;">
+                            <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
+                              <%= image_tag "dernsai_icon.png", alt: "DERNSAI", style: "width:28px;height:28px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.08);padding:4px;", crossorigin: "anonymous" %>
+                              <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
                             </div>
                           </div>
                         </div>
@@ -418,42 +430,46 @@
                     </div>
                   <% end %>
                 <% else %>
-                  <% card_id = "standings-card-#{div.id}-no-group" %>
-                  <div class="d-flex align-items-center justify-content-between mb-1" style="gap:8px;">
-                    <div style="font-size:12px;color:#546e7a;">ตารางคะแนนรุ่นนี้</div>
-                    <button type="button"
-                            class="btn btn-sm btn-success js-standings-export"
-                            data-target="<%= card_id %>"
-                            data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>.png">
-                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                        <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="table-responsive">
-                    <div id="<%= card_id %>">
-                      <table class="table table-sm align-middle mb-0">
-                      <thead class="table-light">
-                        <tr>
-                          <th scope="col">ทีม</th>
-                          <th scope="col" class="text-center">แต้ม</th>
-                          <th scope="col" class="text-center">แข่ง</th>
-                          <th scope="col" class="text-center">ชนะ</th>
-                          <th scope="col" class="text-center">แพ้</th>
-                          <th scope="col" class="text-center">เสมอ</th>
-                          <th scope="col" class="text-center">ประตู</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td colspan="7" class="text-center text-muted" style="font-size:13px;">
-                            ยังไม่มีการแบ่งสายสำหรับรุ่นนี้
-                          </td>
-                        </tr>
-                      </tbody>
-                      </table>
+                  <% div_team_ids = (div_matches.map(&:home_team_id) + div_matches.map(&:away_team_id)).compact.uniq %>
+                  <% if div_team_ids.any? %>
+                    <% card_id = "standings-card-#{div.id}-no-group" %>
+                    <div class="d-flex align-items-center justify-content-between mb-1" style="gap:8px;">
+                      <div style="font-size:12px;color:#546e7a;">ตารางคะแนนรุ่นนี้</div>
+                      <button type="button"
+                              class="btn btn-sm btn-success js-standings-export"
+                              data-target="<%= card_id %>"
+                              data-division-id="<%= div.id %>"
+                              data-filename="standings_<%= div.name.to_s.gsub(' ', '_') %>.png">
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                          <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                        </svg>
+                      </button>
                     </div>
-                  </div>
+                    <div class="table-responsive">
+                      <div id="<%= card_id %>">
+                        <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                          <tr>
+                            <th scope="col">ทีม</th>
+                            <th scope="col" class="text-center">แต้ม</th>
+                            <th scope="col" class="text-center">แข่ง</th>
+                            <th scope="col" class="text-center">ชนะ</th>
+                            <th scope="col" class="text-center">แพ้</th>
+                            <th scope="col" class="text-center">เสมอ</th>
+                            <th scope="col" class="text-center">ประตู</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td colspan="7" class="text-center text-muted" style="font-size:13px;">
+                              ยังไม่มีการแบ่งสายสำหรับรุ่นนี้
+                            </td>
+                          </tr>
+                        </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  <% end %>
                 <% end %>
 
                 <% top_scorers = (@top_scorers_by_division && @top_scorers_by_division[div.id]) || [] %>
@@ -497,6 +513,55 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
     (function() {
+      function ensureModal() {
+        var existing = document.getElementById('standings-snapshot-modal');
+        if (existing) return existing;
+
+        var modal = document.createElement('div');
+        modal.id = 'standings-snapshot-modal';
+        modal.style.display = 'none';
+        modal.style.position = 'fixed';
+        modal.style.inset = '0';
+        modal.style.zIndex = '1055';
+        modal.style.background = 'rgba(0,0,0,0.72)';
+        modal.style.padding = '16px';
+        modal.style.overflow = 'auto';
+
+        modal.innerHTML = '' +
+          '<div style="min-height:100%;display:flex;align-items:center;justify-content:center;">' +
+          '  <div style="position:relative;max-width:min(1080px, 96vw);width:100%;">' +
+          '    <button type="button" data-standings-snapshot-close style="position:absolute;top:-10px;right:-10px;width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;font-size:22px;line-height:1;">×</button>' +
+          '    <img data-standings-snapshot-modal-img alt="Standings snapshot" style="width:100%;height:auto;border-radius:14px;display:block;background:#fff;" />' +
+          '  </div>' +
+          '</div>';
+
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+        modal.querySelector('[data-standings-snapshot-close]').addEventListener('click', function() {
+          modal.style.display = 'none';
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') {
+            modal.style.display = 'none';
+          }
+        });
+
+        return modal;
+      }
+
+      function setModalImage(src) {
+        var modal = ensureModal();
+        var modalImg = modal.querySelector('[data-standings-snapshot-modal-img]');
+        modalImg.src = src;
+        modal.setAttribute('data-current-src', src);
+        modal.style.display = 'block';
+      }
+
       document.addEventListener('click', async function(e) {
         var btn = e.target.closest('.js-standings-export');
         if (!btn) return;
@@ -512,34 +577,15 @@
         var oldText = btn.innerText;
         try {
           btn.disabled = true;
-          btn.innerText = 'กำลังสร้างรูป...';
-
-          (function() {
-            var themes = [
-              { name: 'green', primary: '#063a2a', secondary: '#0b4a33', title: '#d7ff59' },
-              { name: 'blue', primary: '#0a1b3a', secondary: '#0b2a4f', title: '#8ecbff' },
-              { name: 'purple', primary: '#2a1247', secondary: '#3b1a63', title: '#e0b3ff' },
-              { name: 'yellow', primary: '#3a2f00', secondary: '#5a4800', title: '#ffe066' },
-              { name: 'orange', primary: '#3a1f00', secondary: '#5a2e00', title: '#ffb347' },
-              { name: 'red', primary: '#3a0a12', secondary: '#5a1220', title: '#ff7b7b' },
-              { name: 'navy', primary: '#061226', secondary: '#0b1f3d', title: '#7fb3ff' }
-            ];
-            var theme = themes[Math.floor(Math.random() * themes.length)];
-            var root = target.querySelector('[data-theme-root]');
-            var gradient = target.querySelector('[data-theme-gradient]');
-            var title = target.querySelector('[data-theme-title]');
-            if (root) root.style.background = theme.primary;
-            if (gradient) gradient.style.background = 'linear-gradient(135deg, ' + theme.primary + 'e0 0%, ' + theme.secondary + 'c7 45%, ' + theme.primary + 'e0 100%)';
-            if (title) title.style.color = theme.title;
-          })();
 
           var canvas = await html2canvas(target, {
             backgroundColor: '#ffffff',
             scale: 2,
             useCORS: true
           });
-
           var dataUrl = canvas.toDataURL('image/png');
+          setModalImage(dataUrl);
+
           var a = document.createElement('a');
           a.href = dataUrl;
           a.download = filename;

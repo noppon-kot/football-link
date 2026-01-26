@@ -21,6 +21,21 @@
                       url: update_team_tournament_team_registration_path(@tournament, @registration),
                       method: :patch,
                       local: true do |f| %>
+          <% if defined?(@divisions) && @divisions.size > 1 %>
+            <% locked = respond_to?(:locked_registration?) ? locked_registration?(@registration) : false %>
+            <div class="mb-3">
+              <label class="form-label">รุ่น</label>
+              <% if locked %>
+                <div class="form-control-plaintext"><%= @registration.tournament_division&.name || "-" %></div>
+              <% else %>
+                <%= select_tag "team_registration[tournament_division_id]",
+                      options_from_collection_for_select(@divisions, :id, :name, @registration.tournament_division_id),
+                      include_blank: false,
+                      class: "form-select" %>
+              <% end %>
+            </div>
+          <% end %>
+
           <div class="mb-3">
             <label class="form-label">ชื่อทีม</label>
             <%= f.text_field :name, class: "form-control" %>

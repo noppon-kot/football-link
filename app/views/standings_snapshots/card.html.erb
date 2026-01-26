@@ -1,0 +1,108 @@
+<div id="standings-snapshot-card" style="position:relative;width:1080px;height:1350px;overflow:hidden;">
+  <div data-theme-root style="position:relative;width:1080px;height:1350px;background:#071b14;">
+    <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
+    <div data-theme-gradient style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(6,58,42,0.88) 0%, rgba(11,74,51,0.78) 45%, rgba(10,47,34,0.88) 100%);"></div>
+
+    <div style="position:absolute;left:54px;right:54px;top:48px;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;">
+      <div>
+        <div data-theme-title style="font-size:50px;font-weight:900;letter-spacing:0.4px;line-height:1.05;color:#d7ff59;text-transform:uppercase;">
+          <%= @tournament.title %>
+        </div>
+        <div style="margin-top:12px;font-size:30px;font-weight:900;color:rgba(255,255,255,0.92);letter-spacing:0.8px;">ตารางคะแนน</div>
+        <div style="margin-top:8px;font-size:18px;color:rgba(255,255,255,0.88);">
+          รุ่น <%= @division.name %>
+          <% if @group.present? %>
+            · สาย <%= @group.name %>
+          <% end %>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
+        <%= image_tag "dernsai_ban.png", alt: "DERNSAI", style: "width:110px;height:34px;border-radius:6px;object-fit:contain;background:rgba(255,255,255,0.08);padding:2px 6px;", crossorigin: "anonymous" %>
+        <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
+      </div>
+    </div>
+
+    <div style="position:absolute;left:54px;right:54px;top:260px;bottom:54px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
+      <div style="padding:18px 20px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.9);font-weight:900;font-size:15px;letter-spacing:0.6px;">
+          <div style="width:60px;text-align:center;">NO</div>
+          <div style="flex:1;">CLUB</div>
+          <div style="width:80px;text-align:center;">แต้ม</div>
+          <div style="width:60px;text-align:center;">แข่ง</div>
+          <div style="width:60px;text-align:center;">ชนะ</div>
+          <div style="width:60px;text-align:center;">แพ้</div>
+          <div style="width:60px;text-align:center;">เสมอ</div>
+          <div style="width:70px;text-align:center;">ประตู</div>
+        </div>
+
+        <% if @sorted.any? %>
+          <% @sorted.first(10).each_with_index do |(tid, s), idx| %>
+            <% team = Team.find(tid) %>
+            <div style="display:flex;align-items:center;gap:10px;padding:14px 0;border-top:1px solid rgba(255,255,255,0.18);">
+              <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:20px;"><%= idx + 1 %></div>
+              <div style="flex:1;display:flex;align-items:center;gap:12px;min-width:0;">
+                <% if team.logo.attached? %>
+                  <%= image_tag team.logo, style: "width:48px;height:48px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
+                <% else %>
+                  <div style="width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
+                <% end %>
+                <div style="font-size:24px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><%= team.name %></div>
+              </div>
+              <div style="width:80px;text-align:center;color:#ffffff;font-weight:900;font-size:24px;"><%= s[:pts] %></div>
+              <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:played] %></div>
+              <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:won] %></div>
+              <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:lost] %></div>
+              <div style="width:60px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:draw] %></div>
+              <div style="width:70px;text-align:center;color:#ffffff;font-weight:900;font-size:18px;"><%= s[:gf] %></div>
+            </div>
+          <% end %>
+        <% else %>
+          <div style="padding:26px 0;color:rgba(255,255,255,0.85);font-size:18px;font-weight:700;">ยังไม่มีข้อมูลตารางคะแนน</div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  (function() {
+    var auto = <%= params[:auto].present? ? 'true' : 'false' %>;
+    if (!auto) return;
+
+    async function run() {
+      try {
+        var target = document.getElementById('standings-snapshot-card');
+        if (!target) return;
+
+        var canvas = await html2canvas(target, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true
+        });
+
+        var dataUrl = canvas.toDataURL('image/png');
+        window.parent.postMessage({
+          type: 'standings_snapshot',
+          tournamentId: <%= @tournament.id %>,
+          divisionId: <%= @division.id %>,
+          groupId: <%= @group&.id || 'null' %>,
+          imageData: dataUrl
+        }, '*');
+      } catch (e) {
+        window.parent.postMessage({
+          type: 'standings_snapshot_error',
+          tournamentId: <%= @tournament.id %>,
+          divisionId: <%= @division.id %>,
+          groupId: <%= @group&.id || 'null' %>,
+          error: (e && e.message) ? e.message : String(e)
+        }, '*');
+      }
+    }
+
+    window.addEventListener('load', run);
+    document.addEventListener('turbo:load', run);
+    document.addEventListener('DOMContentLoaded', run);
+  })();
+</script>
