@@ -513,6 +513,9 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
     (function() {
+      if (window.__standingsExportInitialized) return;
+      window.__standingsExportInitialized = true;
+
       function ensureModal() {
         var existing = document.getElementById('standings-snapshot-modal');
         if (existing) return existing;
@@ -566,6 +569,9 @@
         var btn = e.target.closest('.js-standings-export');
         if (!btn) return;
 
+        if (btn.getAttribute('data-busy') === '1') return;
+        btn.setAttribute('data-busy', '1');
+
         var targetId = btn.getAttribute('data-target');
         if (!targetId) return;
 
@@ -598,6 +604,7 @@
         } finally {
           btn.disabled = false;
           btn.innerText = oldText;
+          btn.setAttribute('data-busy', '0');
         }
       });
     })();
