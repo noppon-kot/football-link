@@ -9,7 +9,8 @@
   <% share_count = (@next_day_matches_page || []).size %>
   <% share_base_height = 1350 %>
   <% share_extra_matches = share_count > 6 ? (share_count - 6) : 0 %>
-  <% share_card_height = share_base_height + (share_extra_matches * 190) %>
+  <% share_footer_buffer = 180 %>
+  <% share_card_height = share_base_height + (share_extra_matches * 220) + share_footer_buffer %>
 
   <div id="fixture-share-card" style="position:fixed;left:-10000px;top:0;width:1080px;height:<%= share_card_height %>px;overflow:hidden;">
     <div data-theme-root style="position:relative;width:1080px;height:<%= share_card_height %>px;background:#071b14;">
@@ -33,7 +34,7 @@
         </div>
       </div>
 
-      <div style="position:absolute;left:80px;right:80px;top:250px;bottom:120px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
+      <div style="position:absolute;left:80px;right:80px;top:250px;bottom:170px;background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;">
         <div style="padding:14px 16px;">
           <% if @next_day_matches_page.any? %>
             <% @next_day_matches_page.each do |match| %>
