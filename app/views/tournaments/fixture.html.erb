@@ -352,6 +352,17 @@
             วันที่: <%= @selected_day.present? ? @selected_day.strftime("%d/%m/%Y") : "-" %>
           </div>
 
+          <div class="fixture-filter-row" style="margin-bottom:10px;">
+            <div style="flex:1 1 auto;min-width:220px;">
+              <input type="text"
+                     id="fixture-team-search"
+                     class="form-control form-control-sm"
+                     placeholder="ค้นหาชื่อทีม"
+                     autocomplete="off" />
+            </div>
+            <div class="text-muted" id="fixture-search-count" style="font-size:12px;white-space:nowrap;align-self:center;"></div>
+          </div>
+
           <div class="modal fade" id="fixtureDayModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
               <div class="modal-content">
@@ -412,7 +423,8 @@
                                  end %>
                 <% group_or_round = group_name.presence || round_title.presence || "-" %>
 
-                <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-match-link", style: "text-decoration:none;color:inherit;" do %>
+                <% team_text = [match.home_name, match.away_name].join(" ") %>
+                <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-match-link", data: { fixture_team_text: team_text.downcase }, style: "text-decoration:none;color:inherit;" do %>
                   <div class="fixture-match-card">
                     <div class="fixture-match-card-header">
                       <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
@@ -449,6 +461,49 @@
                           <% end %>
                         </div>
                       </div>
+
+                      <% home_lineup_ok = (@lineup_submitted_by_match_and_side && @lineup_submitted_by_match_and_side[[match.id, "home"]]) %>
+                      <% away_lineup_ok = (@lineup_submitted_by_match_and_side && @lineup_submitted_by_match_and_side[[match.id, "away"]]) %>
+                      <% home_entry_id = (@entry_id_by_match_and_side && @entry_id_by_match_and_side[[match.id, "home"]]) %>
+                      <% away_entry_id = (@entry_id_by_match_and_side && @entry_id_by_match_and_side[[match.id, "away"]]) %>
+                      <% home_clickable = current_user.present? && home_entry_id.present? && @manageable_entry_ids&.include?(home_entry_id) %>
+                      <% away_clickable = current_user.present? && away_entry_id.present? && @manageable_entry_ids&.include?(away_entry_id) %>
+                      <div class="d-flex justify-content-between" style="margin-top:8px;font-size:12px;color:#78909c;">
+                        <div class="d-inline-flex align-items-center" style="gap:6px;">
+                          <% if home_clickable %>
+                            <%= link_to my_entry_lineup_tournament_path(@tournament, team_registration_id: home_entry_id, match_id: match.id),
+                                  title: "เหย้า Line Up: #{home_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง'}",
+                                  style: "color:#{home_lineup_ok ? '#16a34a' : '#9ca3af'};display:inline-flex;align-items:center;text-decoration:none;" do %>
+                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            <% end %>
+                          <% else %>
+                            <span title="เหย้า Line Up: <%= home_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง' %>" style="color:<%= home_lineup_ok ? '#16a34a' : '#9ca3af' %>;display:inline-flex;align-items:center;">
+                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            </span>
+                          <% end %>
+                        </div>
+                        <div class="d-inline-flex align-items-center" style="gap:6px;">
+                          <% if away_clickable %>
+                            <%= link_to my_entry_lineup_tournament_path(@tournament, team_registration_id: away_entry_id, match_id: match.id),
+                                  title: "เยือน Line Up: #{away_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง'}",
+                                  style: "color:#{away_lineup_ok ? '#16a34a' : '#9ca3af'};display:inline-flex;align-items:center;text-decoration:none;" do %>
+                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            <% end %>
+                          <% else %>
+                            <span title="เยือน Line Up: <%= away_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง' %>" style="color:<%= away_lineup_ok ? '#16a34a' : '#9ca3af' %>;display:inline-flex;align-items:center;">
+                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            </span>
+                          <% end %>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 <% end %>
@@ -470,7 +525,7 @@
                 </thead>
                 <tbody>
                   <% @next_day_matches_page.each_with_index do |match, idx| %>
-                    <tr>
+                    <tr data-fixture-team-text="<%= [match.home_name, match.away_name].join(" ").downcase %>">
                       <td class="text-center" style="font-size:12px;white-space:nowrap;">
                         <%= link_to "คู่ที่ #{((@day_page - 1) * @day_per_page) + idx + 1}", match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" %>
                       </td>
@@ -516,6 +571,24 @@
                                           style: "width:24px;height:24px;object-fit:cover;" %>
                           <% end %>
                           <span style="font-weight:600;"><%= match.home_name %></span>
+                          <% home_lineup_ok = (@lineup_submitted_by_match_and_side && @lineup_submitted_by_match_and_side[[match.id, "home"]]) %>
+                          <% home_entry_id = (@entry_id_by_match_and_side && @entry_id_by_match_and_side[[match.id, "home"]]) %>
+                          <% home_clickable = current_user.present? && home_entry_id.present? && @manageable_entry_ids&.include?(home_entry_id) %>
+                          <% if home_clickable %>
+                            <%= link_to my_entry_lineup_tournament_path(@tournament, team_registration_id: home_entry_id, match_id: match.id),
+                                  title: "เหย้า Line Up: #{home_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง'}",
+                                  style: "color:#{home_lineup_ok ? '#16a34a' : '#9ca3af'};display:inline-flex;align-items:center;text-decoration:none;" do %>
+                              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            <% end %>
+                          <% else %>
+                            <span title="เหย้า Line Up: <%= home_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง' %>" style="color:<%= home_lineup_ok ? '#16a34a' : '#9ca3af' %>;display:inline-flex;align-items:center;">
+                              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            </span>
+                          <% end %>
                         </div>
                       </td>
                       <td>
@@ -526,6 +599,24 @@
                                           style: "width:24px;height:24px;object-fit:cover;" %>
                           <% end %>
                           <span style="font-weight:600;"><%= match.away_name %></span>
+                          <% away_lineup_ok = (@lineup_submitted_by_match_and_side && @lineup_submitted_by_match_and_side[[match.id, "away"]]) %>
+                          <% away_entry_id = (@entry_id_by_match_and_side && @entry_id_by_match_and_side[[match.id, "away"]]) %>
+                          <% away_clickable = current_user.present? && away_entry_id.present? && @manageable_entry_ids&.include?(away_entry_id) %>
+                          <% if away_clickable %>
+                            <%= link_to my_entry_lineup_tournament_path(@tournament, team_registration_id: away_entry_id, match_id: match.id),
+                                  title: "เยือน Line Up: #{away_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง'}",
+                                  style: "color:#{away_lineup_ok ? '#16a34a' : '#9ca3af'};display:inline-flex;align-items:center;text-decoration:none;" do %>
+                              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            <% end %>
+                          <% else %>
+                            <span title="เยือน Line Up: <%= away_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง' %>" style="color:<%= away_lineup_ok ? '#16a34a' : '#9ca3af' %>;display:inline-flex;align-items:center;">
+                              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
+                              </svg>
+                            </span>
+                          <% end %>
                         </div>
                       </td>
                       <td class="text-end" style="font-size:12px;white-space:nowrap;">
@@ -1495,12 +1586,14 @@
                         <% div_matches.each do |m| %>
                           <% label_time = m.kickoff_at.present? ? m.kickoff_at.strftime("%d/%m %H:%M") : "ยังไม่ได้กำหนด" %>
                           <% kickoff_iso = m.kickoff_at&.iso8601 %>
+                          <% team_text = [m.home_name, m.away_name].join(" ") %>
                           <button type="button"
                                   class="btn btn-sm w-100 text-start"
                                   data-bulk-match="1"
                                   data-match-id="<%= m.id %>"
                                   data-kickoff-at="<%= kickoff_iso %>"
                                   data-label="<%= [m.home_name, "vs", m.away_name].join(' ') %>"
+                                  data-fixture-team-text="<%= team_text.downcase %>"
                                   style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;margin-bottom:8px;background:#ffffff;">
                             <div class="d-flex justify-content-between" style="gap:10px;">
                               <div style="font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -1530,3 +1623,58 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function() {
+    function normalizeText(v) {
+      return (v || "").toString().trim().toLowerCase();
+    }
+
+    function applyFixtureTeamFilter() {
+      var input = document.getElementById("fixture-team-search");
+      if (!input) return;
+      var q = normalizeText(input.value);
+
+      var mobileLinks = document.querySelectorAll("a.fixture-match-link[data-fixture-team-text]");
+      var desktopRows = document.querySelectorAll("tr[data-fixture-team-text]");
+
+      var total = mobileLinks.length + desktopRows.length;
+      var visible = 0;
+
+      mobileLinks.forEach(function(a) {
+        var t = normalizeText(a.getAttribute("data-fixture-team-text"));
+        var show = !q || (t && t.indexOf(q) !== -1);
+        a.style.display = show ? "block" : "none";
+        if (show) visible += 1;
+      });
+
+      desktopRows.forEach(function(tr) {
+        var t = normalizeText(tr.getAttribute("data-fixture-team-text"));
+        var show = !q || (t && t.indexOf(q) !== -1);
+        tr.style.display = show ? "" : "none";
+        if (show) visible += 1;
+      });
+
+      var counter = document.getElementById("fixture-search-count");
+      if (counter) {
+        if (!q) {
+          counter.textContent = "";
+        } else {
+          counter.textContent = visible + "/" + total;
+        }
+      }
+    }
+
+    function bindFixtureTeamSearch() {
+      var input = document.getElementById("fixture-team-search");
+      if (!input) return;
+      if (input.dataset.bound === "1") return;
+      input.dataset.bound = "1";
+      input.addEventListener("input", applyFixtureTeamFilter);
+      applyFixtureTeamFilter();
+    }
+
+    document.addEventListener("turbo:load", bindFixtureTeamSearch);
+    document.addEventListener("DOMContentLoaded", bindFixtureTeamSearch);
+  })();
+</script>

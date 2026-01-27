@@ -81,6 +81,16 @@ class TournamentsController < ApplicationController
     divisions = @tournament.tournament_divisions.select(:id)
     today_start = Time.zone.today.beginning_of_day
 
+    show_mine = params[:mine].to_s == "1" && current_user.present?
+    managed_team_ids = []
+    if show_mine
+      managed_entry_ids_from_manager_user = TeamRegistration.where(tournament_id: @tournament.id, manager_user_id: current_user.id).pluck(:id)
+      managed_entry_ids_from_join = TeamRegistrationManager.where(user_id: current_user.id).joins(:team_registration).where(team_registrations: { tournament_id: @tournament.id }).pluck(:team_registration_id)
+      managed_entry_ids = (managed_entry_ids_from_manager_user + managed_entry_ids_from_join).uniq
+      managed_team_ids = TeamRegistration.where(id: managed_entry_ids).pluck(:team_id).compact.uniq
+      show_mine = false if managed_team_ids.empty?
+    end
+
     requested_day = nil
     if params[:day].present?
       begin
@@ -92,6 +102,9 @@ class TournamentsController < ApplicationController
 
     all_dated = Match.where(tournament_division_id: divisions)
                      .where.not(kickoff_at: nil)
+    if show_mine
+      all_dated = all_dated.where("home_team_id IN (:ids) OR away_team_id IN (:ids)", ids: managed_team_ids)
+    end
 
     available_days = all_dated
                       .distinct
@@ -132,9 +145,12 @@ class TournamentsController < ApplicationController
     end
 
     @next_day_matches = if resolved_day.present?
-                          Match.where(tournament_division_id: divisions)
-                              .where(kickoff_at: resolved_day.beginning_of_day..resolved_day.end_of_day)
-                              .includes(:home_team, :away_team, :group, :tournament_division)
+                          base = Match.where(tournament_division_id: divisions)
+                                     .where(kickoff_at: resolved_day.beginning_of_day..resolved_day.end_of_day)
+                          if show_mine
+                            base = base.where("home_team_id IN (:ids) OR away_team_id IN (:ids)", ids: managed_team_ids)
+                          end
+                          base.includes(:home_team, :away_team, :group, :tournament_division)
                               .order(:kickoff_at, :id)
                         else
                           Match.none
@@ -148,7 +164,10 @@ class TournamentsController < ApplicationController
     @next_day_matches_page = @next_day_matches
 
     all_matches_base = Match.where(tournament_division_id: divisions)
-                           .includes(:home_team, :away_team, :group, :tournament_division)
+    if show_mine
+      all_matches_base = all_matches_base.where("home_team_id IN (:ids) OR away_team_id IN (:ids)", ids: managed_team_ids)
+    end
+    all_matches_base = all_matches_base.includes(:home_team, :away_team, :group, :tournament_division)
 
     # คู่ที่ยังไม่แข่ง (ไม่มีสกอร์ครบ) ให้ขึ้นก่อน แล้วค่อยเรียงตามวันเวลา
     all_matches_base = all_matches_base.order(
@@ -170,6 +189,58 @@ class TournamentsController < ApplicationController
                                   .left_joins(:group)
                                   .includes(:group, :home_team, :away_team, :tournament_division)
                                   .order(Arel.sql("matches.stage ASC, groups.name ASC NULLS LAST, matches.round_number ASC NULLS LAST, matches.position ASC NULLS LAST, matches.id ASC"))
+
+    match_ids_for_lineup = (@next_day_matches_page.map(&:id) + @all_matches_page.map(&:id)).uniq
+    @lineup_submitted_by_match_and_side = {}
+    if match_ids_for_lineup.any?
+      MatchLineup.where(match_id: match_ids_for_lineup)
+                .pluck(:match_id, :side, :submitted_at)
+                .each do |match_id, side, submitted_at|
+        @lineup_submitted_by_match_and_side[[match_id, side.to_s]] = submitted_at.present?
+      end
+    end
+
+    matches_for_roster = (@next_day_matches_page + @all_matches_page).uniq { |m| m.id }
+    @roster_submitted_by_match_and_side = {}
+    @entry_id_by_match_and_side = {}
+    @manageable_entry_ids = Set.new
+    if matches_for_roster.any?
+      division_ids_for_roster = matches_for_roster.map(&:tournament_division_id).compact.uniq
+      team_ids_for_roster = matches_for_roster.flat_map { |m| [m.home_team_id, m.away_team_id] }.compact.uniq
+
+      entries_by_div_and_team = {}
+      if division_ids_for_roster.any? && team_ids_for_roster.any?
+        TeamRegistration
+          .where(tournament_id: @tournament.id)
+          .where(tournament_division_id: division_ids_for_roster)
+          .where(team_id: team_ids_for_roster)
+          .select(:id, :team_id, :tournament_division_id, :roster_locked)
+          .find_each do |tr|
+            entries_by_div_and_team[[tr.tournament_division_id, tr.team_id]] = tr
+          end
+      end
+
+      matches_for_roster.each do |m|
+        home_entry = if m.home_team_id.present?
+                       entries_by_div_and_team[[m.tournament_division_id, m.home_team_id]]
+                     end
+        away_entry = if m.away_team_id.present?
+                       entries_by_div_and_team[[m.tournament_division_id, m.away_team_id]]
+                     end
+
+        @roster_submitted_by_match_and_side[[m.id, "home"]] = !!home_entry&.roster_locked?
+        @roster_submitted_by_match_and_side[[m.id, "away"]] = !!away_entry&.roster_locked?
+
+        @entry_id_by_match_and_side[[m.id, "home"]] = home_entry&.id
+        @entry_id_by_match_and_side[[m.id, "away"]] = away_entry&.id
+      end
+    end
+
+    if current_user.present?
+      ids_from_manager_user = TeamRegistration.where(tournament_id: @tournament.id, manager_user_id: current_user.id).pluck(:id)
+      ids_from_join = TeamRegistrationManager.where(user_id: current_user.id).joins(:team_registration).where(team_registrations: { tournament_id: @tournament.id }).pluck(:team_registration_id)
+      @manageable_entry_ids = (ids_from_manager_user + ids_from_join).uniq.to_set
+    end
   end
 
   def bulk_schedule

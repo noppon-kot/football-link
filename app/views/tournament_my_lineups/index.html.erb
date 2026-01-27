@@ -1,0 +1,78 @@
+<div class="app-shell">
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <div class="d-flex justify-content-between align-items-center mb-2" style="gap:8px;">
+        <div>
+          <div style="font-size:18px;font-weight:bold;">ส่งรายชื่อตัวจริง (Line Up)</div>
+          <div class="text-muted" style="font-size:13px;">
+            <%= @entry.team.name %> · รุ่น <%= @entry.tournament_division&.name || "-" %>
+          </div>
+        </div>
+        <div>
+          <%= link_to "กลับ", tournament_path(@tournament), class: "btn btn-sm btn-outline-secondary" %>
+        </div>
+      </div>
+
+      <% if !@entry.respond_to?(:roster_locked?) || !@entry.roster_locked? %>
+        <div class="alert alert-warning" style="font-size:13px;">
+          ต้องส่งรายชื่อนักกีฬาก่อน จึงจะส่งรายชื่อตัวจริงได้
+          <div class="mt-2">
+            <%= link_to "ไปจัดการนักกีฬา", my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id), class: "btn btn-sm btn-warning" %>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <% if @matches.any? %>
+            <div class="d-flex flex-column" style="gap:10px;">
+              <% @matches.each do |m| %>
+                <% side = @match_side[m.id] %>
+                <% lineup = @lineup_by_match_id[m.id] %>
+                <% submitted = lineup && lineup.side.to_s == side.to_s && lineup.submitted_at.present? %>
+                <% locked_by_time = m.kickoff_at.present? && Time.zone.now >= m.kickoff_at %>
+
+                <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                  <div style="min-width:0;">
+                    <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                      <%= m.home_name %> vs <%= m.away_name %>
+                    </div>
+                    <div class="text-muted" style="font-size:12px;">
+                      <%= m.kickoff_at.present? ? m.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่กำหนดเวลา" %>
+                      <% if side.present? %>
+                        · ฝั่ง: <%= side.to_s == "home" ? "เหย้า" : "เยือน" %>
+                      <% end %>
+                    </div>
+                    <div class="text-muted" style="font-size:12px; margin-top:2px;">
+                      สถานะ: <%= submitted ? "ส่งรายชื่อตัวจริงแล้ว" : "ยังไม่ส่งรายชื่อตัวจริง" %>
+                      <% if submitted %>
+                        · ส่งล่าสุด: <%= lineup.submitted_at.strftime("%d/%m/%Y %H:%M") %>
+                      <% end %>
+                      <% if locked_by_time %>
+                        · ล็อกแล้ว
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <div style="flex:0 0 auto;">
+                    <% if locked_by_time %>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" disabled>ล็อกแล้ว</button>
+                    <% else %>
+                      <%= link_to (submitted ? "แก้ไขรายชื่อ" : "ส่งรายชื่อตัวจริง (Line Up)"),
+                                  my_entry_lineup_tournament_path(@tournament, team_registration_id: @entry.id, match_id: m.id),
+                                  class: (submitted ? "btn btn-sm btn-outline-success" : "btn btn-sm btn-success") %>
+                    <% end %>
+                  </div>
+                </div>
+
+                <hr class="my-1" />
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-muted" style="font-size:13px;">ยังไม่มีแมตช์ของทีมนี้</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -222,13 +222,6 @@
             </script>
           <% end %>
 
-		  <% home_team = @match.home_team %>
-		  <% away_team = @match.away_team %>
-		  <% home_entry_id = @home_entry&.id %>
-		  <% away_entry_id = @away_entry&.id %>
-		  <% home_events = (@match_events || []).select { |e| e.tournament_player&.team_registration_id == home_entry_id } %>
-		  <% away_events = (@match_events || []).select { |e| e.tournament_player&.team_registration_id == away_entry_id } %>
-
           <% if can_manage_registrations?(@tournament) %>
             <hr />
             <%= form_with url: match_score_tournament_path(@tournament, match_id: @match.id), method: :patch, local: true do %>
@@ -325,6 +318,117 @@
                   <% else %>
                     <div class="text-muted" style="font-size:12px;">ยังไม่มีนักเตะในทีมนี้</div>
                   <% end %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <% show_lineups = (@home_lineup&.submitted_at.present? || @away_lineup&.submitted_at.present?) %>
+      <% if show_lineups %>
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                  <div>
+                    <div class="fw-bold">Line Up ทีมเหย้า</div>
+                    <div class="text-muted" style="font-size:12px;">
+                      สถานะ:
+                      <%= @home_lineup&.submitted_at.present? ? "ส่งแล้ว" : "ยังไม่ส่ง" %>
+                      <% if @home_lineup&.submitted_at.present? %>
+                        · ส่งล่าสุด <%= @home_lineup.submitted_at.strftime("%d/%m/%Y %H:%M") %>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+
+                <hr />
+                <% home_starters = (@home_lineup_players || []).select { |lp| lp.role == "starter" } %>
+                <% if home_starters.any? %>
+                  <div class="d-flex flex-column" style="gap:8px;">
+                    <% home_starters.each do |lp| %>
+                      <% p = lp.tournament_player %>
+                      <% next unless p %>
+                      <% y = (@yellow_count_by_player_id && @yellow_count_by_player_id[p.id]).to_i %>
+                      <% age = if @competition_year.present? && p.birth_date.present?
+                                 @competition_year - p.birth_date.year
+                               end %>
+                      <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                        <div style="min-width:0;">
+                          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <%= p.full_name %>
+                          </div>
+                          <div class="text-muted" style="font-size:12px;">
+                            (<%= p.jersey_number.presence || "-" %>/<%= age.present? ? age : "-" %>)
+                          </div>
+                        </div>
+                        <% if y > 0 %>
+                          <div class="d-flex align-items-center" style="gap:2px;flex:0 0 auto;">
+                            <% y.times do %>
+                              <span style="width:10px;height:14px;border-radius:3px;background:#facc15;border:1px solid rgba(0,0,0,0.25);display:inline-block;"></span>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <div class="text-muted" style="font-size:12px;">ยังไม่มีรายชื่อตัวจริง</div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                  <div>
+                    <div class="fw-bold">Line Up ทีมเยือน</div>
+                    <div class="text-muted" style="font-size:12px;">
+                      สถานะ:
+                      <%= @away_lineup&.submitted_at.present? ? "ส่งแล้ว" : "ยังไม่ส่ง" %>
+                      <% if @away_lineup&.submitted_at.present? %>
+                        · ส่งล่าสุด <%= @away_lineup.submitted_at.strftime("%d/%m/%Y %H:%M") %>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+
+                <hr />
+                <% away_starters = (@away_lineup_players || []).select { |lp| lp.role == "starter" } %>
+                <% if away_starters.any? %>
+                  <div class="d-flex flex-column" style="gap:8px;">
+                    <% away_starters.each do |lp| %>
+                      <% p = lp.tournament_player %>
+                      <% next unless p %>
+                      <% y = (@yellow_count_by_player_id && @yellow_count_by_player_id[p.id]).to_i %>
+                      <% age = if @competition_year.present? && p.birth_date.present?
+                                 @competition_year - p.birth_date.year
+                               end %>
+                      <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
+                        <div style="min-width:0;">
+                          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <%= p.full_name %>
+                          </div>
+                          <div class="text-muted" style="font-size:12px;">
+                            (<%= p.jersey_number.presence || "-" %>/<%= age.present? ? age : "-" %>)
+                          </div>
+                        </div>
+                        <% if y > 0 %>
+                          <div class="d-flex align-items-center" style="gap:2px;flex:0 0 auto;">
+                            <% y.times do %>
+                              <span style="width:10px;height:14px;border-radius:3px;background:#facc15;border:1px solid rgba(0,0,0,0.25);display:inline-block;"></span>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <div class="text-muted" style="font-size:12px;">ยังไม่มีรายชื่อตัวจริง</div>
                 <% end %>
               </div>
             </div>

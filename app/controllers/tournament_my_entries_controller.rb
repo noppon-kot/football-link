@@ -5,6 +5,7 @@ class TournamentMyEntriesController < ApplicationController
   before_action :require_entry_permission
 
   def show
+    redirect_to teams_tournament_path(@tournament)
   end
 
   def submit_roster

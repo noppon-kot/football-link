@@ -25,6 +25,23 @@ class TournamentMatchesController < ApplicationController
                     end
 
     @match_events = @match.match_events.includes(tournament_player: :team_registration).order(:id)
+
+    @home_lineup_players = @home_lineup.match_lineup_players.includes(:tournament_player).to_a
+    @away_lineup_players = @away_lineup.match_lineup_players.includes(:tournament_player).to_a
+
+    lineup_player_ids = (@home_lineup_players + @away_lineup_players).map { |lp| lp.tournament_player_id }.compact.uniq
+    @yellow_count_by_player_id = {}
+    if lineup_player_ids.any?
+      @yellow_count_by_player_id = MatchEvent
+                                  .joins(match: :tournament_division)
+                                  .where(tournament_player_id: lineup_player_ids)
+                                  .where(event_type: :yellow_card)
+                                  .where(tournament_divisions: { tournament_id: @tournament.id })
+                                  .group(:tournament_player_id)
+                                  .count
+    end
+
+    @competition_year = @tournament.competition_date&.year
   end
 
   def update_score
@@ -94,20 +111,15 @@ class TournamentMatchesController < ApplicationController
       return redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: "ต้องส่งรายชื่อนักกีฬาก่อน จึงจะยืนยันรายชื่อในแมตช์ได้"
     end
 
-    if lineup.locked? && !can_manage_registrations?(@tournament)
-      return redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: "ส่งรายชื่อแล้ว ไม่สามารถแก้ไขได้"
+    kickoff_at = @match.kickoff_at
+    if !can_manage_registrations?(@tournament) && kickoff_at.present? && Time.zone.now >= kickoff_at
+      return redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: "เริ่มแข่งขันแล้ว ไม่สามารถแก้ไขรายชื่อตัวจริงได้"
     end
 
     starter_ids = Array(params.dig(:lineup, :starter_ids)).map(&:to_i).uniq
-    sub_ids = Array(params.dig(:lineup, :sub_ids)).map(&:to_i).uniq
-
-    # กันซ้ำ
-    overlap = starter_ids & sub_ids
-    starter_ids -= overlap
 
     allowed_ids = entry.tournament_players.pluck(:id)
     starter_ids &= allowed_ids
-    sub_ids &= allowed_ids
 
     MatchLineup.transaction do
       lineup.update!(team_registration: entry)
@@ -117,14 +129,11 @@ class TournamentMatchesController < ApplicationController
       starter_ids.each do |pid|
         lineup.match_lineup_players.create!(tournament_player_id: pid, role: :starter)
       end
-      sub_ids.each do |pid|
-        lineup.match_lineup_players.create!(tournament_player_id: pid, role: :substitute)
-      end
 
       lineup.update!(
         submitted_by_user: current_user,
         submitted_at: Time.zone.now,
-        locked: true
+        locked: (can_manage_registrations?(@tournament) ? lineup.locked? : false)
       )
     end
 

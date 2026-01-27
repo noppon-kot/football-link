@@ -165,7 +165,8 @@ class TeamRegistrationsController < ApplicationController
   end
 
   def require_manage_permission
-    return if can_manage_registrations?(@tournament)
+    can_manage_sensitive = admin? || @tournament.organizer_id == current_user.id
+    return if can_manage_sensitive
 
     if %w[edit_team update_team].include?(action_name) && @registration.present?
       return if @registration.team_registration_managers.where(user_id: current_user.id).exists?

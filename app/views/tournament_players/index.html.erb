@@ -9,7 +9,7 @@
         </div>
         <div class="d-flex" style="gap:8px;">
           <%= link_to "กลับ",
-                      teams_tournament_path(@tournament),
+                      my_entry_tournament_path(@tournament, team_registration_id: @entry.id),
                       class: "btn btn-sm btn-outline-secondary" %>
           <% can_edit_roster = !public_view && ((!@entry.respond_to?(:roster_locked?) || !@entry.roster_locked?) || can_manage_registrations?(@tournament)) %>
           <% can_submit_roster = (@entry.respond_to?(:roster_locked?) && !@entry.roster_locked?) %>

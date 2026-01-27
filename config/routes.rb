@@ -62,12 +62,16 @@ Rails.application.routes.draw do
 
       patch "my/entries/:team_registration_id/roster/submit", to: "tournament_my_entries#submit_roster", as: :my_entry_roster_submit
       patch "my/entries/:team_registration_id/roster/unlock", to: "tournament_my_entries#unlock_roster", as: :my_entry_roster_unlock
+      get "my/entries/:team_registration_id", to: "tournament_my_entries#show", as: :my_entry
       get "my/entries/:team_registration_id/players", to: "tournament_players#index", as: :my_entry_players
       get "my/entries/:team_registration_id/players/new", to: "tournament_players#new", as: :new_my_entry_player
       post "my/entries/:team_registration_id/players", to: "tournament_players#create", as: :my_entry_players_create
       get "my/entries/:team_registration_id/players/:id/edit", to: "tournament_players#edit", as: :edit_my_entry_player
       patch "my/entries/:team_registration_id/players/:id", to: "tournament_players#update", as: :my_entry_player
       delete "my/entries/:team_registration_id/players/:id", to: "tournament_players#destroy"
+
+      get "my/entries/:team_registration_id/lineups", to: "tournament_my_lineups#index", as: :my_entry_lineups
+      get "my/entries/:team_registration_id/lineups/:match_id", to: "tournament_my_lineups#show", as: :my_entry_lineup
       post :generate_mock_schedule
       post :generate_knockout
       post :assign_slot_teams

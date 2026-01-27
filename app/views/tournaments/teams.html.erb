@@ -25,28 +25,61 @@
       <div class="team-list-card card shadow-sm">
         <div class="team-list-header d-flex justify-content-between align-items-center">
           <span>ทีมที่สนใจ / สมัคร</span>
-          <% if can_manage_registrations?(@tournament) %>
-            <%= link_to new_tournament_team_registration_path(@tournament),
-                        class: "btn btn-sm btn-outline-secondary",
-                        title: "เพิ่มทีมใหม่",
-                        data: { bs_toggle: "tooltip", bs_placement: "top" },
-                        aria: { label: "เพิ่มทีมใหม่" },
-                        style: "line-height:1;padding:6px 8px;" do %>
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                <path d="M11 5h2v14h-2zM5 11h14v2H5z" fill="currentColor"/>
-              </svg>
+          <div class="d-flex align-items-center" style="gap:6px;">
+            <% show_mine = params[:mine].to_s == "1" %>
+            <% can_manage_sensitive = current_user.present? && (admin? || @tournament.organizer_id == current_user.id) %>
+            <% if current_user.present? %>
+              <%= link_to teams_tournament_path(@tournament, mine: (show_mine ? nil : 1)),
+                    class: (show_mine ? "btn btn-sm btn-primary" : "btn btn-sm btn-outline-primary"),
+                    title: "ทีมของฉัน",
+                    data: { bs_toggle: "tooltip", bs_placement: "top" },
+                    aria: { label: "ทีมของฉัน" },
+                    style: "line-height:1;padding:6px 10px;" do %>
+                ทีมของฉัน
+              <% end %>
+
+              <% if show_mine %>
+                <%= link_to teams_tournament_path(@tournament),
+                      class: "btn btn-sm btn-outline-secondary",
+                      title: "แสดงทั้งหมด",
+                      data: { bs_toggle: "tooltip", bs_placement: "top" },
+                      aria: { label: "แสดงทั้งหมด" },
+                      style: "line-height:1;padding:6px 10px;" do %>
+                  ทั้งหมด
+                <% end %>
+              <% end %>
             <% end %>
-          <% end %>
+
+            <% if can_manage_sensitive %>
+              <%= link_to new_tournament_team_registration_path(@tournament),
+                          class: "btn btn-sm btn-outline-secondary",
+                          title: "เพิ่มทีมใหม่",
+                          data: { bs_toggle: "tooltip", bs_placement: "top" },
+                          aria: { label: "เพิ่มทีมใหม่" },
+                          style: "line-height:1;padding:6px 8px;" do %>
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                  <path d="M11 5h2v14h-2zM5 11h14v2H5z" fill="currentColor"/>
+                </svg>
+              <% end %>
+            <% end %>
+          </div>
         </div>
         <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
-        <% regs_without_div = @tournament.team_registrations.where(tournament_division_id: nil).includes(:team).to_a %>
+        <% regs_without_div = @tournament.team_registrations.where(tournament_division_id: nil).includes(:team, :team_registration_managers).to_a %>
         <% status_order = { "confirmed" => 0, "paid" => 0, "applied" => 1, "interested" => 1 } %>
+        <% show_mine = params[:mine].to_s == "1" %>
 
         <% if divisions.any? || @tournament.team_registrations.any? %>
           <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
 
           <% divisions.each_with_index do |div, idx| %>
-            <% regs = div.team_registrations.includes(:team).to_a %>
+            <% regs = div.team_registrations.includes(:team, :team_registration_managers).to_a %>
+            <% if show_mine && current_user.present? %>
+              <% regs = regs.select do |r|
+                   r.manager_user_id == current_user.id ||
+                     r.team_registration_managers.any? { |m| m.user_id == current_user.id }
+                 end %>
+            <% end %>
             <% sorted_regs = regs.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
             <% color_class = color_classes[idx % color_classes.size] %>
             <% locked_for_div = div.groups.exists? || div.matches.exists? %>
@@ -85,7 +118,7 @@
                               class: "text-decoration-none",
                               style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
                         <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
-                        <% if can_manage_registrations?(@tournament) %>
+                        <% if can_manage_sensitive %>
                           <div class="text-muted" style="font-size:12px;">
                             ผู้ดูแล:
                             <% if reg.manager_users.any? %>
@@ -98,7 +131,7 @@
 
                         <% status_btn_class = (display_state == :confirmed ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-secondary") %>
                         <div style="margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
-                          <% if can_manage_registrations?(@tournament) %>
+                          <% if can_manage_sensitive %>
                             <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
                             <%= button_to tournament_team_registration_path(@tournament, reg),
                                   method: :patch,
@@ -163,18 +196,40 @@
                             <div class="<%= badge_class %>"><%= label %></div>
                             <% is_team_manager = current_user.present? && (
                               reg.manager_user_id == current_user.id ||
-                              reg.team_registration_managers.where(user_id: current_user.id).exists?
+                              reg.team_registration_managers.any? { |m| m.user_id == current_user.id }
                             ) %>
                             <% if is_team_manager %>
-                              <%= link_to my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
-                                    class: "btn btn-sm btn-outline-success",
-                                    title: "จัดการทีมของฉัน",
+                              <%= link_to edit_team_tournament_team_registration_path(@tournament, reg),
+                                    class: "btn btn-sm btn-outline-secondary",
+                                    title: "แก้ไขทีม",
                                     data: { bs_toggle: "tooltip", bs_placement: "top" },
-                                    aria: { label: "จัดการทีมของฉัน" },
+                                    aria: { label: "แก้ไขทีม" },
+                                    style: "line-height:1;padding:6px 8px;" do %>
+                                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 000-1.42l-2.34-2.34a1.003 1.003 0 00-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/>
+                                </svg>
+                                <span style="margin-left:6px;">แก้ไข</span>
+                              <% end %>
+
+                              <%= link_to my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
+                                    class: "btn btn-sm btn-outline-primary",
+                                    title: "จัดการนักเตะ",
+                                    data: { bs_toggle: "tooltip", bs_placement: "top" },
+                                    aria: { label: "จัดการนักเตะ" },
                                     style: "line-height:1;padding:6px 8px;" do %>
                                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                                   <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4v2h16v-2c0-2-3.58-4-8-4z" fill="currentColor"/>
                                 </svg>
+                                <span style="margin-left:6px;">นักเตะ</span>
+                              <% end %>
+
+                              <%= link_to my_entry_lineups_tournament_path(@tournament, team_registration_id: reg.id),
+                                    class: "btn btn-sm btn-success",
+                                    title: "ส่งรายชื่อตัวจริง (Line Up)",
+                                    data: { bs_toggle: "tooltip", bs_placement: "top" },
+                                    aria: { label: "ส่งรายชื่อตัวจริง (Line Up)" },
+                                    style: "line-height:1;padding:6px 10px;" do %>
+                                Line Up
                               <% end %>
                             <% end %>
                           <% end %>
@@ -193,16 +248,24 @@
           <% end %>
 
           <% if regs_without_div.any? %>
-            <div class="mt-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
-              <div class="d-flex align-items-center mb-2" style="gap:8px;">
-                <div class="border-start border-4 border-secondary" style="height:20px;"></div>
-                <div>
-                  <div class="fw-bold" style="font-size:13px;">ไม่ระบุรุ่น</div>
-                  <div style="font-size:11px;color:#78909c;">จำนวนทีมที่ยังไม่ได้เลือกรุ่น <%= regs_without_div.count %> ทีม</div>
+            <% regs_without_div_filtered = regs_without_div %>
+            <% if show_mine && current_user.present? %>
+              <% regs_without_div_filtered = regs_without_div.select do |r|
+                   r.manager_user_id == current_user.id ||
+                     r.team_registration_managers.any? { |m| m.user_id == current_user.id }
+                 end %>
+            <% end %>
+            <% if regs_without_div_filtered.any? %>
+              <div class="mt-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
+                <div class="d-flex align-items-center mb-2" style="gap:8px;">
+                  <div class="border-start border-4 border-secondary" style="height:20px;"></div>
+                  <div>
+                    <div class="fw-bold" style="font-size:13px;">ไม่ระบุรุ่น</div>
+                    <div style="font-size:11px;color:#78909c;">จำนวนทีมที่ยังไม่ได้เลือกรุ่น <%= regs_without_div_filtered.count %> ทีม</div>
+                  </div>
                 </div>
-              </div>
-              <% sorted_regs = regs_without_div.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
-              <% sorted_regs.each_with_index do |reg, reg_idx| %>
+                <% sorted_regs = regs_without_div_filtered.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
+                <% sorted_regs.each_with_index do |reg, reg_idx| %>
                 <% team = reg.team %>
                 <% display_state = case reg.status
                                    when "confirmed", "paid" then :confirmed
@@ -229,7 +292,7 @@
 
                       <% status_btn_class = (display_state == :confirmed ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-secondary") %>
                       <div style="margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
-                        <% if can_manage_registrations?(@tournament) %>
+                        <% if can_manage_sensitive %>
                           <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
                           <%= button_to tournament_team_registration_path(@tournament, reg),
                                 method: :patch,
@@ -266,6 +329,17 @@
                               <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4v2h16v-2c0-2-3.58-4-8-4z" fill="currentColor"/>
                             </svg>
                           <% end %>
+                          <%= link_to edit_manager_tournament_team_registration_path(@tournament, reg),
+                                class: "btn btn-sm btn-outline-primary",
+                                title: "กำหนดผู้จัดการทีม",
+                                data: { bs_toggle: "tooltip", bs_placement: "top" },
+                                aria: { label: "กำหนดผู้จัดการทีม" },
+                                style: "line-height:1;padding:6px 8px;" do %>
+                            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                              <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm7 8v-1c0-2.2-3.1-4-7-4s-7 1.8-7 4v1h14zm1-7h-2v-2h-2v2h-2v2h2v2h2v-2h2z" fill="currentColor"/>
+                            </svg>
+                          <% end %>
+
                           <%# สำหรับทีมที่ไม่ระบุรุ่น จะไม่มี lock ที่ระดับ division จึงลบได้เสมอ %>
                           <%= button_to tournament_team_registration_path(@tournament, reg),
                                 method: :delete,
@@ -283,18 +357,40 @@
                           <div class="<%= badge_class %>"><%= label %></div>
                           <% is_team_manager = current_user.present? && (
                             reg.manager_user_id == current_user.id ||
-                            reg.team_registration_managers.where(user_id: current_user.id).exists?
+                            reg.team_registration_managers.any? { |m| m.user_id == current_user.id }
                           ) %>
                           <% if is_team_manager %>
-                            <%= link_to my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
-                                  class: "btn btn-sm btn-outline-success",
-                                  title: "จัดการทีมของฉัน",
+                            <%= link_to edit_team_tournament_team_registration_path(@tournament, reg),
+                                  class: "btn btn-sm btn-outline-secondary",
+                                  title: "แก้ไขทีม",
                                   data: { bs_toggle: "tooltip", bs_placement: "top" },
-                                  aria: { label: "จัดการทีมของฉัน" },
+                                  aria: { label: "แก้ไขทีม" },
+                                  style: "line-height:1;padding:6px 8px;" do %>
+                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 000-1.42l-2.34-2.34a1.003 1.003 0 00-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/>
+                              </svg>
+                              <span style="margin-left:6px;">แก้ไข</span>
+                            <% end %>
+
+                            <%= link_to my_entry_players_tournament_path(@tournament, team_registration_id: reg.id),
+                                  class: "btn btn-sm btn-outline-primary",
+                                  title: "จัดการนักเตะ",
+                                  data: { bs_toggle: "tooltip", bs_placement: "top" },
+                                  aria: { label: "จัดการนักเตะ" },
                                   style: "line-height:1;padding:6px 8px;" do %>
                               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                                 <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4.42 0-8 2-8 4v2h16v-2c0-2-3.58-4-8-4z" fill="currentColor"/>
                               </svg>
+                              <span style="margin-left:6px;">นักเตะ</span>
+                            <% end %>
+
+                            <%= link_to my_entry_lineups_tournament_path(@tournament, team_registration_id: reg.id),
+                                  class: "btn btn-sm btn-success",
+                                  title: "ส่งรายชื่อตัวจริง (Line Up)",
+                                  data: { bs_toggle: "tooltip", bs_placement: "top" },
+                                  aria: { label: "ส่งรายชื่อตัวจริง (Line Up)" },
+                                  style: "line-height:1;padding:6px 10px;" do %>
+                              Line Up
                             <% end %>
                           <% end %>
                         <% end %>
@@ -305,8 +401,9 @@
                     <hr class="my-1" />
                   <% end %>
                 </div>
-              <% end %>
-            </div>
+                <% end %>
+              </div>
+            <% end %>
           <% end %>
         <% else %>
           <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัคร</div>

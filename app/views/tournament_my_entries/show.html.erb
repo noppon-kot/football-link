@@ -18,13 +18,13 @@
 
       <div class="card shadow-sm">
         <div class="card-body">
-          <div class="d-flex flex-column" style="gap:10px;">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>นักกีฬา</div>
-              <%= link_to "จัดการนักกีฬา",
-                          my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id),
-                          class: "btn btn-sm btn-primary" %>
-            </div>
+          <div class="d-flex justify-content-end" style="gap:8px;flex-wrap:wrap;">
+            <%= link_to "จัดการนักกีฬา",
+                        my_entry_players_tournament_path(@tournament, team_registration_id: @entry.id),
+                        class: "btn btn-sm btn-primary" %>
+            <%= link_to "ส่งรายชื่อนักกีฬา (Line Up)",
+                        my_entry_lineups_tournament_path(@tournament, team_registration_id: @entry.id),
+                        class: "btn btn-sm btn-success" %>
           </div>
         </div>
       </div>
