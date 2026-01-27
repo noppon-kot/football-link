@@ -713,8 +713,226 @@
             });
           }
 
+          function initBulkScheduleQueue() {
+            var root = document.getElementById('bulk-schedule-root');
+            if (!root || root.getAttribute('data-queue-init') === '1') return;
+            root.setAttribute('data-queue-init', '1');
+
+            var modal = document.getElementById('bulkScheduleModal');
+            var form = modal ? modal.querySelector('form') : null;
+            var queueEl = document.getElementById('bulk-schedule-queue');
+            var hiddenEl = document.getElementById('bulk-schedule-hidden-inputs');
+            var clearBtn = document.getElementById('bulk-schedule-clear');
+            if (!form || !queueEl || !hiddenEl) return;
+
+            var scheduleDateInput = form.querySelector('input[name="schedule_date"]');
+            var queue = [];
+
+            function escapeHtml(str) {
+              return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            }
+
+            function parseIsoDate(iso) {
+              if (!iso) return null;
+              var d = new Date(iso);
+              return isNaN(d.getTime()) ? null : d;
+            }
+
+            function toYmd(dateObj) {
+              if (!dateObj) return '';
+              var y = dateObj.getFullYear();
+              var m = String(dateObj.getMonth() + 1).padStart(2, '0');
+              var d = String(dateObj.getDate()).padStart(2, '0');
+              return y + '-' + m + '-' + d;
+            }
+
+            function render() {
+              hiddenEl.innerHTML = '';
+              if (!queue.length) {
+                queueEl.innerHTML = '<div class="text-muted" style="font-size:12px;">ยังไม่ได้เลือกคู่ (คลิกจากรายการด้านล่างเพื่อเพิ่ม)</div>';
+                syncAvailableMatchButtons();
+                return;
+              }
+
+              queueEl.innerHTML = queue.map(function(item, idx) {
+                var label = escapeHtml(item.label);
+                return '' +
+                  '<div draggable="true" data-queue-item="1" data-queue-id="' + item.id + '" class="d-flex align-items-center justify-content-between" style="gap:10px;padding:6px 6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:#ffffff;margin-bottom:6px;cursor:grab;">' +
+                  '  <div style="font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                  '    <span style="font-weight:700;">' + (idx + 1) + '.</span> ' + label +
+                  '  </div>' +
+                  '  <button type="button" class="btn btn-sm btn-outline-secondary" data-queue-remove="' + item.id + '">ลบ</button>' +
+                  '</div>';
+              }).join('');
+
+              queue.forEach(function(item) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'match_ids[]';
+                input.value = String(item.id);
+                hiddenEl.appendChild(input);
+              });
+
+              syncAvailableMatchButtons();
+            }
+
+            function syncAvailableMatchButtons() {
+              var queued = new Set(queue.map(function(x) { return String(x.id); }));
+              document.querySelectorAll('[data-bulk-match="1"]').forEach(function(btn) {
+                var id = btn.getAttribute('data-match-id');
+                if (!id) return;
+                btn.style.display = queued.has(String(id)) ? 'none' : '';
+              });
+            }
+
+            function addToQueue(matchId, label) {
+              matchId = parseInt(matchId, 10);
+              if (!matchId) return;
+              if (queue.some(function(x) { return x.id === matchId; })) return;
+              queue.push({ id: matchId, label: label || ('#' + matchId) });
+              render();
+            }
+
+            function removeFromQueue(matchId) {
+              matchId = parseInt(matchId, 10);
+              if (!matchId) return;
+              queue = queue.filter(function(x) { return x.id !== matchId; });
+              render();
+            }
+
+            function clearQueue() {
+              queue = [];
+              render();
+            }
+
+            var draggedId = null;
+
+            function findQueueIndexById(id) {
+              id = parseInt(id, 10);
+              return queue.findIndex(function(x) { return x.id === id; });
+            }
+
+            function buildDefaultQueueForSelectedDate() {
+              var selectedYmd = scheduleDateInput ? String(scheduleDateInput.value || '').trim() : '';
+              if (!selectedYmd) {
+                queue = [];
+                render();
+                return;
+              }
+
+              var matches = Array.prototype.slice.call(document.querySelectorAll('[data-bulk-match="1"]'));
+              var dated = matches.map(function(btn) {
+                var id = btn.getAttribute('data-match-id');
+                var label = btn.getAttribute('data-label') || btn.innerText || ('#' + id);
+                var kickoffIso = btn.getAttribute('data-kickoff-at');
+                var kickoffDate = parseIsoDate(kickoffIso);
+                return { id: parseInt(id, 10), label: label, kickoff: kickoffDate, kickoffYmd: toYmd(kickoffDate) };
+              }).filter(function(m) {
+                return m.id && m.kickoff && m.kickoffYmd === selectedYmd;
+              });
+
+              if (!dated.length) {
+                queue = [];
+                render();
+                return;
+              }
+              dated.sort(function(a, b) {
+                if (a.kickoff.getTime() !== b.kickoff.getTime()) return a.kickoff.getTime() - b.kickoff.getTime();
+                return a.id - b.id;
+              });
+
+              queue = dated.map(function(m) {
+                return { id: m.id, label: m.label };
+              });
+              render();
+            }
+
+            queueEl.addEventListener('dragstart', function(e) {
+              var item = e.target.closest && e.target.closest('[data-queue-item="1"]');
+              if (!item) return;
+              draggedId = item.getAttribute('data-queue-id');
+              try {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', draggedId);
+              } catch (err) {}
+            });
+
+            queueEl.addEventListener('dragover', function(e) {
+              var item = e.target.closest && e.target.closest('[data-queue-item="1"]');
+              if (!item) return;
+              e.preventDefault();
+              try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+            });
+
+            queueEl.addEventListener('drop', function(e) {
+              var item = e.target.closest && e.target.closest('[data-queue-item="1"]');
+              if (!item) return;
+              e.preventDefault();
+
+              var targetId = item.getAttribute('data-queue-id');
+              var fromId = draggedId;
+              if (!fromId) {
+                try { fromId = e.dataTransfer.getData('text/plain'); } catch (err) {}
+              }
+              if (!fromId || !targetId || fromId === targetId) return;
+
+              var fromIdx = findQueueIndexById(fromId);
+              var toIdx = findQueueIndexById(targetId);
+              if (fromIdx < 0 || toIdx < 0) return;
+
+              var moved = queue.splice(fromIdx, 1)[0];
+              queue.splice(toIdx, 0, moved);
+              draggedId = null;
+              render();
+            });
+
+            document.addEventListener('click', function(e) {
+              var btn = e.target.closest && e.target.closest('[data-bulk-match="1"]');
+              if (btn) {
+                addToQueue(btn.getAttribute('data-match-id'), btn.getAttribute('data-label'));
+                return;
+              }
+
+              var removeBtn = e.target.closest && e.target.closest('[data-queue-remove]');
+              if (removeBtn) {
+                removeFromQueue(removeBtn.getAttribute('data-queue-remove'));
+                return;
+              }
+            });
+
+            if (clearBtn) {
+              clearBtn.addEventListener('click', function() {
+                clearQueue();
+              });
+            }
+
+            if (scheduleDateInput) {
+              var onScheduleDateChange = function() {
+                buildDefaultQueueForSelectedDate();
+              };
+              scheduleDateInput.addEventListener('change', onScheduleDateChange);
+              scheduleDateInput.addEventListener('input', onScheduleDateChange);
+              scheduleDateInput.addEventListener('blur', onScheduleDateChange);
+            }
+
+            if (modal) {
+              modal.addEventListener('shown.bs.modal', function() {
+                buildDefaultQueueForSelectedDate();
+              });
+            }
+
+            render();
+          }
+
           document.addEventListener('turbo:load', bindBulkScheduleWait);
           document.addEventListener('DOMContentLoaded', bindBulkScheduleWait);
+          document.addEventListener('turbo:load', initBulkScheduleQueue);
+          document.addEventListener('DOMContentLoaded', initBulkScheduleQueue);
         })();
       </script>
 
@@ -1228,30 +1446,54 @@
                   </div>
 
                   <hr />
-                  <div class="fw-bold" style="font-size:13px;">1) เลือกคู่ที่ต้องการตั้งเวลา</div>
-                  <div class="text-muted" style="font-size:12px;margin-top:4px;">ระบบจะตั้งเวลาเรียงตามลำดับที่แสดงในรายการนี้</div>
+                  <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
+                  <% all_matches = @all_matches_for_all_match || [] %>
+                  <% default_date = (@selected_day || Time.zone.today).to_date %>
+                  <% preselected_ids = all_matches.select { |m| m.kickoff_at.present? && m.kickoff_at.to_date == default_date }
+                                                .sort_by { |m| [m.kickoff_at, m.id] }
+                                                .map(&:id) %>
 
-                  <div style="max-height:45vh;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-top:10px;">
-                    <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
-                    <% all_matches = @all_matches_for_all_match || [] %>
-                    <% divisions.each do |div| %>
-                      <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
-                      <% next if div_matches.empty? %>
-                      <div class="fw-bold" style="font-size:12px;margin:8px 0 6px 0;">รุ่น <%= div.name %></div>
-                      <% div_matches.each do |m| %>
-                        <% label_time = m.kickoff_at.present? ? m.kickoff_at.strftime("%d/%m %H:%M") : "ยังไม่ได้กำหนด" %>
-                        <label class="d-flex align-items-start" style="gap:8px;padding:6px 6px;border-radius:8px;">
-                          <%= check_box_tag "match_ids[]", m.id, false, style: "margin-top:3px;" %>
-                          <span style="font-size:12px;min-width:0;">
-                            <span style="font-weight:600;">#<%= m.position.presence || m.id %></span>
-                            <span class="text-muted">(<%= label_time %>)</span>
-                            <span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  <div class="fw-bold" style="font-size:13px;">1) กำหนดคิวเตะ (เรียงตามที่คลิก)</div>
+                  <div class="text-muted" style="font-size:12px;margin-top:4px;">คลิกคู่ด้านล่างเพื่อเพิ่มเข้าคิว สามารถลบ/ล้างได้ และระบบจะคำนวณเวลาเรียงตามคิวนี้</div>
+
+                  <div id="bulk-schedule-root" data-preselected-ids="<%= preselected_ids.join(',') %>">
+                    <div class="d-flex align-items-center justify-content-between" style="gap:10px;">
+                      <div class="fw-bold" style="font-size:12px;">คิวที่เลือก</div>
+                      <button type="button" class="btn btn-sm btn-outline-danger" id="bulk-schedule-clear">Clear</button>
+                    </div>
+
+                    <div id="bulk-schedule-queue" style="margin-top:8px;border:1px solid #e5e7eb;border-radius:10px;padding:8px;min-height:52px;background:#fafafa;"></div>
+                    <div id="bulk-schedule-hidden-inputs"></div>
+
+                    <div class="mt-3 fw-bold" style="font-size:12px;">2) รายการคู่ทั้งหมด (คลิกเพื่อเพิ่มเข้าคิว)</div>
+                    <div style="max-height:38vh;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-top:8px;">
+                      <% divisions.each do |div| %>
+                        <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
+                        <% next if div_matches.empty? %>
+                        <div class="fw-bold" style="font-size:12px;margin:8px 0 6px 0;">รุ่น <%= div.name %></div>
+                        <% div_matches.each do |m| %>
+                          <% label_time = m.kickoff_at.present? ? m.kickoff_at.strftime("%d/%m %H:%M") : "ยังไม่ได้กำหนด" %>
+                          <% kickoff_iso = m.kickoff_at&.iso8601 %>
+                          <button type="button"
+                                  class="btn btn-sm w-100 text-start"
+                                  data-bulk-match="1"
+                                  data-match-id="<%= m.id %>"
+                                  data-kickoff-at="<%= kickoff_iso %>"
+                                  data-label="<%= [m.home_name, "vs", m.away_name].join(' ') %>"
+                                  style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;margin-bottom:8px;background:#ffffff;">
+                            <div class="d-flex justify-content-between" style="gap:10px;">
+                              <div style="font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                <span class="text-muted">(<%= label_time %>)</span>
+                              </div>
+                              <div class="text-muted" style="font-size:12px;white-space:nowrap;">+ เพิ่ม</div>
+                            </div>
+                            <div style="font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                               <%= m.home_name %> vs <%= m.away_name %>
-                            </span>
-                          </span>
-                        </label>
+                            </div>
+                          </button>
+                        <% end %>
                       <% end %>
-                    <% end %>
+                    </div>
                   </div>
 
                   <div class="d-flex justify-content-end" style="gap:8px;margin-top:12px;">

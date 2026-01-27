@@ -341,6 +341,46 @@
 
       <script>
         (function() {
+          function ensureGlobalWaitOverlay() {
+            var el = document.getElementById('global-wait-overlay');
+            if (el) return el;
+
+            el = document.createElement('div');
+            el.id = 'global-wait-overlay';
+            el.style.display = 'none';
+            el.style.position = 'fixed';
+            el.style.inset = '0';
+            el.style.zIndex = '3000';
+            el.style.background = 'rgba(0,0,0,0.55)';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            el.style.padding = '16px';
+            el.innerHTML = '' +
+              '<div style="background:#ffffff;border-radius:14px;padding:16px 18px;min-width:220px;max-width:92vw;box-shadow:0 12px 30px rgba(0,0,0,0.25);">' +
+              '  <div class="d-flex align-items-center" style="gap:10px;">' +
+              '    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>' +
+              '    <div style="font-weight:700;">กำลังประมวลผล...</div>' +
+              '  </div>' +
+              '  <div class="text-muted" style="font-size:12px;margin-top:6px;">กรุณารอสักครู่</div>' +
+              '</div>';
+            document.body.appendChild(el);
+            return el;
+          }
+
+          function showGlobalWaitOverlay() {
+            var el = ensureGlobalWaitOverlay();
+            el.style.display = 'flex';
+          }
+
+          function hideGlobalWaitOverlay() {
+            var el = document.getElementById('global-wait-overlay');
+            if (el) el.style.display = 'none';
+          }
+
+          // expose for pages that want to use it explicitly
+          window.showGlobalWaitOverlay = showGlobalWaitOverlay;
+          window.hideGlobalWaitOverlay = hideGlobalWaitOverlay;
+
           function initTooltips() {
             if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
 
@@ -383,6 +423,25 @@
           document.addEventListener('DOMContentLoaded', initTooltips);
           initBackToTop();
           initTooltips();
+
+          // Global loading overlay for long navigations / submits
+          // - Show only for explicit actions (form submits / saves)
+          // - Do not show for Turbo prefetch/hover or top tab navigation
+          if (!window.__globalWaitOverlayBound) {
+            document.addEventListener('turbo:load', function() {
+              hideGlobalWaitOverlay();
+            });
+
+            document.addEventListener('submit', function(e) {
+              var form = e.target;
+              if (!form || form.tagName !== 'FORM') return;
+              // allow opt-out
+              if (form.getAttribute('data-disable-wait-overlay') === '1') return;
+              showGlobalWaitOverlay();
+            }, true);
+
+            window.__globalWaitOverlayBound = true;
+          }
 
           // auto hide flash messages after a short delay
           var flashes = document.querySelectorAll('.js-flash-auto-hide');
