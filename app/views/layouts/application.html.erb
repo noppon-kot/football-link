@@ -32,17 +32,22 @@
         URI.join(request.base_url, asset_path("dernsai_icon.png")).to_s
       end %>
 
+    <% og_title = content_for?(:og_title) ? yield(:og_title) : share_title %>
+    <% og_description = content_for?(:og_description) ? yield(:og_description) : share_description %>
+    <% og_url = content_for?(:og_url) ? yield(:og_url) : share_url %>
+    <% og_image_url = content_for?(:og_image) ? yield(:og_image) : share_image_url %>
+
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="DERNSAI">
-    <meta property="og:title" content="<%= share_title %>">
-    <meta property="og:description" content="<%= share_description %>">
-    <meta property="og:url" content="<%= share_url %>">
-    <meta property="og:image" content="<%= share_image_url %>">
+    <meta property="og:title" content="<%= og_title %>">
+    <meta property="og:description" content="<%= og_description %>">
+    <meta property="og:url" content="<%= og_url %>">
+    <meta property="og:image" content="<%= og_image_url %>">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="<%= share_title %>">
-    <meta name="twitter:description" content="<%= share_description %>">
-    <meta name="twitter:image" content="<%= share_image_url %>">
+    <meta name="twitter:title" content="<%= og_title %>">
+    <meta name="twitter:description" content="<%= og_description %>">
+    <meta name="twitter:image" content="<%= og_image_url %>">
 
     <%= yield :head %>
 

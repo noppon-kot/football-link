@@ -1,3 +1,37 @@
+<% content_for :og_title do %>
+  <%= [@match.home_name, "vs", @match.away_name, "·", @tournament.title].join(' ') %>
+<% end %>
+<% content_for :og_description do %>
+  <%= begin
+        parts = []
+        parts << ("รุ่น #{@match.tournament_division.name}" if @match.tournament_division&.name.present?)
+        parts << (@match.kickoff_at.strftime("%d/%m/%Y %H:%M") if @match.kickoff_at.present?)
+        if @match.home_score.present? && @match.away_score.present?
+          parts << "สกอร์ #{@match.home_score}-#{@match.away_score}"
+        end
+        parts << @tournament.location_name.presence
+        parts.compact.join(" · ")
+      rescue
+        @tournament.location_name.to_s
+      end %>
+<% end %>
+<% content_for :og_url do %>
+  <%= request.original_url %>
+<% end %>
+<% content_for :og_image do %>
+  <%= begin
+        if @match.respond_to?(:images) && @match.images.attached?
+          rails_blob_url(@match.images.first, host: request.base_url)
+        elsif @tournament.respond_to?(:images) && @tournament.images.attached?
+          rails_blob_url(@tournament.images.first, host: request.base_url)
+        else
+          URI.join(request.base_url, asset_path("dernsai_icon.png")).to_s
+        end
+      rescue
+        URI.join(request.base_url, asset_path("dernsai_icon.png")).to_s
+      end %>
+<% end %>
+
 <div class="app-shell">
   <div class="tournament-show-body">
     <div class="container py-2">

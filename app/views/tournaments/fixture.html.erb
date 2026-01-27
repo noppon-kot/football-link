@@ -1,3 +1,24 @@
+<% content_for :og_title do %>
+  <%= "โปรแกรม · #{@tournament.title}" %>
+<% end %>
+<% content_for :og_description do %>
+  <%= [(@selected_day.present? ? "Match Day #{@selected_day.strftime('%d/%m/%Y')}" : "Match Day"), tournament_competition_date_label(@tournament), @tournament.location_name.presence].compact.join(" · ") %>
+<% end %>
+<% content_for :og_url do %>
+  <%= request.original_url %>
+<% end %>
+<% content_for :og_image do %>
+  <%= begin
+        if @tournament.respond_to?(:images) && @tournament.images.attached?
+          rails_blob_url(@tournament.images.first, host: request.base_url)
+        else
+          URI.join(request.base_url, asset_path("dernsai_icon.png")).to_s
+        end
+      rescue
+        URI.join(request.base_url, asset_path("dernsai_icon.png")).to_s
+      end %>
+<% end %>
+
 <div class="app-shell">
   <% day_has_result = @next_day_matches_page.any? { |m| m.home_score.present? && m.away_score.present? } %>
   <% share_title = day_has_result ? "ผลการแข่งขัน" : "MATCH DAY" %>
