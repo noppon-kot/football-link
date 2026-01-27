@@ -22,7 +22,7 @@
 <div class="app-shell">
   <div class="tournament-show-body">
     <div class="container py-2">
-      <div class="team-list-card card shadow-sm">
+      <div class="team-list-card card shadow-sm mx-auto" style="max-width:780px;">
         <div class="team-list-header d-flex justify-content-between align-items-center">
           <span>ทีมที่สนใจ / สมัคร</span>
           <div class="d-flex align-items-center" style="gap:6px;">
@@ -71,30 +71,37 @@
 
         <% if divisions.any? || @tournament.team_registrations.any? %>
           <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
+          <div class="accordion" id="tournament-teams-accordion">
+            <% divisions.each_with_index do |div, idx| %>
+              <% regs = div.team_registrations.includes(:team, :team_registration_managers).to_a %>
+              <% if show_mine && current_user.present? %>
+                <% regs = regs.select do |r|
+                     r.manager_user_id == current_user.id ||
+                       r.team_registration_managers.any? { |m| m.user_id == current_user.id }
+                   end %>
+              <% end %>
+              <% sorted_regs = regs.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
+              <% color_class = color_classes[idx % color_classes.size] %>
+              <% locked_for_div = div.groups.exists? || div.matches.exists? %>
+              <% collapse_id = "tournament-teams-division-#{div.id}" %>
+              <% heading_id = "tournament-teams-division-heading-#{div.id}" %>
 
-          <% divisions.each_with_index do |div, idx| %>
-            <% regs = div.team_registrations.includes(:team, :team_registration_managers).to_a %>
-            <% if show_mine && current_user.present? %>
-              <% regs = regs.select do |r|
-                   r.manager_user_id == current_user.id ||
-                     r.team_registration_managers.any? { |m| m.user_id == current_user.id }
-                 end %>
-            <% end %>
-            <% sorted_regs = regs.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
-            <% color_class = color_classes[idx % color_classes.size] %>
-            <% locked_for_div = div.groups.exists? || div.matches.exists? %>
-
-            <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
-              <div class="d-flex align-items-center mb-2" style="gap:8px;">
-                <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
-                <div>
-                  <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
-                  <div style="font-size:11px;color:#78909c;">จำนวนทีมในรุ่นนี้ <%= regs.count %> ทีม</div>
-                </div>
-              </div>
-
-              <% if sorted_regs.any? %>
-                <% sorted_regs.each_with_index do |reg, reg_idx| %>
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="<%= heading_id %>">
+                  <button class="accordion-button <%= (idx == 0 ? '' : 'collapsed') %>" type="button" data-bs-toggle="collapse" data-bs-target="#<%= collapse_id %>" aria-expanded="<%= idx == 0 %>" aria-controls="<%= collapse_id %>">
+                    <div class="d-flex align-items-center" style="gap:8px;min-width:0;">
+                      <div class="border-start border-4 <%= color_class %>" style="height:18px;"></div>
+                      <div style="min-width:0;">
+                        <div class="fw-bold" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">รุ่น <%= div.name %></div>
+                        <div style="font-size:11px;color:#78909c;">จำนวนทีมในรุ่นนี้ <%= regs.count %> ทีม</div>
+                      </div>
+                    </div>
+                  </button>
+                </h2>
+                <div id="<%= collapse_id %>" class="accordion-collapse collapse <%= (idx == 0 ? 'show' : '') %>" aria-labelledby="<%= heading_id %>" data-bs-parent="#tournament-teams-accordion">
+                  <div class="accordion-body" style="background-color:#f8f9fa;">
+                    <% if sorted_regs.any? %>
+                      <% sorted_regs.each_with_index do |reg, reg_idx| %>
                   <% team = reg.team %>
                   <% display_state = case reg.status
                                      when "confirmed", "paid" then :confirmed
@@ -107,17 +114,17 @@
                                    end %>
 
                   <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
-                  <div style="padding:10px 0;">
-                    <div class="d-flex align-items-start" style="gap:10px;">
+                  <div style="padding:6px 0;">
+                    <div class="d-flex align-items-start" style="gap:8px;">
                       <% if team.logo.attached? %>
-                        <%= image_tag team.logo, class: "rounded-circle", style: "width:32px;height:32px;object-fit:cover;flex:0 0 auto;" %>
+                        <%= image_tag team.logo, class: "rounded-circle", style: "width:26px;height:26px;object-fit:cover;flex:0 0 auto;" %>
                       <% end %>
                       <div style="min-width:0;flex:1;">
                         <%= link_to team.name,
                               team_players_tournament_path(@tournament, team_registration_id: reg.id),
                               class: "text-decoration-none",
                               style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
-                        <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
+                        <div style="font-size:10px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
                         <% if can_manage_sensitive %>
                           <div class="text-muted" style="font-size:12px;">
                             ผู้ดูแล:
@@ -130,7 +137,7 @@
                         <% end %>
 
                         <% status_btn_class = (display_state == :confirmed ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-secondary") %>
-                        <div style="margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
+                        <div style="margin-top:4px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
                           <% if can_manage_sensitive %>
                             <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
                             <%= button_to tournament_team_registration_path(@tournament, reg),
@@ -237,35 +244,43 @@
                       </div>
                     </div>
                     <% if reg_idx < (sorted_regs.size - 1) %>
-                      <hr class="my-1" />
+                      <hr class="my-0" />
                     <% end %>
                   </div>
-                <% end %>
-              <% else %>
-                <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัครในรุ่นนี้</div>
-              <% end %>
-            </div>
-          <% end %>
-
-          <% if regs_without_div.any? %>
-            <% regs_without_div_filtered = regs_without_div %>
-            <% if show_mine && current_user.present? %>
-              <% regs_without_div_filtered = regs_without_div.select do |r|
-                   r.manager_user_id == current_user.id ||
-                     r.team_registration_managers.any? { |m| m.user_id == current_user.id }
-                 end %>
-            <% end %>
-            <% if regs_without_div_filtered.any? %>
-              <div class="mt-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
-                <div class="d-flex align-items-center mb-2" style="gap:8px;">
-                  <div class="border-start border-4 border-secondary" style="height:20px;"></div>
-                  <div>
-                    <div class="fw-bold" style="font-size:13px;">ไม่ระบุรุ่น</div>
-                    <div style="font-size:11px;color:#78909c;">จำนวนทีมที่ยังไม่ได้เลือกรุ่น <%= regs_without_div_filtered.count %> ทีม</div>
+                      <% end %>
+                    <% else %>
+                      <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัครในรุ่นนี้</div>
+                    <% end %>
                   </div>
                 </div>
+              </div>
+            <% end %>
+
+            <% if regs_without_div.any? %>
+              <% regs_without_div_filtered = regs_without_div %>
+              <% if show_mine && current_user.present? %>
+                <% regs_without_div_filtered = regs_without_div.select do |r|
+                     r.manager_user_id == current_user.id ||
+                       r.team_registration_managers.any? { |m| m.user_id == current_user.id }
+                   end %>
+              <% end %>
+              <% if regs_without_div_filtered.any? %>
                 <% sorted_regs = regs_without_div_filtered.sort_by { |reg| [status_order[reg.status] || 1, reg.created_at] } %>
-                <% sorted_regs.each_with_index do |reg, reg_idx| %>
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="tournament-teams-division-heading-unassigned">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tournament-teams-division-unassigned" aria-expanded="false" aria-controls="tournament-teams-division-unassigned">
+                      <div class="d-flex align-items-center" style="gap:8px;min-width:0;">
+                        <div class="border-start border-4 border-secondary" style="height:18px;"></div>
+                        <div style="min-width:0;">
+                          <div class="fw-bold" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">ไม่ระบุรุ่น</div>
+                          <div style="font-size:11px;color:#78909c;">จำนวนทีมที่ยังไม่ได้เลือกรุ่น <%= regs_without_div_filtered.count %> ทีม</div>
+                        </div>
+                      </div>
+                    </button>
+                  </h2>
+                  <div id="tournament-teams-division-unassigned" class="accordion-collapse collapse" aria-labelledby="tournament-teams-division-heading-unassigned" data-bs-parent="#tournament-teams-accordion">
+                    <div class="accordion-body" style="background-color:#f8f9fa;">
+                      <% sorted_regs.each_with_index do |reg, reg_idx| %>
                 <% team = reg.team %>
                 <% display_state = case reg.status
                                    when "confirmed", "paid" then :confirmed
@@ -278,20 +293,20 @@
                                  end %>
 
                 <% label = display_state == :applied ? "สมัครแล้ว" : "ยืนยันแล้ว" %>
-                <div style="padding:10px 0;">
-                  <div class="d-flex align-items-start" style="gap:10px;">
+                <div style="padding:6px 0;">
+                  <div class="d-flex align-items-start" style="gap:8px;">
                     <% if team.logo.attached? %>
-                      <%= image_tag team.logo, class: "rounded-circle", style: "width:32px;height:32px;object-fit:cover;flex:0 0 auto;" %>
+                      <%= image_tag team.logo, class: "rounded-circle", style: "width:26px;height:26px;object-fit:cover;flex:0 0 auto;" %>
                     <% end %>
                     <div style="min-width:0;flex:1;">
                       <%= link_to team.name,
                             team_players_tournament_path(@tournament, team_registration_id: reg.id),
                             class: "text-decoration-none",
                             style: "font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;color:inherit;" %>
-                      <div style="font-size:11px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
+                      <div style="font-size:10px;color:#78909c;">ผู้จัดการทีม: <%= team.contact_name %></div>
 
                       <% status_btn_class = (display_state == :confirmed ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-secondary") %>
-                      <div style="margin-top:8px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
+                      <div style="margin-top:4px;display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;">
                         <% if can_manage_sensitive %>
                           <% target_status = (display_state == :confirmed ? "applied" : "confirmed") %>
                           <%= button_to tournament_team_registration_path(@tournament, reg),
@@ -398,13 +413,17 @@
                     </div>
                   </div>
                   <% if reg_idx < (sorted_regs.size - 1) %>
-                    <hr class="my-1" />
+                    <hr class="my-0" />
                   <% end %>
                 </div>
                 <% end %>
+                    </div>
+                  </div>
+                </div>
               </div>
             <% end %>
           <% end %>
+          </div>
         <% else %>
           <div class="team-list-row">ยังไม่มีทีมที่สนใจหรือสมัคร</div>
         <% end %>
