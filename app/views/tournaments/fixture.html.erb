@@ -674,7 +674,7 @@
 
             modal.innerHTML = '' +
               '<div style="min-height:100%;display:flex;align-items:center;justify-content:center;">' +
-              '  <div style="position:relative;max-width:min(1080px, 96vw);width:100%;">' +
+              '  <div style="position:relative;max-width:min(500px, 96vw);width:100%;">' +
               '    <div style="position:absolute;top:-10px;right:-10px;display:flex;gap:8px;">' +
               '      <button type="button" data-fixture-export-download title="Save" aria-label="Save" style="width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;line-height:1;display:flex;align-items:center;justify-content:center;">' +
               '        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
@@ -890,11 +890,16 @@
               }
 
               queueEl.innerHTML = queue.map(function(item, idx) {
-                var label = escapeHtml(item.label);
+                var safeLabel = escapeHtml(item.label);
+                var parts = safeLabel.split(' · ');
+                var opponent = parts.length ? parts[parts.length - 1] : safeLabel;
+                var prefix = parts.length > 1 ? parts.slice(0, -1).join(' · ') : '';
                 return '' +
                   '<div draggable="true" data-queue-item="1" data-queue-id="' + item.id + '" class="d-flex align-items-center justify-content-between" style="gap:10px;padding:6px 6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:#ffffff;margin-bottom:6px;cursor:grab;">' +
                   '  <div style="font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-                  '    <span style="font-weight:700;">' + (idx + 1) + '.</span> ' + label +
+                  '    <span style="font-weight:700;">' + (idx + 1) + '.</span> ' +
+                  (prefix ? ('<span class="text-muted">' + prefix + ' · </span>') : '') +
+                  '<strong>' + opponent + '</strong>' +
                   '  </div>' +
                   '  <button type="button" class="btn btn-sm btn-outline-secondary" data-queue-remove="' + item.id + '">ลบ</button>' +
                   '</div>';
@@ -1090,10 +1095,11 @@
                       data-bs-toggle="modal"
                       data-bs-target="#bulkScheduleModal"
                       aria-label="ตั้งค่าเวลาแข่งแบบชุด"
-                      style="line-height:1;padding:6px 8px;">
+                      style="line-height:1;padding:6px 10px;">
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                   <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.06 7.06 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 1h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 7.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.49.42h3.8c.24 0 .45-.18.49-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/>
                 </svg>
+                <span style="margin-left:6px;">ตั้งเวลาเป็นชุด</span>
               </button>
             </span>
           <% end %>
@@ -1611,13 +1617,41 @@
                         <% div_matches.each do |m| %>
                           <% label_time = m.kickoff_at.present? ? m.kickoff_at.strftime("%d/%m %H:%M") : "ยังไม่ได้กำหนด" %>
                           <% kickoff_iso = m.kickoff_at&.iso8601 %>
+                          <% group_name = m.group&.name.to_s.presence %>
+                          <% if group_name.blank? && !m.knockout? %>
+                            <% slot = m.home_slot_label.to_s.presence || m.away_slot_label.to_s.presence || "" %>
+                            <% inferred = if slot.match?(/\A\d+[A-Za-z]\z/)
+                                           slot[-1]
+                                         elsif slot.match?(/\A[A-Za-z]\d+\z/)
+                                           slot[0]
+                                         end %>
+                            <% group_name = inferred.to_s.upcase.presence %>
+                          <% end %>
+                          <% round_code = m.round_label.to_s.presence %>
+                          <% round_title = if round_code.present? && m.knockout?
+                                             case round_code
+                                             when "SF" then "รอบ 4 ทีม"
+                                             when "QF" then "รอบ 8 ทีม"
+                                             when "R16" then "รอบ 16 ทีม"
+                                             when "R32" then "รอบ 32 ทีม"
+                                             when "R64" then "รอบ 64 ทีม"
+                                             when "FINAL" then "รอบชิงชนะเลิศ"
+                                             when "3RD" then "ชิงอันดับ 3"
+                                             else "รอบน็อคเอาท์"
+                                             end
+                                           else
+                                             nil
+                                           end %>
+                          <% group_label = m.knockout? ? round_title : (group_name.present? ? "สาย #{group_name}" : nil) %>
+                          <% division_label = div.name.to_s.presence ? "รุ่น #{div.name}" : nil %>
+                          <% data_label = [division_label, group_label, [m.home_name, "vs", m.away_name].join(' ')].compact.join(" · ") %>
                           <% team_text = [m.home_name, m.away_name].join(" ") %>
                           <button type="button"
                                   class="btn btn-sm w-100 text-start"
                                   data-bulk-match="1"
                                   data-match-id="<%= m.id %>"
                                   data-kickoff-at="<%= kickoff_iso %>"
-                                  data-label="<%= [m.home_name, "vs", m.away_name].join(' ') %>"
+                                  data-label="<%= data_label %>"
                                   data-fixture-team-text="<%= team_text.downcase %>"
                                   style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;margin-bottom:8px;background:#ffffff;">
                             <div class="d-flex justify-content-between" style="gap:10px;">
@@ -1627,6 +1661,10 @@
                               <div class="text-muted" style="font-size:12px;white-space:nowrap;">+ เพิ่ม</div>
                             </div>
                             <div style="font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                              <span class="text-muted">(รุ่น <%= div.name %>)</span>
+                              <% if group_label.present? %>
+                                <span class="text-muted">(<%= group_label %>)</span>
+                              <% end %>
                               <%= m.home_name %> vs <%= m.away_name %>
                             </div>
                           </button>

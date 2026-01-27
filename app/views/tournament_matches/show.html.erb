@@ -5,6 +5,17 @@
   <%= begin
         parts = []
         parts << ("รุ่น #{@match.tournament_division.name}" if @match.tournament_division&.name.present?)
+        if @match.group&.name.present?
+          parts << "สาย #{@match.group.name}"
+        else
+          slot = @match.home_slot_label.to_s.presence || @match.away_slot_label.to_s.presence || ""
+          inferred = if slot.match?(/\A\d+[A-Za-z]\z/)
+                       slot[-1]
+                     elsif slot.match?(/\A[A-Za-z]\d+\z/)
+                       slot[0]
+                     end
+          parts << ("สาย #{inferred.to_s.upcase}" if inferred.to_s.present? && !@match.knockout?)
+        end
         parts << (@match.kickoff_at.strftime("%d/%m/%Y %H:%M") if @match.kickoff_at.present?)
         if @match.home_score.present? && @match.away_score.present?
           parts << "สกอร์ #{@match.home_score}-#{@match.away_score}"
@@ -40,6 +51,35 @@
           <div style="font-size:18px;font-weight:bold;">รายละเอียดการแข่งขัน</div>
           <div class="text-muted" style="font-size:13px;">
             <%= @match.tournament_division&.name.present? ? "รุ่น: #{@match.tournament_division.name}" : "-" %>
+            <% group_name = @match.group&.name.to_s.presence %>
+            <% if group_name.blank? && !@match.knockout? %>
+              <% slot = @match.home_slot_label.to_s.presence || @match.away_slot_label.to_s.presence || "" %>
+              <% inferred = if slot.match?(/\A\d+[A-Za-z]\z/)
+                             slot[-1]
+                           elsif slot.match?(/\A[A-Za-z]\d+\z/)
+                             slot[0]
+                           end %>
+              <% group_name = inferred.to_s.upcase.presence %>
+            <% end %>
+            <% round_code = @match.round_label.to_s.presence %>
+            <% round_title = if round_code.present? && @match.knockout?
+                               case round_code
+                               when "SF" then "รอบ 4 ทีม"
+                               when "QF" then "รอบ 8 ทีม"
+                               when "R16" then "รอบ 16 ทีม"
+                               when "R32" then "รอบ 32 ทีม"
+                               when "R64" then "รอบ 64 ทีม"
+                               when "FINAL" then "รอบชิงชนะเลิศ"
+                               when "3RD" then "ชิงอันดับ 3"
+                               else "รอบน็อคเอาท์"
+                               end
+                             else
+                               round_code
+                             end %>
+            <% group_or_round = group_name.presence || round_title.presence %>
+            <% if group_or_round.present? %>
+              · สาย: <%= group_or_round %>
+            <% end %>
             <% if @match.kickoff_at.present? %>
               · <%= @match.kickoff_at.strftime("%d/%m/%Y %H:%M") %>
             <% end %>
