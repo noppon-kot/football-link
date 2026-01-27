@@ -81,6 +81,22 @@ class TournamentsController < ApplicationController
     divisions = @tournament.tournament_divisions.select(:id)
     today_start = Time.zone.today.beginning_of_day
 
+    @available_pitches = Match.where(tournament_division_id: divisions)
+                              .where.not(kickoff_at: nil)
+                              .distinct
+                              .order(:pitch_no)
+                              .pluck(:pitch_no)
+                              .map { |p| p.to_i }
+                              .select { |p| p >= 1 && p <= 6 }
+
+    @selected_pitch = params[:pitch].to_i
+    @selected_pitch = 1 if @selected_pitch <= 0
+    @selected_pitch = 6 if @selected_pitch > 6
+
+    if @available_pitches.any?
+      @selected_pitch = @available_pitches.include?(@selected_pitch) ? @selected_pitch : @available_pitches.first
+    end
+
     show_mine = params[:mine].to_s == "1" && current_user.present?
     managed_team_ids = []
     if show_mine
@@ -101,6 +117,7 @@ class TournamentsController < ApplicationController
     end
 
     all_dated = Match.where(tournament_division_id: divisions)
+                     .where(pitch_no: @selected_pitch)
                      .where.not(kickoff_at: nil)
     if show_mine
       all_dated = all_dated.where("home_team_id IN (:ids) OR away_team_id IN (:ids)", ids: managed_team_ids)
@@ -146,6 +163,7 @@ class TournamentsController < ApplicationController
 
     @next_day_matches = if resolved_day.present?
                           base = Match.where(tournament_division_id: divisions)
+                                     .where(pitch_no: @selected_pitch)
                                      .where(kickoff_at: resolved_day.beginning_of_day..resolved_day.end_of_day)
                           if show_mine
                             base = base.where("home_team_id IN (:ids) OR away_team_id IN (:ids)", ids: managed_team_ids)
@@ -257,6 +275,7 @@ class TournamentsController < ApplicationController
     halves_count = params[:halves_count].to_i
     break_between_halves_min = params[:break_between_halves].to_i
     break_between_matches_min = params[:break_between_matches].to_i
+    pitch_no = params[:pitch_no].to_i
     date_str = params[:schedule_date].to_s.strip
     start_time_str = params[:start_time].to_s.strip
 
@@ -264,6 +283,8 @@ class TournamentsController < ApplicationController
     halves_count = 2 if halves_count <= 0
     break_between_halves_min = 0 if break_between_halves_min < 0
     break_between_matches_min = 0 if break_between_matches_min < 0
+    pitch_no = 1 if pitch_no <= 0
+    pitch_no = 6 if pitch_no > 6
 
     begin
       schedule_date = Date.parse(date_str)
@@ -299,7 +320,7 @@ class TournamentsController < ApplicationController
     current_kickoff = start_at
     Match.transaction do
       ordered_matches.each do |m|
-        m.update!(kickoff_at: current_kickoff)
+        m.update!(kickoff_at: current_kickoff, pitch_no: pitch_no)
         current_kickoff = current_kickoff + match_minutes.minutes + break_between_matches_min.minutes
       end
     end

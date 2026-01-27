@@ -347,10 +347,27 @@
             </button>
           </div>
         </div>
-        <div class="card-body">
+        <div class="card-body" style="background:#f3f4f6;">
           <div class="mb-2" style="font-size:12px;color:#78909c;">
             วันที่: <%= @selected_day.present? ? @selected_day.strftime("%d/%m/%Y") : "-" %>
           </div>
+
+          <% pitches = Array(@available_pitches).map(&:to_i).uniq.select { |p| p >= 1 && p <= 6 }.sort %>
+          <% if pitches.size > 1 %>
+            <div class="mb-2" style="display:flex;gap:6px;flex-wrap:wrap;">
+              <% selected_pitch = (@selected_pitch.presence || pitches.first).to_i %>
+              <% pitches.each do |p| %>
+                <% active = p == selected_pitch %>
+                <%= link_to "สนาม #{p}",
+                            fixture_tournament_path(@tournament,
+                              day: (@selected_day&.strftime('%Y-%m-%d') || params[:day]),
+                              pitch: p,
+                              mine: (params[:mine].presence)),
+                            class: "btn btn-sm #{active ? 'btn-success' : 'btn-outline-success'}",
+                            style: "line-height:1;padding:6px 10px;" %>
+              <% end %>
+            </div>
+          <% end %>
 
           <div class="fixture-filter-row" style="margin-bottom:10px;">
             <div style="flex:1 1 auto;min-width:220px;">
@@ -376,7 +393,7 @@
                     <div class="list-group">
                       <% days.each do |d| %>
                         <% is_active = @selected_day.present? && d == @selected_day %>
-                        <%= link_to fixture_tournament_path(@tournament, day: d.strftime("%Y-%m-%d")),
+                        <%= link_to fixture_tournament_path(@tournament, day: d.strftime("%Y-%m-%d"), pitch: (@selected_pitch.presence || Array(@available_pitches).first || 1)),
                                     class: "list-group-item list-group-item-action #{'active' if is_active}",
                                     style: "font-size:14px;" do %>
                           <%= d.strftime("%d/%m/%Y") %>
@@ -714,7 +731,8 @@
             var day = '<%= j(@selected_day&.strftime("%Y-%m-%d") || "") %>';
             var title = '<%= j(@tournament.title.to_s.gsub(" ", "_")) %>';
             var page = '<%= j(@day_page.to_s) %>';
-            var filename = (title ? title : 'fixture') + (day ? ('_' + day) : '') + (page ? ('_p' + page) : '') + '.png';
+            var pitch = '<%= j((@selected_pitch.presence || 1).to_s) %>';
+            var filename = (title ? title : 'fixture') + (day ? ('_' + day) : '') + (pitch ? ('_field' + pitch) : '') + (page ? ('_p' + page) : '') + '.png';
             modal.setAttribute('data-filename', filename);
             modal.style.display = 'block';
           }
@@ -1537,6 +1555,13 @@
                     <div class="col-12 col-md-6">
                       <label class="form-label" style="font-size:12px;">เวลาเริ่มแข่ง (คู่แรก)</label>
                       <%= time_field_tag :start_time, "09:00", class: "form-control" %>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" style="font-size:12px;">สนาม (คิวนี้ใช้สนามเดียว)</label>
+                      <%= select_tag :pitch_no,
+                            options_for_select((1..6).map { |n| ["สนาม #{n}", n] }, 1),
+                            class: "form-select" %>
                     </div>
 
                     <div class="col-6 col-md-3">
