@@ -724,7 +724,12 @@ class TournamentsController < ApplicationController
   end
 
   def require_pro_plan
+    return
+
+    return unless logged_in?
+    return unless can_edit_tournament?(@tournament)
     return if admin?
+    return if current_user&.respond_to?(:pro?) && current_user.pro?
     return if @tournament&.pro?
     return if @tournament&.competition_data_present?
     return if pro_owner?(@tournament)

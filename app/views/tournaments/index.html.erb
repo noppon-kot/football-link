@@ -23,7 +23,9 @@
       <div id="tournament-index" data-view="list">
         <div id="tournament-index-list" class="d-flex flex-column" style="gap:6px;">
           <% @tournaments.each do |tournament| %>
-            <%= link_to tournament_path(tournament), class: "card shadow-sm", style: "text-decoration:none;color:inherit;" do %>
+            <div class="card shadow-sm position-relative" style="text-decoration:none;color:inherit;">
+              <%= link_to "", tournament_path(tournament), class: "stretched-link", aria: { label: tournament.title } %>
+
               <div class="card-body" style="padding:10px 12px;">
                 <div class="d-flex justify-content-between" style="gap:10px;">
                   <div style="min-width:0;">
@@ -41,19 +43,37 @@
                       <%= (division_names.presence || [tournament.age_category]).join(', ') %>
                     </div>
                   </div>
-                  <div class="text-muted" style="font-size:18px;line-height:1;flex:0 0 auto;align-self:center;">
-                    ›
+
+                  <div class="d-flex align-items-center" style="gap:8px;flex:0 0 auto;">
+                    <% if can_edit_tournament?(tournament) %>
+                      <%= link_to edit_tournament_path(tournament),
+                                  class: "btn btn-sm btn-outline-secondary",
+                                  title: "แก้ไขรายการ",
+                                  data: { bs_toggle: "tooltip", bs_placement: "top" },
+                                  aria: { label: "แก้ไขรายการ" },
+                                  style: "line-height:1;padding:6px 8px;position:relative;z-index:2;" do %>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 000-1.42l-2.34-2.34a1.003 1.003 0 00-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/>
+                        </svg>
+                      <% end %>
+                    <% end %>
+
+                    <div class="text-muted" style="font-size:18px;line-height:1;">
+                      ›
+                    </div>
                   </div>
                 </div>
               </div>
-            <% end %>
+            </div>
           <% end %>
         </div>
 
         <div id="tournament-index-grid" class="tournament-grid d-none">
           <% @tournaments.each do |tournament| %>
-            <%= link_to tournament_path(tournament), class: "tournament-grid-item", style: "text-decoration:none;color:inherit;" do %>
-              <div class="card shadow-sm" style="border-radius:14px;overflow:hidden;">
+            <div class="tournament-grid-item">
+              <div class="card shadow-sm position-relative" style="border-radius:14px;overflow:hidden;">
+                <%= link_to "", tournament_path(tournament), class: "stretched-link", aria: { label: tournament.title } %>
+
                 <% if tournament.images.attached? %>
                   <% image = tournament.images.first %>
                   <div class="tournament-grid-media">
@@ -66,6 +86,8 @@
                 <% end %>
 
                 <div class="card-body" style="padding:10px 10px;">
+                  <div class="d-flex justify-content-between align-items-start" style="gap:8px;">
+                    <div style="min-width:0;">
                   <div class="fw-semibold tournament-index-title" style="font-size:14px;line-height:1.25;">
                     <%= tournament.title %>
                   </div>
@@ -75,9 +97,24 @@
                   <div class="text-muted" style="font-size:12px;">
                     <%= tournament.location_name %> · <%= tournament.province %>
                   </div>
+                    </div>
+
+                    <% if can_edit_tournament?(tournament) %>
+                      <%= link_to edit_tournament_path(tournament),
+                                  class: "btn btn-sm btn-outline-secondary",
+                                  title: "แก้ไขรายการ",
+                                  data: { bs_toggle: "tooltip", bs_placement: "top" },
+                                  aria: { label: "แก้ไขรายการ" },
+                                  style: "line-height:1;padding:6px 8px;position:relative;z-index:2;" do %>
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 000-1.42l-2.34-2.34a1.003 1.003 0 00-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="currentColor"/>
+                        </svg>
+                      <% end %>
+                    <% end %>
+                  </div>
                 </div>
               </div>
-            <% end %>
+            </div>
           <% end %>
         </div>
       </div>
