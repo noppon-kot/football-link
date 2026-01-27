@@ -2,7 +2,7 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  helper_method :current_user, :logged_in?, :admin?, :can_create_tournaments?, :can_edit_tournament?, :can_manage_registrations?
+  helper_method :current_user, :logged_in?, :admin?, :can_create_tournaments?, :can_edit_tournament?, :can_manage_registrations?, :pro_owner?
 
   before_action :require_login
   before_action :set_global_search_filters
@@ -34,6 +34,12 @@ class ApplicationController < ActionController::Base
 
   def can_manage_registrations?(tournament)
     can_edit_tournament?(tournament)
+  end
+
+  def pro_owner?(tournament)
+    return false unless logged_in?
+    return false unless current_user.respond_to?(:pro?) && current_user.pro?
+    tournament.organizer_id == current_user.id
   end
 
   def require_login

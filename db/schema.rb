@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_27_003700) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_27_175000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -287,6 +287,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_27_003700) do
     t.string "password_digest"
     t.string "security_question"
     t.string "security_answer_digest"
+    t.integer "package", default: 0, null: false
+    t.index ["package"], name: "index_users_on_package"
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 

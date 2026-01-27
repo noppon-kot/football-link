@@ -96,12 +96,21 @@
               <path d="M10.5 3a7.5 7.5 0 105.2 12.9l3.4 3.4 1.4-1.4-3.4-3.4A7.5 7.5 0 0010.5 3zm0 2a5.5 5.5 0 110 11 5.5 5.5 0 010-11z" fill="currentColor"/>
             </svg>
           </button>
+
+          <% unless current_user.present? %>
+            <%= link_to login_path, class: "ls-icon-btn ls-icon-btn--login", aria: { label: "เข้าสู่ระบบ" } do %>
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                <path d="M10 17l1.41-1.41L9.83 14H20v-2H9.83l1.58-1.59L10 9l-5 5 5 5z" fill="currentColor"/>
+                <path d="M4 4h8v2H4v12h8v2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" fill="currentColor"/>
+              </svg>
+            <% end %>
+          <% end %>
         </div>
       </div>
 
       <% if defined?(@tournament) && @tournament.present? && @tournament.persisted? %>
         <% can_manage_tournament = can_edit_tournament?(@tournament) %>
-        <% pro_enabled = admin? || @tournament.pro? || @tournament.competition_data_present? %>
+        <% pro_enabled = admin? || @tournament.pro? || @tournament.competition_data_present? || pro_owner?(@tournament) %>
         <% has_teams = @tournament.team_registrations.exists? %>
         <% has_groups = Group.joins(:tournament_division).where(tournament_divisions: { tournament_id: @tournament.id }).exists? %>
         <% has_matches = Match.joins(:tournament_division).where(tournament_divisions: { tournament_id: @tournament.id }).exists? %>
@@ -224,6 +233,11 @@
             <% end %>
 
             <%= link_to "เพิ่มรายการแข่ง", new_tournament_path, class: "ls-drawer-link" %>
+
+            <% if admin? %>
+              <div style="height:1px;background:rgba(255,255,255,0.08);"></div>
+              <%= link_to "จัดการผู้ใช้", admin_users_path, class: "ls-drawer-link" %>
+            <% end %>
 
             <% if defined?(@tournament) && @tournament.present? && @tournament.persisted? %>
               <div style="height:1px;background:rgba(255,255,255,0.08);"></div>

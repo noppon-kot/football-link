@@ -727,6 +727,7 @@ class TournamentsController < ApplicationController
     return if admin?
     return if @tournament&.pro?
     return if @tournament&.competition_data_present?
+    return if pro_owner?(@tournament)
 
     redirect_to tournament_path(@tournament), alert: "เมนูนี้รองรับเฉพาะแพ็กเกจ Pro (แพ็กเกจฟรีใช้งานได้เฉพาะ Info และ Team)"
   end

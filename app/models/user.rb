@@ -2,6 +2,8 @@ class User < ApplicationRecord
   # role: 0 = organizer, 1 = player, 2 = field_owner, 3 = sponsor
   enum :role, { organizer: 0, player: 1, field_owner: 2, sponsor: 3 }
 
+  enum :package, { free: 0, pro: 1 }
+
   has_secure_password validations: false
 
   before_validation :normalize_username

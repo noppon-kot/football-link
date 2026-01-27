@@ -85,6 +85,8 @@ Rails.application.routes.draw do
     resources :admin_message_comments, only: [:create]
   end
 
+  resources :admin_users, only: [:index, :edit, :update]
+
   patch "tournaments/:id/approve", to: "tournaments#approve", as: :approve_tournament
 
   root "tournaments#index"
