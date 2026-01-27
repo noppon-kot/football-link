@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :destroy]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -170,6 +170,72 @@ class TournamentsController < ApplicationController
                                   .left_joins(:group)
                                   .includes(:group, :home_team, :away_team, :tournament_division)
                                   .order(Arel.sql("matches.stage ASC, groups.name ASC NULLS LAST, matches.round_number ASC NULLS LAST, matches.position ASC NULLS LAST, matches.id ASC"))
+  end
+
+  def bulk_schedule
+    unless can_manage_registrations?(@tournament)
+      return redirect_to fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    match_ids = Array(params[:match_ids]).map(&:to_i).uniq
+    if match_ids.empty?
+      return redirect_to fixture_tournament_path(@tournament), alert: "กรุณาเลือกคู่ที่ต้องการตั้งเวลา"
+    end
+
+    minutes_per_half = params[:minutes_per_half].to_i
+    halves_count = params[:halves_count].to_i
+    break_between_halves_min = params[:break_between_halves].to_i
+    break_between_matches_min = params[:break_between_matches].to_i
+    date_str = params[:schedule_date].to_s.strip
+    start_time_str = params[:start_time].to_s.strip
+
+    minutes_per_half = 10 if minutes_per_half <= 0
+    halves_count = 2 if halves_count <= 0
+    break_between_halves_min = 0 if break_between_halves_min < 0
+    break_between_matches_min = 0 if break_between_matches_min < 0
+
+    begin
+      schedule_date = Date.parse(date_str)
+    rescue ArgumentError
+      schedule_date = nil
+    end
+
+    if schedule_date.blank? || start_time_str.blank?
+      return redirect_to fixture_tournament_path(@tournament), alert: "กรุณาเลือกวันที่ และเวลาเริ่มแข่ง"
+    end
+
+    begin
+      start_at = Time.zone.parse("#{schedule_date} #{start_time_str}")
+    rescue ArgumentError, TypeError
+      start_at = nil
+    end
+
+    if start_at.blank?
+      return redirect_to fixture_tournament_path(@tournament), alert: "เวลาเริ่มแข่งไม่ถูกต้อง"
+    end
+
+    divisions = @tournament.tournament_divisions.select(:id)
+    matches_by_id = Match.where(tournament_division_id: divisions, id: match_ids).index_by(&:id)
+    ordered_matches = match_ids.filter_map { |id| matches_by_id[id] }
+
+    if ordered_matches.empty?
+      return redirect_to fixture_tournament_path(@tournament), alert: "ไม่พบคู่ที่เลือก"
+    end
+
+    match_minutes = (minutes_per_half * halves_count) + (halves_count > 1 ? ((halves_count - 1) * break_between_halves_min) : 0)
+    match_minutes = 1 if match_minutes <= 0
+
+    current_kickoff = start_at
+    Match.transaction do
+      ordered_matches.each do |m|
+        m.update!(kickoff_at: current_kickoff)
+        current_kickoff = current_kickoff + match_minutes.minutes + break_between_matches_min.minutes
+      end
+    end
+
+    redirect_to fixture_tournament_path(@tournament, day: schedule_date.strftime("%Y-%m-%d")), notice: "ตั้งเวลาแข่งเรียบร้อยแล้ว"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
   end
 
   def table

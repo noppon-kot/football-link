@@ -47,6 +47,7 @@ Rails.application.routes.draw do
       get :package
       get :staff, to: "tournament_staffs#show"
       patch :staff, to: "tournament_staffs#update"
+      patch :bulk_schedule
       get "matches/:match_id", to: "tournament_matches#show", as: :match
       patch "matches/:match_id/score", to: "tournament_matches#update_score", as: :match_score
       patch "matches/:match_id/images", to: "tournament_matches#update_images", as: :match_images

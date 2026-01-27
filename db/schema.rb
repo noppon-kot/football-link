@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_26_120000) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_27_003700) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -309,8 +309,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_26_120000) do
   add_foreign_key "matches", "teams", column: "away_team_id"
   add_foreign_key "matches", "teams", column: "home_team_id"
   add_foreign_key "matches", "tournament_divisions"
-  add_foreign_key "standings_snapshots", "groups"
-  add_foreign_key "standings_snapshots", "tournament_divisions"
+  add_foreign_key "standings_snapshots", "groups", on_delete: :cascade
+  add_foreign_key "standings_snapshots", "tournament_divisions", on_delete: :cascade
   add_foreign_key "team_registration_managers", "team_registrations"
   add_foreign_key "team_registration_managers", "users"
   add_foreign_key "team_registrations", "teams"

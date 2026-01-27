@@ -361,10 +361,6 @@
 
           <div id="next-match-capture">
             <% if @next_match_day.present? && @next_day_matches_total.positive? %>
-            <div class="mb-2" style="font-size:13px;font-weight:bold;">
-              <%= @next_match_day.strftime("%d/%m/%Y") %>
-            </div>
-
             <div class="d-block d-md-none fixture-match-list fixture-mobile-only">
               <% @next_day_matches_page.each_with_index do |match, idx| %>
                 <% match_no = ((@day_page - 1) * @day_per_page) + idx + 1 %>
@@ -401,7 +397,7 @@
                       <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
                       <div style="white-space:nowrap;">
                         <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
-                        <span style="color:#78909c;">· <%= group_or_round %> · <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y") : "ยังไม่ได้กำหนดวัน" %></span>
+                        <span style="color:#78909c;">· <%= group_or_round %></span>
                       </div>
                     </div>
                     <div class="fixture-match-card-body">
@@ -642,6 +638,7 @@
             var oldText = buttonEl.innerText;
             try {
               buttonEl.disabled = true;
+              showWaitOverlay();
 
               applyExportTheme(targetEl);
 
@@ -653,13 +650,49 @@
 
               var dataUrl = canvas.toDataURL('image/png');
               setModalImage(dataUrl);
-            } catch (e) {
-              console.error(e);
+            } catch (err) {
+              console.error(err);
               alert('สร้างรูปไม่สำเร็จ');
             } finally {
               buttonEl.disabled = false;
               if (oldText) buttonEl.innerText = oldText;
+              hideWaitOverlay();
             }
+          }
+
+          function ensureWaitOverlay() {
+            var el = document.getElementById('global-wait-overlay');
+            if (el) return el;
+            el = document.createElement('div');
+            el.id = 'global-wait-overlay';
+            el.style.display = 'none';
+            el.style.position = 'fixed';
+            el.style.inset = '0';
+            el.style.zIndex = '2000';
+            el.style.background = 'rgba(0,0,0,0.55)';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            el.style.padding = '16px';
+            el.innerHTML = '' +
+              '<div style="background:#ffffff;border-radius:14px;padding:16px 18px;min-width:220px;max-width:92vw;box-shadow:0 12px 30px rgba(0,0,0,0.25);">' +
+              '  <div class="d-flex align-items-center" style="gap:10px;">' +
+              '    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>' +
+              '    <div style="font-weight:700;">กำลังประมวลผล...</div>' +
+              '  </div>' +
+              '  <div class="text-muted" style="font-size:12px;margin-top:6px;">กรุณารอสักครู่</div>' +
+              '</div>';
+            document.body.appendChild(el);
+            return el;
+          }
+
+          function showWaitOverlay() {
+            var el = ensureWaitOverlay();
+            el.style.display = 'flex';
+          }
+
+          function hideWaitOverlay() {
+            var el = document.getElementById('global-wait-overlay');
+            if (el) el.style.display = 'none';
           }
 
           var btn = document.getElementById('fixture-export');
@@ -670,6 +703,18 @@
               exportCard(btn, card, prefix);
             });
           }
+
+          function bindBulkScheduleWait() {
+            var form = document.querySelector('#bulkScheduleModal form');
+            if (!form || form.getAttribute('data-wait-bound') === '1') return;
+            form.setAttribute('data-wait-bound', '1');
+            form.addEventListener('submit', function() {
+              showWaitOverlay();
+            });
+          }
+
+          document.addEventListener('turbo:load', bindBulkScheduleWait);
+          document.addEventListener('DOMContentLoaded', bindBulkScheduleWait);
         })();
       </script>
 
@@ -688,7 +733,23 @@
       </script>
 
       <div class="card shadow-sm mb-3">
-        <div class="card-header fw-bold">All Match</div>
+        <div class="card-header d-flex align-items-center justify-content-between" style="gap:10px;">
+          <div class="fw-bold">All Match</div>
+          <% if can_manage_registrations?(@tournament) %>
+            <span title="ตั้งค่าเวลาแข่งแบบชุด" data-bs-toggle="tooltip" data-bs-placement="top" style="display:inline-block;">
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#bulkScheduleModal"
+                      aria-label="ตั้งค่าเวลาแข่งแบบชุด"
+                      style="line-height:1;padding:6px 8px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                  <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.06 7.06 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 1h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 7.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.49.42h3.8c.24 0 .45-.18.49-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/>
+                </svg>
+              </button>
+            </span>
+          <% end %>
+        </div>
         <div class="card-body">
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
 
@@ -1125,6 +1186,84 @@
           <% end %>
         </div>
       </div>
+
+      <% if can_manage_registrations?(@tournament) %>
+        <div class="modal fade" id="bulkScheduleModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <div class="fw-bold">ตั้งเวลาแข่งแบบชุด</div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <%= form_with url: bulk_schedule_tournament_path(@tournament), method: :patch, local: true do %>
+                  <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" style="font-size:12px;">วันที่แข่ง</label>
+                      <%= date_field_tag :schedule_date,
+                            (@selected_day&.strftime("%Y-%m-%d") || Time.zone.today.strftime("%Y-%m-%d")),
+                            class: "form-control" %>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" style="font-size:12px;">เวลาเริ่มแข่ง (คู่แรก)</label>
+                      <%= time_field_tag :start_time, "09:00", class: "form-control" %>
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                      <label class="form-label" style="font-size:12px;">แข่งกี่นาที/ครึ่ง</label>
+                      <%= number_field_tag :minutes_per_half, 20, class: "form-control", min: 1 %>
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label" style="font-size:12px;">มีกี่ครึ่ง</label>
+                      <%= number_field_tag :halves_count, 2, class: "form-control", min: 1 %>
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label" style="font-size:12px;">พักครึ่ง (นาที)</label>
+                      <%= number_field_tag :break_between_halves, 5, class: "form-control", min: 0 %>
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label" style="font-size:12px;">พักระหว่างคู่ (นาที)</label>
+                      <%= number_field_tag :break_between_matches, 5, class: "form-control", min: 0 %>
+                    </div>
+                  </div>
+
+                  <hr />
+                  <div class="fw-bold" style="font-size:13px;">1) เลือกคู่ที่ต้องการตั้งเวลา</div>
+                  <div class="text-muted" style="font-size:12px;margin-top:4px;">ระบบจะตั้งเวลาเรียงตามลำดับที่แสดงในรายการนี้</div>
+
+                  <div style="max-height:45vh;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-top:10px;">
+                    <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
+                    <% all_matches = @all_matches_for_all_match || [] %>
+                    <% divisions.each do |div| %>
+                      <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
+                      <% next if div_matches.empty? %>
+                      <div class="fw-bold" style="font-size:12px;margin:8px 0 6px 0;">รุ่น <%= div.name %></div>
+                      <% div_matches.each do |m| %>
+                        <% label_time = m.kickoff_at.present? ? m.kickoff_at.strftime("%d/%m %H:%M") : "ยังไม่ได้กำหนด" %>
+                        <label class="d-flex align-items-start" style="gap:8px;padding:6px 6px;border-radius:8px;">
+                          <%= check_box_tag "match_ids[]", m.id, false, style: "margin-top:3px;" %>
+                          <span style="font-size:12px;min-width:0;">
+                            <span style="font-weight:600;">#<%= m.position.presence || m.id %></span>
+                            <span class="text-muted">(<%= label_time %>)</span>
+                            <span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                              <%= m.home_name %> vs <%= m.away_name %>
+                            </span>
+                          </span>
+                        </label>
+                      <% end %>
+                    <% end %>
+                  </div>
+
+                  <div class="d-flex justify-content-end" style="gap:8px;margin-top:12px;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <%= submit_tag "บันทึกเวลา", class: "btn btn-primary" %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>
