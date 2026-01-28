@@ -33,15 +33,11 @@ class Match < ApplicationRecord
     return nil if label.blank?
     case label
     when "BP1"
-      "รองแชมป์ที่ดีที่สุด"
-    when /\A1([A-Z])\z/
-      "ที่1 สาย#{$1}"
-    when /\A2([A-Z])\z/
-      "ที่2 สาย#{$1}"
-    when /\A3([A-Z])\z/
-      "ที่3 สาย#{$1}"
-    when /\A4([A-Z])\z/
-      "ที่4 สาย#{$1}"
+      "อันดับ2 ที่ดีที่สุด (ค่าเฉลี่ย)"
+    when /\ABP(\d+)\z/
+      "อันดับ2 ที่ดีที่สุด ##{$1} (ค่าเฉลี่ย)"
+    when /\A(\d+)([A-Z])\z/
+      "ที่#{$1} สาย#{$2}"
     else
       label
     end

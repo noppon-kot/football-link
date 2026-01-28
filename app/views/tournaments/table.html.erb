@@ -354,6 +354,9 @@
                         </div>
                       </div>
 
+                      <div class="text-muted mb-1" style="font-size:10px;">
+                        <span title="ใช้สำหรับเปรียบเทียบทีมอันดับ 2 ที่ดีที่สุดข้ามสาย">💡 คอลัมน์ "แต้ม/นัด" และ "+/-/นัด" ใช้สำหรับเปรียบเทียบทีมข้ามสายที่มีจำนวนนัดไม่เท่ากัน</span>
+                      </div>
                       <div class="table-responsive standings-scroll">
                         <table class="table table-sm align-middle mb-0 standings-table">
                           <thead class="table-light">
@@ -366,6 +369,8 @@
                               <th scope="col" class="text-center" style="width:44px;">แพ้</th>
                               <th scope="col" class="text-center" style="width:44px;">เสมอ</th>
                               <th scope="col" class="text-center" style="width:56px;">ประตู</th>
+                              <th scope="col" class="text-center" style="width:56px;font-size:10px;" title="แต้มเฉลี่ยต่อนัด">แต้ม/นัด</th>
+                              <th scope="col" class="text-center" style="width:56px;font-size:10px;" title="ผลต่างประตูเฉลี่ยต่อนัด">+/-/นัด</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -418,6 +423,9 @@
                                 <% team = Team.find(tid) %>
                                 <% gd = s[:gf] - s[:ga] %>
                                 <% leader_row = (idx == 0) %>
+                                <% played_safe = [s[:played], 1].max %>
+                                <% pts_avg = (s[:pts].to_f / played_safe).round(2) %>
+                                <% gd_avg = ((s[:gf] - s[:ga]).to_f / played_safe).round(2) %>
                                 <tr<%= ' style="background-color:#fffde7;"' if leader_row %>>
                                   <td class="text-start standings-sticky-rank" style="font-size:12px;"><%= idx + 1 %></td>
                                   <td class="standings-sticky-team">
@@ -436,11 +444,13 @@
                                   <td class="text-center"><%= s[:lost] %></td>
                                   <td class="text-center"><%= s[:draw] %></td>
                                   <td class="text-center"><%= s[:gf] %></td>
+                                  <td class="text-center" style="font-size:11px;color:#1976d2;" title="แต้มเฉลี่ย <%= pts_avg %> ต่อนัด"><%= pts_avg %></td>
+                                  <td class="text-center" style="font-size:11px;color:<%= gd_avg >= 0 ? '#388e3c' : '#d32f2f' %>;" title="ผลต่างประตูเฉลี่ย <%= gd_avg %> ต่อนัด"><%= gd_avg >= 0 ? "+#{gd_avg}" : gd_avg %></td>
                                 </tr>
                               <% end %>
                             <% else %>
                               <tr>
-                                <td colspan="8" class="text-center text-muted" style="font-size:13px;">
+                                <td colspan="10" class="text-center text-muted" style="font-size:13px;">
                                   ยังไม่มีทีมในสายนี้ (หรือยังไม่ได้จัดทีมลงสาย)
                                 </td>
                               </tr>

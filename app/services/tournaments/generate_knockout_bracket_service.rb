@@ -115,40 +115,132 @@ module Tournaments
     # ถ้าเป็นโหมด knockout_only (ไม่มีรอบแบ่งกลุ่ม) และ bracket_size = 8
     # ให้ใช้ slot แบบ A1-A2, A3-A4, B1-B2, B3-B4 แทน
     def assign_first_round_slot_labels_if_applicable!(labels)
-      return unless [4, 8].include?(@bracket_size)
+      return unless [4, 8, 16].include?(@bracket_size)
 
       groups = @division.groups.order(:name).to_a
+      return if groups.empty?
+
       # โหมด knockout_only ต้องใช้ pattern A1-A4/B1-B4 ไม่ใช่ pattern 1A/2B จากรอบแบ่งกลุ่ม
       if @knockout_only && @bracket_size == 8
         assign_first_round_labels_for_knockout_only_8_team!
-      elsif groups.size == 3 && @bracket_size == 4
-        assign_first_round_labels_for_three_groups(groups)
       elsif groups.size == 2
         assign_first_round_labels_from_groups(groups)
+      else
+        # ใช้ generic algorithm สำหรับ 3+ สาย
+        assign_first_round_labels_generic(groups)
       end
     end
 
-    # 3 สาย เข้ารอบ 4 ทีม: 1A vs BP1 (รองแชมป์ที่ดีที่สุด), 1B vs 1C
-    def assign_first_round_labels_for_three_groups(groups)
+    # Generic algorithm สำหรับ N สาย เข้ารอบ M ทีม
+    # หลักการ:
+    # 1. เอาแชมป์กลุ่มทั้งหมด (N ทีม)
+    # 2. ถ้า N < M: เอา Best Performers (BP) จากอันดับถัดไป จนครบ M ทีม
+    # 3. จับคู่ให้ทีมจากสายเดียวกันไม่เจอกันในรอบแรก
+    def assign_first_round_labels_generic(groups)
       first_round_matches = @division.matches.knockout.where(round_number: 1).order(:position, :id).to_a
-      return unless first_round_matches.size == 2
+      return if first_round_matches.empty?
 
+      num_groups = groups.size
       ordered_groups = groups.sort_by(&:name)
-      a_name = ordered_groups[0].name.presence || "A"
-      b_name = ordered_groups[1].name.presence || "B"
-      c_name = ordered_groups[2].name.presence || "C"
+      group_names = ordered_groups.map { |g| g.name.presence || ('A'.ord + ordered_groups.index(g)).chr }
 
-      # SF1: 1A vs BP1 (รองแชมป์ที่ดีที่สุด)
-      # SF2: 1B vs 1C
-      slot_pairs = [
-        ["1#{a_name}", "BP1"],
-        ["1#{b_name}", "1#{c_name}"]
-      ]
-
+      # คำนวณจำนวนทีมที่ต้องการ
+      teams_needed = @bracket_size
+      
+      # คำนวณว่าต้องเอากี่อันดับจากแต่ละสาย และต้องเอา BP กี่ทีม
+      # ถ้า teams_needed <= num_groups: เอาแค่แชมป์กลุ่ม + BP
+      # ถ้า teams_needed > num_groups: เอาหลายอันดับจากแต่ละสาย
+      
+      qualifiers = [] # [{rank: 1, group_idx: 0, label: "1A"}, ...]
+      
+      if teams_needed <= num_groups
+        # เอาแชมป์กลุ่มทั้งหมด
+        num_groups.times do |i|
+          qualifiers << { rank: 1, group_idx: i, label: "1#{group_names[i]}" }
+        end
+        # เติม BP จนครบ (ไม่ควรเกิดกรณีนี้ถ้า teams_needed <= num_groups)
+      else
+        # คำนวณว่าต้องเอากี่อันดับจากแต่ละสาย
+        full_rounds = teams_needed / num_groups
+        remainder = teams_needed % num_groups
+        
+        # เอาอันดับ 1 ถึง full_rounds จากทุกสาย
+        (1..full_rounds).each do |rank|
+          num_groups.times do |i|
+            qualifiers << { rank: rank, group_idx: i, label: "#{rank}#{group_names[i]}" }
+          end
+        end
+        
+        # เติม BP จากอันดับถัดไป
+        if remainder > 0
+          remainder.times do |bp_idx|
+            qualifiers << { rank: full_rounds + 1, group_idx: nil, label: "BP#{bp_idx + 1}" }
+          end
+        end
+      end
+      
+      # จับคู่ให้ทีมจากสายเดียวกันไม่เจอกันในรอบแรก
+      slot_pairs = generate_cross_group_pairings(qualifiers, num_groups)
+      
       first_round_matches.each_with_index do |match, idx|
+        next if idx >= slot_pairs.size
         home_label, away_label = slot_pairs[idx]
         match.update!(home_slot_label: home_label, away_slot_label: away_label)
       end
+    end
+
+    # สร้างคู่แข่งขันให้ทีมจากสายเดียวกันไม่เจอกันในรอบแรก
+    # กรณี 3 สาย 4 ทีม: 1A vs BP1, 1B vs 1C
+    # กรณี 5 สาย 8 ทีม: 1A vs BP3, 1B vs BP2, 1C vs BP1, 1D vs 1E
+    def generate_cross_group_pairings(qualifiers, num_groups)
+      pairs = []
+      used = Set.new
+      remaining = qualifiers.dup
+      
+      # แยก qualifiers ตาม rank
+      by_rank = qualifiers.group_by { |q| q[:rank] }
+      ranks = by_rank.keys.sort
+      
+      # หา BP qualifiers (group_idx = nil)
+      bp_qualifiers = remaining.select { |q| q[:group_idx].nil? }
+      group_qualifiers = remaining.reject { |q| q[:group_idx].nil? }
+      
+      # จับคู่แชมป์กลุ่มกับ BP ก่อน (ถ้ามี)
+      bp_qualifiers.reverse.each do |bp|
+        # หาแชมป์กลุ่มที่ยังไม่ถูกใช้
+        partner = group_qualifiers.find { |gq| !used.include?(gq[:label]) }
+        next unless partner
+        
+        pairs << [partner[:label], bp[:label]]
+        used.add(partner[:label])
+        used.add(bp[:label])
+      end
+      
+      # จับคู่แชมป์กลุ่มที่เหลือกันเอง (ข้ามสาย)
+      unused_group_qualifiers = group_qualifiers.reject { |q| used.include?(q[:label]) }
+      
+      while unused_group_qualifiers.size >= 2
+        hq = unused_group_qualifiers.shift
+        next if used.include?(hq[:label])
+        
+        # หา opponent ที่คนละสาย
+        opponent_idx = unused_group_qualifiers.find_index do |lq|
+          !used.include?(lq[:label]) && lq[:group_idx] != hq[:group_idx]
+        end
+        
+        # ถ้าหาไม่เจอคนละสาย ให้หาจากที่เหลือ
+        opponent_idx ||= unused_group_qualifiers.find_index { |lq| !used.include?(lq[:label]) }
+        
+        next unless opponent_idx
+        
+        opponent = unused_group_qualifiers.delete_at(opponent_idx)
+        
+        pairs << [hq[:label], opponent[:label]]
+        used.add(hq[:label])
+        used.add(opponent[:label])
+      end
+      
+      pairs
     end
 
     def assign_first_round_labels_from_groups(groups)
