@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -71,6 +71,27 @@ class TournamentsController < ApplicationController
 
   def package
     # หน้าแสดงแพ็กเกจ/สิทธิ์การใช้งานของรายการนี้
+  end
+
+  def manage_schedule
+    unless can_manage_registrations?(@tournament)
+      return redirect_to fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    divisions = @tournament.tournament_divisions.order(:position, :id)
+    @all_matches = Match.where(tournament_division_id: divisions.pluck(:id))
+                        .includes(:home_team, :away_team, :group, :tournament_division)
+                        .order(:kickoff_at, :id)
+    @divisions = divisions
+    @selected_day = if params[:day].present?
+                      begin
+                        Date.parse(params[:day].to_s)
+                      rescue ArgumentError
+                        Time.zone.today
+                      end
+                    else
+                      Time.zone.today
+                    end
   end
 
   def groups
@@ -174,18 +195,12 @@ class TournamentsController < ApplicationController
                           Match.none
                         end
 
-    # แบ่งหน้า (default 10 คู่ต่อหน้า, สามารถเลือกได้)
+    # แสดงทุกคู่ (ไม่ paginate ในหน้าหลัก)
     @next_day_matches_total = @next_day_matches.count
-    @day_per_page = params[:day_per_page].to_i
-    @day_per_page = 10 if @day_per_page <= 0
-    @day_per_page = @next_day_matches_total if @day_per_page > @next_day_matches_total && @next_day_matches_total > 0
-    @day_page = params[:day_page].to_i
-    @day_page = 1 if @day_page <= 0
-    @next_day_matches_total_pages = @day_per_page > 0 ? (@next_day_matches_total.to_f / @day_per_page).ceil : 1
-    @next_day_matches_total_pages = 1 if @next_day_matches_total_pages <= 0
-    @day_page = @next_day_matches_total_pages if @day_page > @next_day_matches_total_pages
-    day_offset = (@day_page - 1) * @day_per_page
-    @next_day_matches_page = @next_day_matches.offset(day_offset).limit(@day_per_page)
+    @next_day_matches_page = @next_day_matches.to_a
+    @day_per_page = @next_day_matches_total
+    @day_page = 1
+    @next_day_matches_total_pages = 1
 
     all_matches_base = Match.where(tournament_division_id: divisions)
     if show_mine

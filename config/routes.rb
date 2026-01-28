@@ -42,6 +42,7 @@ Rails.application.routes.draw do
       get :teams
       get :groups
       get :fixture
+      get :manage_schedule
       get :table
       get :knockout
       get :package

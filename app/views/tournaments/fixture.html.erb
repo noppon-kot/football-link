@@ -221,14 +221,67 @@
           min-height: 70px;
         }
 
+        /* LiveScore style - teams stacked vertically */
         .fixture-teams-row {
-          display: grid;
-          grid-template-columns: 1fr 72px 1fr;
-          align-items: center;
-          gap: 10px;
-          min-height: 44px;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
         }
 
+        .fixture-team-row {
+          display: flex;
+          align-items: center;
+          padding: 8px 0;
+          border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+
+        .fixture-team-row:last-child {
+          border-bottom: none;
+        }
+
+        .fixture-team-logo {
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          object-fit: cover;
+          background: rgba(0,0,0,0.06);
+          flex: 0 0 28px;
+          margin-right: 10px;
+        }
+
+        .fixture-team-name {
+          flex: 1;
+          font-weight: 500;
+          font-size: 14px;
+          line-height: 1.2;
+          color: #1e293b;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .fixture-team-score {
+          font-weight: 700;
+          font-size: 16px;
+          color: #1e293b;
+          min-width: 24px;
+          text-align: right;
+        }
+
+        .fixture-team-score--winner {
+          color: #16a34a;
+        }
+
+        .fixture-team-score-link {
+          display: block;
+        }
+
+        .fixture-team-score-link:hover .fixture-team-score {
+          background: #e2e8f0;
+          border-radius: 4px;
+        }
+
+        /* Legacy styles for desktop */
         .fixture-team {
           min-width: 0;
           display: flex;
@@ -239,15 +292,6 @@
         .fixture-team--away {
           justify-content: flex-end;
           text-align: right;
-        }
-
-        .fixture-team-name {
-          font-weight: 400;
-          font-size: 15px;
-          line-height: 1.15;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
 
         .fixture-logo {
@@ -273,6 +317,47 @@
           font-size: 12px;
           color: #78909c;
           margin-top: 2px;
+        }
+
+        /* Date navigation arrows */
+        .fixture-date-nav {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          padding: 8px 0;
+        }
+
+        .fixture-date-nav-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid #e2e8f0;
+          background: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+
+        .fixture-date-nav-btn:hover {
+          background: #f1f5f9;
+          color: #1e293b;
+        }
+
+        .fixture-date-nav-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        .fixture-date-label {
+          font-weight: 600;
+          font-size: 15px;
+          color: #1e293b;
+          min-width: 120px;
+          text-align: center;
         }
 
         .fixture-meta {
@@ -343,7 +428,16 @@
               </button>
             </span>
 
-            <button type="button" id="fixture-export" class="btn btn-sm btn-success" title="ดาวน์โหลดรูปแข่งหน้านี้" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="ดาวน์โหลดรูปแข่งหน้านี้" style="line-height:1;padding:6px 8px;">
+            <% if can_manage_registrations?(@tournament) %>
+              <%= link_to manage_schedule_tournament_path(@tournament), class: "btn btn-sm btn-outline-primary", title: "จัดการตารางแข่ง", style: "line-height:1;padding:6px 10px;" do %>
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false" style="margin-right:4px;">
+                  <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.06 7.06 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 1h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 7.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.49.42h3.8c.24 0 .45-.18.49-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/>
+                </svg>
+                จัดการตารางแข่ง
+              <% end %>
+            <% end %>
+
+            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#fixtureDownloadModal" title="ดาวน์โหลดรูปแข่ง" aria-label="ดาวน์โหลดรูปแข่ง" style="line-height:1;padding:6px 8px;">
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
                 <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
               </svg>
@@ -351,8 +445,19 @@
           </div>
         </div>
         <div class="card-body" style="background:#f3f4f6;">
+          <% days = (@available_days || []).sort %>
+          
           <div class="mb-2" style="font-size:12px;color:#78909c;">
-            วันที่: <%= @selected_day.present? ? @selected_day.strftime("%d/%m/%Y") : "-" %>
+            <% if @selected_day.present? %>
+              วันที่: <%= @selected_day.strftime("%d/%m/%Y") %><%= "(#{@next_day_matches_total}คู่)" if @next_day_matches_total > 0 %>
+              <% if days.size > 1 %>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#fixtureDayModal" style="font-size:11px;padding:2px 8px;">
+                  เปลี่ยนวัน
+                </button>
+              <% end %>
+            <% else %>
+              -
+            <% end %>
           </div>
 
           <% pitches = Array(@available_pitches).map(&:to_i).uniq.select { |p| p >= 1 && p <= 6 }.sort %>
@@ -371,17 +476,6 @@
               <% end %>
             </div>
           <% end %>
-
-          <div class="fixture-filter-row" style="margin-bottom:10px;">
-            <div style="flex:1 1 auto;min-width:220px;">
-              <input type="text"
-                     id="fixture-team-search"
-                     class="form-control form-control-sm"
-                     placeholder="ค้นหาชื่อทีม"
-                     autocomplete="off" />
-            </div>
-            <div class="text-muted" id="fixture-search-count" style="font-size:12px;white-space:nowrap;align-self:center;"></div>
-          </div>
 
           <div class="modal fade" id="fixtureDayModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -411,44 +505,114 @@
             </div>
           </div>
 
-          <% if @next_day_matches_total > 0 %>
-          <div class="mb-3" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:12px;color:#78909c;">แสดง:</span>
-              <select id="day-per-page-select" 
-                      class="form-select form-select-sm" 
-                      style="width:auto;min-width:75px;font-size:13px;"
-                      onchange="window.location.href='<%= fixture_tournament_path(@tournament) %>?day=<%= @selected_day&.strftime('%Y-%m-%d') || params[:day] %>&pitch=<%= @selected_pitch.presence || params[:pitch] %><%= "&mine=#{params[:mine]}" if params[:mine].present? %>&day_page=1&day_per_page=' + this.value">
-                <% (1..30).each do |n| %>
-                  <option value="<%= n %>" <%= 'selected' if @day_per_page == n %>><%= n %></option>
-                <% end %>
-              </select>
-              <span style="font-size:12px;color:#78909c;">คู่/หน้า</span>
-            </div>
-
-            <% if @next_day_matches_total_pages > 1 %>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                <span style="font-size:12px;color:#78909c;">หน้า:</span>
-                <% (1..@next_day_matches_total_pages).each do |page_num| %>
-                  <% is_current = page_num == @day_page %>
-                  <%= link_to page_num,
-                              fixture_tournament_path(@tournament,
-                                day: (@selected_day&.strftime('%Y-%m-%d') || params[:day]),
-                                pitch: (@selected_pitch.presence || params[:pitch]),
-                                mine: (params[:mine].presence),
-                                day_page: page_num,
-                                day_per_page: @day_per_page),
-                              class: "btn btn-sm #{is_current ? 'btn-success' : 'btn-outline-success'}",
-                              style: "min-width:36px;font-weight:700;font-size:14px;line-height:1;padding:8px 10px;" %>
-                <% end %>
+          <div class="modal fade" id="fixtureDownloadModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <div class="fw-bold">ดาวน์โหลดรูปตารางแข่ง</div>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding:0;">
+                  <div class="p-3 border-bottom" style="background:#f8f9fa;">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:12px;">
+                      <div class="d-flex align-items-center" style="gap:12px;">
+                        <div>
+                          <label class="form-label mb-1" style="font-size:11px;color:#6b7280;">คู่/หน้า</label>
+                          <select id="download-per-page" class="form-select form-select-sm" style="width:auto;min-width:80px;">
+                            <% [5, 10, 15, 20, 25, 30].each do |n| %>
+                              <option value="<%= n %>" <%= 'selected' if n == 10 %>><%= n %></option>
+                            <% end %>
+                            <option value="<%= @next_day_matches_total %>">ทั้งหมด</option>
+                          </select>
+                        </div>
+                        <div id="download-page-selector">
+                          <label class="form-label mb-1" style="font-size:11px;color:#6b7280;">หน้า</label>
+                          <div id="download-page-buttons" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+                        </div>
+                      </div>
+                      <div class="text-muted" style="font-size:12px;">
+                        <%= @selected_day&.strftime("%d/%m/%Y") %> · ทั้งหมด <%= @next_day_matches_total %> คู่
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div id="download-preview-container" style="max-height:60vh;overflow:auto;">
+                    <div id="download-preview-capture" style="background:#fff;padding:16px;">
+                      <table class="table table-sm align-middle mb-0" style="font-size:13px;">
+                        <thead style="background:#f1f5f9;">
+                          <tr>
+                            <th style="width:60px;white-space:nowrap;">คู่ที่</th>
+                            <th style="width:50px;">เวลา</th>
+                            <th style="width:50px;">รุ่น</th>
+                            <th style="width:70px;">สาย/รอบ</th>
+                            <th>ทีมเหย้า</th>
+                            <th>ทีมเยือน</th>
+                            <th style="width:60px;text-align:center;">สกอร์</th>
+                          </tr>
+                        </thead>
+                        <tbody id="download-preview-body">
+                          <% @next_day_matches_page.each_with_index do |match, idx| %>
+                            <% group_name = match.group&.name.to_s.presence %>
+                            <% round_title = if match.knockout?
+                                               case match.round_label
+                                               when "SF" then "รอบ 4 ทีม"
+                                               when "QF" then "รอบ 8 ทีม"
+                                               when "R16" then "รอบ 16 ทีม"
+                                               when "FINAL" then "ชิงชนะเลิศ"
+                                               when "3RD" then "ชิงที่ 3"
+                                               else match.round_label
+                                               end
+                                             else
+                                               group_name.present? ? group_name : "-"
+                                             end %>
+                            <tr data-match-row="<%= idx + 1 %>">
+                              <td style="color:#0ea5e9;font-weight:600;">คู่ที่ <%= idx + 1 %></td>
+                              <td><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %></td>
+                              <td><%= match.tournament_division&.name || "-" %></td>
+                              <td><%= round_title %></td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.home_team&.logo&.attached? %>
+                                    <%= image_tag match.home_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;" %>
+                                  <% end %>
+                                  <%= match.home_name %>
+                                </div>
+                              </td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.away_team&.logo&.attached? %>
+                                    <%= image_tag match.away_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;" %>
+                                  <% end %>
+                                  <%= match.away_name %>
+                                </div>
+                              </td>
+                              <td style="text-align:center;">
+                                <% if match.home_score.present? && match.away_score.present? %>
+                                  <strong><%= match.home_score %> - <%= match.away_score %></strong>
+                                <% else %>
+                                  -
+                                <% end %>
+                              </td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                  <button type="button" id="download-selected-page" class="btn btn-sm btn-success">
+                    <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                      <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                    </svg>
+                    ดาวน์โหลดรูป
+                  </button>
+                </div>
               </div>
-            <% end %>
-
-            <span style="font-size:12px;color:#78909c;">
-              (คู่ที่ <%= ((@day_page - 1) * @day_per_page) + 1 %>-<%= [(@day_page * @day_per_page), @next_day_matches_total].min %> จาก <%= @next_day_matches_total %> คู่)
-            </span>
+            </div>
           </div>
-          <% end %>
+
 
           <div id="next-match-capture">
             <% if @next_match_day.present? && @next_day_matches_total.positive? %>
@@ -483,8 +647,7 @@
                 <% group_or_round = group_name.presence || round_title.presence || "-" %>
 
                 <% team_text = [match.home_name, match.away_name].join(" ") %>
-                <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-match-link", data: { fixture_team_text: team_text.downcase }, style: "text-decoration:none;color:inherit;" do %>
-                  <div class="fixture-match-card">
+                  <div class="fixture-match-card" data-fixture-team-text="<%= team_text.downcase %>">
                     <div class="fixture-match-card-header">
                       <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
                       <div style="white-space:nowrap;">
@@ -493,79 +656,42 @@
                       </div>
                     </div>
                     <div class="fixture-match-card-body">
+                      <% home_score = match.home_score.to_i %>
+                      <% away_score = match.away_score.to_i %>
+                      <% has_score = match.home_score.present? && match.away_score.present? %>
+                      <% home_winner = has_score && home_score > away_score %>
+                      <% away_winner = has_score && away_score > home_score %>
                       <div class="fixture-teams-row">
-                        <div class="fixture-team">
+                        <div class="fixture-team-row">
                           <% if match.home_team&.logo&.attached? %>
-                            <%= image_tag match.home_team.logo, class: "fixture-logo" %>
+                            <%= image_tag match.home_team.logo, class: "fixture-team-logo" %>
                           <% else %>
-                            <div class="fixture-logo"></div>
+                            <div class="fixture-team-logo"></div>
                           <% end %>
                           <div class="fixture-team-name"><%= match.home_name %></div>
-                        </div>
-
-                        <div class="fixture-score">
-                          <% if match.home_score.present? && match.away_score.present? %>
-                            <div class="fixture-score-main"><%= match.home_score %> - <%= match.away_score %></div>
-                          <% else %>
-                            <div class="fixture-score-main">VS</div>
+                          <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-team-score-link", style: "text-decoration:none;" do %>
+                            <div class="fixture-team-score <%= 'fixture-team-score--winner' if home_winner %>">
+                              <%= has_score ? home_score : "-" %>
+                            </div>
                           <% end %>
                         </div>
-
-                        <div class="fixture-team fixture-team--away">
-                          <div class="fixture-team-name"><%= match.away_name %></div>
+                        <div class="fixture-team-row">
                           <% if match.away_team&.logo&.attached? %>
-                            <%= image_tag match.away_team.logo, class: "fixture-logo" %>
+                            <%= image_tag match.away_team.logo, class: "fixture-team-logo" %>
                           <% else %>
-                            <div class="fixture-logo"></div>
+                            <div class="fixture-team-logo"></div>
+                          <% end %>
+                          <div class="fixture-team-name"><%= match.away_name %></div>
+                          <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-team-score-link", style: "text-decoration:none;" do %>
+                            <div class="fixture-team-score <%= 'fixture-team-score--winner' if away_winner %>">
+                              <%= has_score ? away_score : "-" %>
+                            </div>
                           <% end %>
                         </div>
                       </div>
 
-                      <% home_lineup_ok = (@lineup_submitted_by_match_and_side && @lineup_submitted_by_match_and_side[[match.id, "home"]]) %>
-                      <% away_lineup_ok = (@lineup_submitted_by_match_and_side && @lineup_submitted_by_match_and_side[[match.id, "away"]]) %>
-                      <% home_entry_id = (@entry_id_by_match_and_side && @entry_id_by_match_and_side[[match.id, "home"]]) %>
-                      <% away_entry_id = (@entry_id_by_match_and_side && @entry_id_by_match_and_side[[match.id, "away"]]) %>
-                      <% home_clickable = current_user.present? && home_entry_id.present? && @manageable_entry_ids&.include?(home_entry_id) %>
-                      <% away_clickable = current_user.present? && away_entry_id.present? && @manageable_entry_ids&.include?(away_entry_id) %>
-                      <div class="d-flex justify-content-between" style="margin-top:8px;font-size:12px;color:#78909c;">
-                        <div class="d-inline-flex align-items-center" style="gap:6px;">
-                          <% if home_clickable %>
-                            <%= link_to my_entry_lineup_tournament_path(@tournament, team_registration_id: home_entry_id, match_id: match.id),
-                                  title: "เหย้า Line Up: #{home_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง'}",
-                                  style: "color:#{home_lineup_ok ? '#16a34a' : '#9ca3af'};display:inline-flex;align-items:center;text-decoration:none;" do %>
-                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
-                              </svg>
-                            <% end %>
-                          <% else %>
-                            <span title="เหย้า Line Up: <%= home_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง' %>" style="color:<%= home_lineup_ok ? '#16a34a' : '#9ca3af' %>;display:inline-flex;align-items:center;">
-                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
-                              </svg>
-                            </span>
-                          <% end %>
-                        </div>
-                        <div class="d-inline-flex align-items-center" style="gap:6px;">
-                          <% if away_clickable %>
-                            <%= link_to my_entry_lineup_tournament_path(@tournament, team_registration_id: away_entry_id, match_id: match.id),
-                                  title: "เยือน Line Up: #{away_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง'}",
-                                  style: "color:#{away_lineup_ok ? '#16a34a' : '#9ca3af'};display:inline-flex;align-items:center;text-decoration:none;" do %>
-                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
-                              </svg>
-                            <% end %>
-                          <% else %>
-                            <span title="เยือน Line Up: <%= away_lineup_ok ? 'ส่งแล้ว' : 'ยังไม่ส่ง' %>" style="color:<%= away_lineup_ok ? '#16a34a' : '#9ca3af' %>;display:inline-flex;align-items:center;">
-                              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5.33 0-8 2.67-8 5v1h16v-1c0-2.33-2.67-5-8-5Z"/>
-                              </svg>
-                            </span>
-                          <% end %>
-                        </div>
-                      </div>
                     </div>
                   </div>
-                <% end %>
               <% end %>
             </div>
 
@@ -1279,36 +1405,103 @@
 
       <script>
         (function() {
-          if (window.__fixtureMatchCardNavInitialized) return;
-          document.addEventListener('click', function(e) {
-            var card = e.target.closest && e.target.closest('[data-match-href]');
-            if (!card) return;
-            if (e.target.closest('a, button, input, select, textarea, label')) return;
-            var href = card.getAttribute('data-match-href');
-            if (href) window.location.href = href;
-          });
-          window.__fixtureMatchCardNavInitialized = true;
+          var totalMatches = <%= @next_day_matches_total %>;
+          var perPageSelect = document.getElementById('download-per-page');
+          var pageButtonsContainer = document.getElementById('download-page-buttons');
+          var downloadBtn = document.getElementById('download-selected-page');
+          var previewBody = document.getElementById('download-preview-body');
+          var selectedPage = 1;
+
+          function updatePreviewTable() {
+            if (!previewBody) return;
+            var perPage = parseInt(perPageSelect.value, 10) || 10;
+            var startIdx = (selectedPage - 1) * perPage;
+            var endIdx = startIdx + perPage;
+            
+            var rows = previewBody.querySelectorAll('tr[data-match-row]');
+            rows.forEach(function(row, idx) {
+              if (idx >= startIdx && idx < endIdx) {
+                row.style.display = '';
+                var matchNoCell = row.querySelector('td:first-child');
+                if (matchNoCell) {
+                  matchNoCell.textContent = 'คู่ที่ ' + (idx - startIdx + 1);
+                }
+              } else {
+                row.style.display = 'none';
+              }
+            });
+          }
+
+          function updatePageButtons() {
+            if (!perPageSelect || !pageButtonsContainer) return;
+            var perPage = parseInt(perPageSelect.value, 10) || 10;
+            var totalPages = Math.ceil(totalMatches / perPage);
+            if (totalPages <= 0) totalPages = 1;
+            
+            if (selectedPage > totalPages) {
+              selectedPage = 1;
+            }
+            
+            pageButtonsContainer.innerHTML = '';
+            for (var i = 1; i <= totalPages; i++) {
+              var btn = document.createElement('button');
+              btn.type = 'button';
+              btn.className = 'btn btn-sm ' + (i === selectedPage ? 'btn-success' : 'btn-outline-success');
+              btn.style.cssText = 'min-width:32px;font-weight:600;font-size:12px;padding:4px 8px;';
+              btn.textContent = i;
+              btn.dataset.page = i;
+              btn.addEventListener('click', function() {
+                selectedPage = parseInt(this.dataset.page, 10);
+                updatePageButtons();
+                updatePreviewTable();
+              });
+              pageButtonsContainer.appendChild(btn);
+            }
+            
+            updatePreviewTable();
+          }
+
+          if (perPageSelect) {
+            perPageSelect.addEventListener('change', function() {
+              selectedPage = 1;
+              updatePageButtons();
+            });
+          }
+
+          if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+              var captureEl = document.getElementById('download-preview-capture');
+              if (captureEl && typeof html2canvas !== 'undefined') {
+                html2canvas(captureEl, { scale: 2, useCORS: true }).then(function(canvas) {
+                  var link = document.createElement('a');
+                  link.download = 'fixture-page-' + selectedPage + '.png';
+                  link.href = canvas.toDataURL('image/png');
+                  link.click();
+                });
+              } else {
+                alert('กรุณารอสักครู่แล้วลองใหม่');
+              }
+            });
+          }
+
+          var modal = document.getElementById('fixtureDownloadModal');
+          if (modal) {
+            modal.addEventListener('shown.bs.modal', function() {
+              selectedPage = 1;
+              updatePageButtons();
+            });
+          }
+
+          document.addEventListener('DOMContentLoaded', updatePageButtons);
+          document.addEventListener('turbo:load', updatePageButtons);
         })();
       </script>
 
-      <div class="card shadow-sm mb-3">
+      <% if false && can_manage_registrations?(@tournament) %>
+      <!-- All Match section moved to manage_schedule page -->
+      <div class="card shadow-sm mb-3" style="display:none;">
         <div class="card-header d-flex align-items-center justify-content-between" style="gap:10px;">
           <div class="fw-bold">All Match</div>
-          <% if can_manage_registrations?(@tournament) %>
-            <span title="ตั้งค่าเวลาแข่งแบบชุด" data-bs-toggle="tooltip" data-bs-placement="top" style="display:inline-block;">
-              <button type="button"
-                      class="btn btn-sm btn-outline-secondary"
-                      data-bs-toggle="modal"
-                      data-bs-target="#bulkScheduleModal"
-                      aria-label="ตั้งค่าเวลาแข่งแบบชุด"
-                      style="line-height:1;padding:6px 10px;">
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
-                  <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.06 7.06 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 1h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 7.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.49.42h3.8c.24 0 .45-.18.49-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/>
-                </svg>
-                <span style="margin-left:6px;">ตั้งเวลาเป็นชุด</span>
-              </button>
-            </span>
-          <% end %>
         </div>
         <div class="card-body">
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
@@ -1746,6 +1939,7 @@
           <% end %>
         </div>
       </div>
+      <% end %>
 
       <% if can_manage_registrations?(@tournament) %>
         <div class="modal fade" id="bulkScheduleModal" tabindex="-1" aria-hidden="true">

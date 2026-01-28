@@ -1,0 +1,558 @@
+<% content_for :og_title do %>
+  <%= "จัดการตารางแข่ง · #{@tournament.title}" %>
+<% end %>
+
+<div class="app-shell">
+  <div class="tournament-show-body">
+    <div class="container py-2">
+      <div class="mb-3">
+        <%= link_to fixture_tournament_path(@tournament), class: "btn btn-sm btn-outline-secondary" do %>
+          <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/>
+          </svg>
+          กลับไปหน้า Match Day
+        <% end %>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between" style="gap:10px;">
+          <div class="fw-bold">จัดการตารางแข่ง</div>
+          <span title="ตั้งค่าเวลาแข่งแบบชุด" data-bs-toggle="tooltip" data-bs-placement="top" style="display:inline-block;">
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#bulkScheduleModal"
+                    aria-label="ตั้งค่าเวลาแข่งแบบชุด"
+                    style="line-height:1;padding:6px 10px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.06 7.06 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 1h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 7.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.49.42h3.8c.24 0 .45-.18.49-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z" fill="currentColor"/>
+              </svg>
+              <span style="margin-left:6px;">ตั้งเวลาเป็นชุด</span>
+            </button>
+          </span>
+        </div>
+        <div class="card-body">
+          <% if @divisions.any? && @all_matches.any? %>
+            <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
+
+            <% @divisions.each_with_index do |div, idx| %>
+              <% div_matches = @all_matches.select { |m| m.tournament_division_id == div.id } %>
+              <% next if div_matches.empty? %>
+
+              <% color_class = color_classes[idx % color_classes.size] %>
+              <% division_teams = div.team_registrations.confirmed_for_competition.includes(:team).map(&:team).compact.uniq %>
+              <% teams_by_group = {} %>
+              <% div.groups.order(:name).each do |g| %>
+                <% ids = div.matches.group_stage.where(group_id: g.id).pluck(:home_team_id, :away_team_id).flatten.compact.uniq %>
+                <% teams_by_group[g.name.to_s] = division_teams.select { |t| ids.include?(t.id) } %>
+              <% end %>
+
+              <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
+                <div class="d-flex align-items-center mb-2" style="gap:8px;">
+                  <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
+                  <div>
+                    <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
+                    <div style="font-size:11px;color:#78909c;">ตารางแข่งขันทั้งหมดในรุ่นนี้</div>
+                  </div>
+                </div>
+
+                <% matches_by_group = div_matches.group_by do |m| %>
+                  <% if m.knockout? %>
+                    <% "KO_#{m.round_label}" %>
+                  <% else %>
+                    <% "GROUP_#{m.group&.name || "-"}" %>
+                  <% end %>
+                <% end %>
+
+                <% sorted_group_keys = matches_by_group.keys.sort_by do |group_key| %>
+                  <% if group_key.start_with?("KO_") %>
+                    <% round_code = group_key.sub("KO_", "") %>
+                    <% case round_code
+                       when "R64" then 1
+                       when "R32" then 2
+                       when "R16" then 3
+                       when "QF"  then 4
+                       when "SF"  then 5
+                       when "FINAL" then 6
+                       when "3RD" then 7
+                       else 8
+                       end %>
+                  <% else %>
+                    <% [0, group_key] %>
+                  <% end %>
+                <% end %>
+
+                <% sorted_group_keys.each do |group_key| %>
+                  <% matches = matches_by_group[group_key] || [] %>
+                  <% next if matches.empty? %>
+
+                  <% group_label = if group_key.start_with?("KO_")
+                                     round_code = group_key.sub("KO_", "")
+                                     case round_code
+                                     when "SF" then "รอบ 4 ทีม"
+                                     when "QF" then "รอบ 8 ทีม"
+                                     when "R16" then "รอบ 16 ทีม"
+                                     when "R32" then "รอบ 32 ทีม"
+                                     when "R64" then "รอบ 64 ทีม"
+                                     when "FINAL" then "รอบชิงชนะเลิศ"
+                                     when "3RD" then "ชิงอันดับ 3"
+                                     else "รอบน็อคเอาท์"
+                                     end
+                                   else
+                                     "สาย #{group_key.sub('GROUP_', '')}"
+                                   end %>
+
+                  <div class="mb-2">
+                    <div class="fw-bold" style="font-size:12px;color:#546e7a;margin-bottom:6px;"><%= group_label %></div>
+                    <div class="table-responsive">
+                      <table class="table table-sm align-middle mb-0" style="font-size:12px;">
+                        <thead class="table-light">
+                          <tr>
+                            <th scope="col" style="width:50px;">คู่ที่</th>
+                            <th scope="col" style="width:80px;">วัน/เวลา</th>
+                            <th scope="col" style="width:50px;">สนาม</th>
+                            <th scope="col">ทีมเหย้า</th>
+                            <th scope="col">ทีมเยือน</th>
+                            <th scope="col" style="width:80px;" class="text-center">สกอร์</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% matches.each_with_index do |match, midx| %>
+                            <tr>
+                              <td>
+                                <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" do %>
+                                  คู่ที่ <%= match.position || (midx + 1) %>
+                                <% end %>
+                              </td>
+                              <td style="white-space:nowrap;">
+                                <% if match.kickoff_at.present? %>
+                                  <%= match.kickoff_at.strftime("%d/%m %H:%M") %>
+                                <% else %>
+                                  <span class="text-muted">-</span>
+                                <% end %>
+                              </td>
+                              <td>
+                                <% if match.pitch_no.present? && match.pitch_no > 0 %>
+                                  สนาม <%= match.pitch_no %>
+                                <% else %>
+                                  <span class="text-muted">-</span>
+                                <% end %>
+                              </td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.home_team&.logo&.attached? %>
+                                    <%= image_tag match.home_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.home_name %></span>
+                                </div>
+                              </td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.away_team&.logo&.attached? %>
+                                    <%= image_tag match.away_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.away_name %></span>
+                                </div>
+                              </td>
+                              <td class="text-center">
+                                <% if match.home_score.present? && match.away_score.present? %>
+                                  <strong><%= match.home_score %> - <%= match.away_score %></strong>
+                                <% else %>
+                                  <span class="text-muted">-</span>
+                                <% end %>
+                              </td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="text-muted" style="font-size:13px;">ยังไม่มีคู่แข่งขันในระบบ</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="bulkScheduleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="fw-bold">ตั้งเวลาแข่งเป็นชุด</div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <%= form_with url: bulk_schedule_tournament_path(@tournament), method: :patch, local: true, id: "bulk-schedule-form" do %>
+          <div class="row g-2" id="bulk-time-settings">
+            <div class="col-12">
+              <div class="d-flex align-items-center justify-content-between" style="gap:10px;">
+                <div class="fw-bold" style="font-size:13px;">ตั้งค่าเวลา</div>
+                <button type="button" class="btn btn-sm btn-success" id="bulk-add-batch-btn" style="display:none;">
+                  เพิ่มชุดนี้ & ตั้งค่าชุดถัดไป
+                </button>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" style="font-size:12px;">วันที่แข่ง</label>
+              <%= date_field_tag :schedule_date,
+                    (@selected_day&.strftime("%Y-%m-%d") || Time.zone.today.strftime("%Y-%m-%d")),
+                    class: "form-control", id: "bulk-schedule-date" %>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" style="font-size:12px;">เวลาเริ่มแข่ง (คู่แรกของชุดนี้)</label>
+              <%= time_field_tag :start_time, "09:00", class: "form-control", id: "bulk-start-time" %>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label" style="font-size:12px;">สนาม</label>
+              <%= number_field_tag :pitch_no, 1, class: "form-control", min: 1, max: 6, id: "bulk-pitch-no" %>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label" style="font-size:12px;">นาที/ครึ่ง</label>
+              <%= number_field_tag :minutes_per_half, 20, class: "form-control", min: 1, id: "bulk-minutes-per-half" %>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label" style="font-size:12px;">จำนวนครึ่ง</label>
+              <%= number_field_tag :halves_count, 2, class: "form-control", min: 1, max: 4, id: "bulk-halves-count" %>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label" style="font-size:12px;">พักครึ่ง (นาที)</label>
+              <%= number_field_tag :break_between_halves, 5, class: "form-control", min: 0, id: "bulk-break-halves" %>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label" style="font-size:12px;">พักระหว่างคู่ (นาที)</label>
+              <%= number_field_tag :break_between_matches, 5, class: "form-control", min: 0, id: "bulk-break-matches" %>
+            </div>
+          </div>
+
+          <div id="bulk-batches-container" style="display:none;margin-top:16px;">
+            <div class="fw-bold" style="font-size:13px;margin-bottom:8px;">ชุดที่เพิ่มแล้ว</div>
+            <div id="bulk-batches-list"></div>
+          </div>
+
+          <hr style="margin:16px 0;">
+
+          <div class="fw-bold" style="font-size:13px;">1) กำหนดคิวเตะ (เรียงตามที่คลิก)</div>
+          <div class="text-muted" style="font-size:12px;margin-top:4px;">คลิกคู่ด้านล่างเพื่อเพิ่มเข้าคิว หากต้องการตั้งเวลาต่างกันในแต่ละชุด ให้กดปุ่ม "เพิ่มชุดนี้ & ตั้งค่าชุดถัดไป"</div>
+
+          <div id="bulk-schedule-root" data-preselected-ids="">
+            <div class="d-flex align-items-center justify-content-between" style="gap:10px;">
+              <div class="fw-bold" style="font-size:12px;">คิวชุดปัจจุบัน</div>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="bulk-schedule-clear">Clear</button>
+            </div>
+
+            <div id="bulk-schedule-queue" style="margin-top:8px;border:1px solid #e5e7eb;border-radius:10px;padding:8px;min-height:52px;background:#fafafa;"></div>
+            <div id="bulk-schedule-hidden-inputs"></div>
+
+            <div class="mt-3 fw-bold" style="font-size:12px;">2) รายการคู่ทั้งหมด (คลิกเพื่อเพิ่มเข้าคิว)</div>
+            <div style="max-height:38vh;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-top:8px;">
+              <% @all_matches.each do |match| %>
+                <% label = "#{match.tournament_division&.name || '-'} · #{match.group&.name.present? ? "สาย#{match.group.name}" : (match.round_label || '-')} · #{match.home_name} vs #{match.away_name}" %>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary mb-1"
+                        data-bulk-match="1"
+                        data-match-id="<%= match.id %>"
+                        data-label="<%= label %>"
+                        data-kickoff-at="<%= match.kickoff_at&.iso8601 %>"
+                        style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:inline-block;text-align:left;">
+                  <%= label %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end" style="gap:8px;margin-top:16px;">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+            <button type="submit" class="btn btn-sm btn-primary">บันทึกเวลาแข่ง</button>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    function initBulkScheduleQueue() {
+      var root = document.getElementById('bulk-schedule-root');
+      if (!root || root.getAttribute('data-queue-init') === '1') return;
+      root.setAttribute('data-queue-init', '1');
+
+      var modal = document.getElementById('bulkScheduleModal');
+      var form = modal ? modal.querySelector('form') : null;
+      var queueEl = document.getElementById('bulk-schedule-queue');
+      var hiddenEl = document.getElementById('bulk-schedule-hidden-inputs');
+      var clearBtn = document.getElementById('bulk-schedule-clear');
+      var addBatchBtn = document.getElementById('bulk-add-batch-btn');
+      var batchesContainer = document.getElementById('bulk-batches-container');
+      var batchesList = document.getElementById('bulk-batches-list');
+      if (!form || !queueEl || !hiddenEl) return;
+
+      var scheduleDateInput = document.getElementById('bulk-schedule-date');
+      var startTimeInput = document.getElementById('bulk-start-time');
+      var pitchNoInput = document.getElementById('bulk-pitch-no');
+      var minutesPerHalfInput = document.getElementById('bulk-minutes-per-half');
+      var halvesCountInput = document.getElementById('bulk-halves-count');
+      var breakHalvesInput = document.getElementById('bulk-break-halves');
+      var breakMatchesInput = document.getElementById('bulk-break-matches');
+
+      var queue = [];
+      var batches = [];
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function getCurrentSettings() {
+        return {
+          schedule_date: scheduleDateInput ? scheduleDateInput.value : '',
+          start_time: startTimeInput ? startTimeInput.value : '09:00',
+          pitch_no: pitchNoInput ? pitchNoInput.value : '1',
+          minutes_per_half: minutesPerHalfInput ? minutesPerHalfInput.value : '20',
+          halves_count: halvesCountInput ? halvesCountInput.value : '2',
+          break_between_halves: breakHalvesInput ? breakHalvesInput.value : '5',
+          break_between_matches: breakMatchesInput ? breakMatchesInput.value : '5'
+        };
+      }
+
+      function calculateEndTime(settings, matchCount) {
+        if (!settings.start_time || matchCount <= 0) return null;
+        var mins = parseInt(settings.minutes_per_half, 10) || 20;
+        var halves = parseInt(settings.halves_count, 10) || 2;
+        var breakHalves = parseInt(settings.break_between_halves, 10) || 5;
+        var breakMatches = parseInt(settings.break_between_matches, 10) || 5;
+        var matchDuration = (mins * halves) + ((halves - 1) * breakHalves);
+        var totalMins = (matchDuration * matchCount) + (breakMatches * (matchCount - 1));
+        var parts = settings.start_time.split(':');
+        var startMins = (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+        var endMins = startMins + totalMins;
+        var endH = Math.floor(endMins / 60) % 24;
+        var endM = endMins % 60;
+        return String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
+      }
+
+      function getAllQueuedIds() {
+        var ids = new Set();
+        batches.forEach(function(b) {
+          b.matches.forEach(function(m) { ids.add(String(m.id)); });
+        });
+        queue.forEach(function(m) { ids.add(String(m.id)); });
+        return ids;
+      }
+
+      function renderBatches() {
+        if (!batchesContainer || !batchesList) return;
+        if (batches.length === 0) {
+          batchesContainer.style.display = 'none';
+          return;
+        }
+        batchesContainer.style.display = 'block';
+        batchesList.innerHTML = batches.map(function(batch, batchIdx) {
+          var endTime = calculateEndTime(batch.settings, batch.matches.length);
+          var timeRange = batch.settings.start_time + (endTime ? ' - ' + endTime : '');
+          return '' +
+            '<div style="border:1px solid #d1fae5;border-radius:10px;padding:10px;margin-bottom:8px;background:#ecfdf5;">' +
+            '  <div class="d-flex align-items-center justify-content-between" style="gap:8px;">' +
+            '    <div>' +
+            '      <span class="badge bg-success" style="font-size:11px;">ชุดที่ ' + (batchIdx + 1) + '</span>' +
+            '      <span style="font-size:12px;margin-left:6px;">' + batch.settings.schedule_date + ' ' + timeRange + '</span>' +
+            '      <span style="font-size:11px;color:#6b7280;margin-left:6px;">สนาม ' + batch.settings.pitch_no + ' · ' + batch.settings.minutes_per_half + ' นาที/ครึ่ง</span>' +
+            '    </div>' +
+            '    <button type="button" class="btn btn-sm btn-outline-danger" data-remove-batch="' + batchIdx + '" style="padding:2px 8px;font-size:11px;">ลบชุด</button>' +
+            '  </div>' +
+            '  <div style="font-size:11px;color:#374151;margin-top:6px;">' +
+            batch.matches.map(function(m, mIdx) {
+              var parts = m.label.split(' · ');
+              var short = parts.length ? parts[parts.length - 1] : m.label;
+              return '<span style="display:inline-block;background:#fff;border:1px solid #d1d5db;border-radius:4px;padding:2px 6px;margin:2px;">' + (mIdx + 1) + '. ' + escapeHtml(short) + '</span>';
+            }).join('') +
+            '  </div>' +
+            '</div>';
+        }).join('');
+      }
+
+      function renderHiddenInputs() {
+        hiddenEl.innerHTML = '';
+        if (batches.length > 0) {
+          batches.forEach(function(batch, batchIdx) {
+            batch.matches.forEach(function(m) {
+              var input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'batches[' + batchIdx + '][match_ids][]';
+              input.value = String(m.id);
+              hiddenEl.appendChild(input);
+            });
+            Object.keys(batch.settings).forEach(function(key) {
+              var input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'batches[' + batchIdx + '][' + key + ']';
+              input.value = batch.settings[key];
+              hiddenEl.appendChild(input);
+            });
+          });
+          if (queue.length > 0) {
+            var currentBatchIdx = batches.length;
+            var settings = getCurrentSettings();
+            queue.forEach(function(m) {
+              var input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'batches[' + currentBatchIdx + '][match_ids][]';
+              input.value = String(m.id);
+              hiddenEl.appendChild(input);
+            });
+            Object.keys(settings).forEach(function(key) {
+              var input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = 'batches[' + currentBatchIdx + '][' + key + ']';
+              input.value = settings[key];
+              hiddenEl.appendChild(input);
+            });
+          }
+        } else {
+          queue.forEach(function(item) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'match_ids[]';
+            input.value = String(item.id);
+            hiddenEl.appendChild(input);
+          });
+        }
+      }
+
+      function render() {
+        renderBatches();
+        renderHiddenInputs();
+
+        if (addBatchBtn) {
+          addBatchBtn.style.display = queue.length > 0 ? 'inline-flex' : 'none';
+        }
+
+        if (!queue.length) {
+          queueEl.innerHTML = '<div class="text-muted" style="font-size:12px;">ยังไม่ได้เลือกคู่ (คลิกจากรายการด้านล่างเพื่อเพิ่ม)</div>';
+          syncAvailableMatchButtons();
+          return;
+        }
+
+        queueEl.innerHTML = queue.map(function(item, idx) {
+          var safeLabel = escapeHtml(item.label);
+          var parts = safeLabel.split(' · ');
+          var opponent = parts.length ? parts[parts.length - 1] : safeLabel;
+          var prefix = parts.length > 1 ? parts.slice(0, -1).join(' · ') : '';
+          return '' +
+            '<div draggable="true" data-queue-item="1" data-queue-id="' + item.id + '" class="d-flex align-items-center justify-content-between" style="gap:10px;padding:6px 6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:#ffffff;margin-bottom:6px;cursor:grab;">' +
+            '  <div style="font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+            '    <span style="font-weight:700;">' + (idx + 1) + '.</span> ' +
+            (prefix ? ('<span class="text-muted">' + prefix + ' · </span>') : '') +
+            '<strong>' + opponent + '</strong>' +
+            '  </div>' +
+            '  <button type="button" class="btn btn-sm btn-outline-secondary" data-queue-remove="' + item.id + '">ลบ</button>' +
+            '</div>';
+        }).join('');
+
+        syncAvailableMatchButtons();
+      }
+
+      function syncAvailableMatchButtons() {
+        var queued = getAllQueuedIds();
+        document.querySelectorAll('[data-bulk-match="1"]').forEach(function(btn) {
+          var id = btn.getAttribute('data-match-id');
+          if (!id) return;
+          btn.style.display = queued.has(String(id)) ? 'none' : '';
+        });
+      }
+
+      function addToQueue(matchId, label) {
+        matchId = parseInt(matchId, 10);
+        if (!matchId) return;
+        var allIds = getAllQueuedIds();
+        if (allIds.has(String(matchId))) return;
+        queue.push({ id: matchId, label: label || ('#' + matchId) });
+        render();
+      }
+
+      function removeFromQueue(matchId) {
+        matchId = parseInt(matchId, 10);
+        if (!matchId) return;
+        queue = queue.filter(function(x) { return x.id !== matchId; });
+        render();
+      }
+
+      function clearQueue() {
+        queue = [];
+        render();
+      }
+
+      function addBatch() {
+        if (queue.length === 0) return;
+        var settings = getCurrentSettings();
+        batches.push({
+          settings: settings,
+          matches: queue.slice()
+        });
+        queue = [];
+        var endTime = calculateEndTime(settings, batches[batches.length - 1].matches.length);
+        if (endTime && startTimeInput) {
+          startTimeInput.value = endTime;
+        }
+        render();
+      }
+
+      function removeBatch(batchIdx) {
+        batchIdx = parseInt(batchIdx, 10);
+        if (batchIdx < 0 || batchIdx >= batches.length) return;
+        batches.splice(batchIdx, 1);
+        render();
+      }
+
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest && e.target.closest('[data-bulk-match="1"]');
+        if (btn) {
+          e.preventDefault();
+          var id = btn.getAttribute('data-match-id');
+          var label = btn.getAttribute('data-label') || btn.innerText;
+          addToQueue(id, label);
+        }
+
+        var removeBtn = e.target.closest && e.target.closest('[data-queue-remove]');
+        if (removeBtn) {
+          e.preventDefault();
+          removeFromQueue(removeBtn.getAttribute('data-queue-remove'));
+        }
+
+        var removeBatchBtn = e.target.closest && e.target.closest('[data-remove-batch]');
+        if (removeBatchBtn) {
+          e.preventDefault();
+          removeBatch(removeBatchBtn.getAttribute('data-remove-batch'));
+        }
+      });
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          clearQueue();
+        });
+      }
+
+      if (addBatchBtn) {
+        addBatchBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          addBatch();
+        });
+      }
+
+      render();
+    }
+
+    document.addEventListener('turbo:load', initBulkScheduleQueue);
+    document.addEventListener('DOMContentLoaded', initBulkScheduleQueue);
+  })();
+</script>
