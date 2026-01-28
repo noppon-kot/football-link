@@ -411,24 +411,43 @@
             </div>
           </div>
 
-          <% if @next_day_matches_total_pages > 1 %>
-            <div class="mb-3" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-              <span style="font-size:12px;color:#78909c;margin-right:4px;">หน้า:</span>
-              <% (1..@next_day_matches_total_pages).each do |page_num| %>
-                <% is_current = page_num == @day_page %>
-                <%= link_to page_num,
-                            fixture_tournament_path(@tournament,
-                              day: (@selected_day&.strftime('%Y-%m-%d') || params[:day]),
-                              pitch: (@selected_pitch.presence || params[:pitch]),
-                              mine: (params[:mine].presence),
-                              day_page: page_num),
-                            class: "btn btn-sm #{is_current ? 'btn-success' : 'btn-outline-success'}",
-                            style: "min-width:36px;font-weight:700;font-size:14px;line-height:1;padding:8px 10px;" %>
-              <% end %>
-              <span style="font-size:12px;color:#78909c;margin-left:8px;">
-                (คู่ที่ <%= ((@day_page - 1) * @day_per_page) + 1 %>-<%= [(@day_page * @day_per_page), @next_day_matches_total].min %> จาก <%= @next_day_matches_total %> คู่)
-              </span>
+          <% if @next_day_matches_total > 0 %>
+          <div class="mb-3" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:12px;color:#78909c;">แสดง:</span>
+              <select id="day-per-page-select" 
+                      class="form-select form-select-sm" 
+                      style="width:auto;min-width:75px;font-size:13px;"
+                      onchange="window.location.href='<%= fixture_tournament_path(@tournament) %>?day=<%= @selected_day&.strftime('%Y-%m-%d') || params[:day] %>&pitch=<%= @selected_pitch.presence || params[:pitch] %><%= "&mine=#{params[:mine]}" if params[:mine].present? %>&day_page=1&day_per_page=' + this.value">
+                <% (1..30).each do |n| %>
+                  <option value="<%= n %>" <%= 'selected' if @day_per_page == n %>><%= n %></option>
+                <% end %>
+              </select>
+              <span style="font-size:12px;color:#78909c;">คู่/หน้า</span>
             </div>
+
+            <% if @next_day_matches_total_pages > 1 %>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:12px;color:#78909c;">หน้า:</span>
+                <% (1..@next_day_matches_total_pages).each do |page_num| %>
+                  <% is_current = page_num == @day_page %>
+                  <%= link_to page_num,
+                              fixture_tournament_path(@tournament,
+                                day: (@selected_day&.strftime('%Y-%m-%d') || params[:day]),
+                                pitch: (@selected_pitch.presence || params[:pitch]),
+                                mine: (params[:mine].presence),
+                                day_page: page_num,
+                                day_per_page: @day_per_page),
+                              class: "btn btn-sm #{is_current ? 'btn-success' : 'btn-outline-success'}",
+                              style: "min-width:36px;font-weight:700;font-size:14px;line-height:1;padding:8px 10px;" %>
+                <% end %>
+              </div>
+            <% end %>
+
+            <span style="font-size:12px;color:#78909c;">
+              (คู่ที่ <%= ((@day_page - 1) * @day_per_page) + 1 %>-<%= [(@day_page * @day_per_page), @next_day_matches_total].min %> จาก <%= @next_day_matches_total %> คู่)
+            </span>
+          </div>
           <% end %>
 
           <div id="next-match-capture">

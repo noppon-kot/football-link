@@ -174,12 +174,14 @@ class TournamentsController < ApplicationController
                           Match.none
                         end
 
-    # แบ่งหน้า 10 คู่ต่อหน้า
+    # แบ่งหน้า (default 10 คู่ต่อหน้า, สามารถเลือกได้)
     @next_day_matches_total = @next_day_matches.count
-    @day_per_page = 10
+    @day_per_page = params[:day_per_page].to_i
+    @day_per_page = 10 if @day_per_page <= 0
+    @day_per_page = @next_day_matches_total if @day_per_page > @next_day_matches_total && @next_day_matches_total > 0
     @day_page = params[:day_page].to_i
     @day_page = 1 if @day_page <= 0
-    @next_day_matches_total_pages = (@next_day_matches_total.to_f / @day_per_page).ceil
+    @next_day_matches_total_pages = @day_per_page > 0 ? (@next_day_matches_total.to_f / @day_per_page).ceil : 1
     @next_day_matches_total_pages = 1 if @next_day_matches_total_pages <= 0
     @day_page = @next_day_matches_total_pages if @day_page > @next_day_matches_total_pages
     day_offset = (@day_page - 1) * @day_per_page
