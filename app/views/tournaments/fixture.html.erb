@@ -69,7 +69,7 @@
                   </div>
                   <div style="font-size:15px;font-weight:800;color:rgba(255,255,255,0.88);">
                     <% if match.tournament_division&.name.present? %>
-                      รุ่น <%= match.tournament_division.name %>
+                      รุ่น <%= match.tournament_division.name %><% if match.group&.name.present? %>/สาย<%= match.group.name %><% end %>
                     <% end %>
                   </div>
                 </div>
