@@ -25,7 +25,8 @@ module Tournaments
         division: division,
         group_count: group_count,
         slots_per_group: slots_per_group,
-        match_format: @params[:match_format]
+        match_format: @params[:match_format],
+        extra_team_placement: @params[:extra_team_placement]
       )
 
       if service.call

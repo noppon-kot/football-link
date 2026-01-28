@@ -1,10 +1,11 @@
 module Tournaments
   class GenerateMockScheduleService
-    def initialize(division:, group_count:, slots_per_group:, match_format: nil)
+    def initialize(division:, group_count:, slots_per_group:, match_format: nil, extra_team_placement: nil)
       @division = division
       @group_count = group_count.to_i
       @slots_per_group = slots_per_group.to_i
       @match_format = (match_format.presence || safe_division_match_format)
+      @extra_team_placement = extra_team_placement.presence || "first"
       @group_sizes = []
     end
 
@@ -126,8 +127,23 @@ module Tournaments
         base = total_teams / @group_count
         extra = total_teams % @group_count
 
+        # กำหนดว่าทีมเกินจะไปอยู่สายไหน
+        extra_indices = case @extra_team_placement
+                        when "last"
+                          # สายท้าย: ทีมเกินไปอยู่สายท้ายก่อน (เช่น 2 สาย 9 ทีม -> B=5, A=4)
+                          (0...extra).map { |i| @group_count - 1 - i }
+                        when "odd"
+                          # สายคี่: ทีมเกินไปอยู่สายคี่ (A=0, C=2, E=4...) ก่อน
+                          odd_indices = (0...@group_count).select { |i| i.even? } # A=0, C=2, E=4 (index 0,2,4 = สาย A,C,E)
+                          even_indices = (0...@group_count).select { |i| i.odd? } # B=1, D=3, F=5
+                          (odd_indices + even_indices).take(extra)
+                        else
+                          # first (default): ทีมเกินไปอยู่สายแรกก่อน (เช่น 2 สาย 9 ทีม -> A=5, B=4)
+                          (0...extra).to_a
+                        end
+
         @group_sizes = (0...@group_count).map do |i|
-          base + (i < extra ? 1 : 0)
+          base + (extra_indices.include?(i) ? 1 : 0)
         end
       else
         # ถ้าไม่มีทีม ให้ใช้จำนวนทีมต่อสายที่ผู้ใช้กรอกเท่ากันทุกสาย

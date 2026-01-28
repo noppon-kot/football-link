@@ -214,6 +214,15 @@
                         </div>
                         <%= hidden_field_tag :slots_per_group, (existing_slots_per_group || 2), class: "js-slots-per-group" %>
 
+                        <div class="col-6 col-md-3 js-field-extra-team-placement">
+                          <label class="form-label" style="font-size:12px;">ทีมเกินอยู่สายไหน</label>
+                          <select name="extra_team_placement" class="form-select form-select-sm">
+                            <option value="first" selected>สายแรก (A, B, C...)</option>
+                            <option value="last">สายท้าย (...C, B, A)</option>
+                            <option value="odd">สายคี่ (A, C, E...)</option>
+                          </select>
+                        </div>
+
                         <div class="col-6 col-md-3 js-field-match-format">
                           <label class="form-label" style="font-size:12px;">รูปแบบแข่ง</label>
                           <select name="match_format" class="form-select form-select-sm js-match-format">
