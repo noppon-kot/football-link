@@ -895,10 +895,21 @@
             var queueEl = document.getElementById('bulk-schedule-queue');
             var hiddenEl = document.getElementById('bulk-schedule-hidden-inputs');
             var clearBtn = document.getElementById('bulk-schedule-clear');
+            var addBatchBtn = document.getElementById('bulk-add-batch-btn');
+            var batchesContainer = document.getElementById('bulk-batches-container');
+            var batchesList = document.getElementById('bulk-batches-list');
             if (!form || !queueEl || !hiddenEl) return;
 
-            var scheduleDateInput = form.querySelector('input[name="schedule_date"]');
+            var scheduleDateInput = document.getElementById('bulk-schedule-date');
+            var startTimeInput = document.getElementById('bulk-start-time');
+            var pitchNoInput = document.getElementById('bulk-pitch-no');
+            var minutesPerHalfInput = document.getElementById('bulk-minutes-per-half');
+            var halvesCountInput = document.getElementById('bulk-halves-count');
+            var breakHalvesInput = document.getElementById('bulk-break-halves');
+            var breakMatchesInput = document.getElementById('bulk-break-matches');
+
             var queue = [];
+            var batches = [];
 
             function escapeHtml(str) {
               return String(str)
@@ -923,8 +934,130 @@
               return y + '-' + m + '-' + d;
             }
 
-            function render() {
+            function getCurrentSettings() {
+              return {
+                schedule_date: scheduleDateInput ? scheduleDateInput.value : '',
+                start_time: startTimeInput ? startTimeInput.value : '09:00',
+                pitch_no: pitchNoInput ? pitchNoInput.value : '1',
+                minutes_per_half: minutesPerHalfInput ? minutesPerHalfInput.value : '20',
+                halves_count: halvesCountInput ? halvesCountInput.value : '2',
+                break_between_halves: breakHalvesInput ? breakHalvesInput.value : '5',
+                break_between_matches: breakMatchesInput ? breakMatchesInput.value : '5'
+              };
+            }
+
+            function calculateEndTime(settings, matchCount) {
+              if (!settings.start_time || matchCount <= 0) return null;
+              var mins = parseInt(settings.minutes_per_half, 10) || 20;
+              var halves = parseInt(settings.halves_count, 10) || 2;
+              var breakHalves = parseInt(settings.break_between_halves, 10) || 5;
+              var breakMatches = parseInt(settings.break_between_matches, 10) || 5;
+              var matchDuration = (mins * halves) + ((halves - 1) * breakHalves);
+              var totalMins = (matchDuration * matchCount) + (breakMatches * (matchCount - 1));
+              var parts = settings.start_time.split(':');
+              var startMins = (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
+              var endMins = startMins + totalMins;
+              var endH = Math.floor(endMins / 60) % 24;
+              var endM = endMins % 60;
+              return String(endH).padStart(2, '0') + ':' + String(endM).padStart(2, '0');
+            }
+
+            function getAllQueuedIds() {
+              var ids = new Set();
+              batches.forEach(function(b) {
+                b.matches.forEach(function(m) { ids.add(String(m.id)); });
+              });
+              queue.forEach(function(m) { ids.add(String(m.id)); });
+              return ids;
+            }
+
+            function renderBatches() {
+              if (!batchesContainer || !batchesList) return;
+              if (batches.length === 0) {
+                batchesContainer.style.display = 'none';
+                return;
+              }
+              batchesContainer.style.display = 'block';
+              batchesList.innerHTML = batches.map(function(batch, batchIdx) {
+                var endTime = calculateEndTime(batch.settings, batch.matches.length);
+                var timeRange = batch.settings.start_time + (endTime ? ' - ' + endTime : '');
+                return '' +
+                  '<div style="border:1px solid #d1fae5;border-radius:10px;padding:10px;margin-bottom:8px;background:#ecfdf5;">' +
+                  '  <div class="d-flex align-items-center justify-content-between" style="gap:8px;">' +
+                  '    <div>' +
+                  '      <span class="badge bg-success" style="font-size:11px;">ชุดที่ ' + (batchIdx + 1) + '</span>' +
+                  '      <span style="font-size:12px;margin-left:6px;">' + batch.settings.schedule_date + ' ' + timeRange + '</span>' +
+                  '      <span style="font-size:11px;color:#6b7280;margin-left:6px;">สนาม ' + batch.settings.pitch_no + ' · ' + batch.settings.minutes_per_half + ' นาที/ครึ่ง</span>' +
+                  '    </div>' +
+                  '    <button type="button" class="btn btn-sm btn-outline-danger" data-remove-batch="' + batchIdx + '" style="padding:2px 8px;font-size:11px;">ลบชุด</button>' +
+                  '  </div>' +
+                  '  <div style="font-size:11px;color:#374151;margin-top:6px;">' +
+                  batch.matches.map(function(m, mIdx) {
+                    var parts = m.label.split(' · ');
+                    var short = parts.length ? parts[parts.length - 1] : m.label;
+                    return '<span style="display:inline-block;background:#fff;border:1px solid #d1d5db;border-radius:4px;padding:2px 6px;margin:2px;">' + (mIdx + 1) + '. ' + escapeHtml(short) + '</span>';
+                  }).join('') +
+                  '  </div>' +
+                  '</div>';
+              }).join('');
+            }
+
+            function renderHiddenInputs() {
               hiddenEl.innerHTML = '';
+              if (batches.length > 0) {
+                batches.forEach(function(batch, batchIdx) {
+                  batch.matches.forEach(function(m) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'batches[' + batchIdx + '][match_ids][]';
+                    input.value = String(m.id);
+                    hiddenEl.appendChild(input);
+                  });
+                  Object.keys(batch.settings).forEach(function(key) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'batches[' + batchIdx + '][' + key + ']';
+                    input.value = batch.settings[key];
+                    hiddenEl.appendChild(input);
+                  });
+                });
+                if (queue.length > 0) {
+                  var currentBatchIdx = batches.length;
+                  var settings = getCurrentSettings();
+                  queue.forEach(function(m) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'batches[' + currentBatchIdx + '][match_ids][]';
+                    input.value = String(m.id);
+                    hiddenEl.appendChild(input);
+                  });
+                  Object.keys(settings).forEach(function(key) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'batches[' + currentBatchIdx + '][' + key + ']';
+                    input.value = settings[key];
+                    hiddenEl.appendChild(input);
+                  });
+                }
+              } else {
+                queue.forEach(function(item) {
+                  var input = document.createElement('input');
+                  input.type = 'hidden';
+                  input.name = 'match_ids[]';
+                  input.value = String(item.id);
+                  hiddenEl.appendChild(input);
+                });
+              }
+            }
+
+            function render() {
+              renderBatches();
+              renderHiddenInputs();
+
+              if (addBatchBtn) {
+                addBatchBtn.style.display = queue.length > 0 ? 'inline-flex' : 'none';
+              }
+
               if (!queue.length) {
                 queueEl.innerHTML = '<div class="text-muted" style="font-size:12px;">ยังไม่ได้เลือกคู่ (คลิกจากรายการด้านล่างเพื่อเพิ่ม)</div>';
                 syncAvailableMatchButtons();
@@ -947,19 +1080,11 @@
                   '</div>';
               }).join('');
 
-              queue.forEach(function(item) {
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'match_ids[]';
-                input.value = String(item.id);
-                hiddenEl.appendChild(input);
-              });
-
               syncAvailableMatchButtons();
             }
 
             function syncAvailableMatchButtons() {
-              var queued = new Set(queue.map(function(x) { return String(x.id); }));
+              var queued = getAllQueuedIds();
               document.querySelectorAll('[data-bulk-match="1"]').forEach(function(btn) {
                 var id = btn.getAttribute('data-match-id');
                 if (!id) return;
@@ -970,7 +1095,8 @@
             function addToQueue(matchId, label) {
               matchId = parseInt(matchId, 10);
               if (!matchId) return;
-              if (queue.some(function(x) { return x.id === matchId; })) return;
+              var allIds = getAllQueuedIds();
+              if (allIds.has(String(matchId))) return;
               queue.push({ id: matchId, label: label || ('#' + matchId) });
               render();
             }
@@ -984,6 +1110,28 @@
 
             function clearQueue() {
               queue = [];
+              render();
+            }
+
+            function addBatch() {
+              if (queue.length === 0) return;
+              var settings = getCurrentSettings();
+              batches.push({
+                settings: settings,
+                matches: queue.slice()
+              });
+              queue = [];
+              var endTime = calculateEndTime(settings, batches[batches.length - 1].matches.length);
+              if (endTime && startTimeInput) {
+                startTimeInput.value = endTime;
+              }
+              render();
+            }
+
+            function removeBatch(batchIdx) {
+              batchIdx = parseInt(batchIdx, 10);
+              if (batchIdx < 0 || batchIdx >= batches.length) return;
+              batches.splice(batchIdx, 1);
               render();
             }
 
@@ -1080,6 +1228,12 @@
                 removeFromQueue(removeBtn.getAttribute('data-queue-remove'));
                 return;
               }
+
+              var removeBatchBtn = e.target.closest && e.target.closest('[data-remove-batch]');
+              if (removeBatchBtn) {
+                removeBatch(removeBatchBtn.getAttribute('data-remove-batch'));
+                return;
+              }
             });
 
             if (clearBtn) {
@@ -1088,9 +1242,17 @@
               });
             }
 
+            if (addBatchBtn) {
+              addBatchBtn.addEventListener('click', function() {
+                addBatch();
+              });
+            }
+
             if (scheduleDateInput) {
               var onScheduleDateChange = function() {
-                buildDefaultQueueForSelectedDate();
+                if (batches.length === 0) {
+                  buildDefaultQueueForSelectedDate();
+                }
               };
               scheduleDateInput.addEventListener('change', onScheduleDateChange);
               scheduleDateInput.addEventListener('input', onScheduleDateChange);
@@ -1099,6 +1261,8 @@
 
             if (modal) {
               modal.addEventListener('shown.bs.modal', function() {
+                batches = [];
+                queue = [];
                 buildDefaultQueueForSelectedDate();
               });
             }
@@ -1592,45 +1756,61 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <%= form_with url: bulk_schedule_tournament_path(@tournament), method: :patch, local: true do %>
-                  <div class="row g-2">
+                <%= form_with url: bulk_schedule_tournament_path(@tournament), method: :patch, local: true, id: "bulk-schedule-form" do %>
+                  <div class="row g-2" id="bulk-time-settings">
+                    <div class="col-12">
+                      <div class="d-flex align-items-center justify-content-between" style="gap:10px;">
+                        <div class="fw-bold" style="font-size:13px;">ตั้งค่าเวลาสำหรับชุดปัจจุบัน</div>
+                        <button type="button" class="btn btn-sm btn-success" id="bulk-add-batch-btn" style="display:none;">
+                          <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>
+                          เพิ่มชุดนี้ & ตั้งค่าชุดถัดไป
+                        </button>
+                      </div>
+                    </div>
                     <div class="col-12 col-md-6">
                       <label class="form-label" style="font-size:12px;">วันที่แข่ง</label>
                       <%= date_field_tag :schedule_date,
                             (@selected_day&.strftime("%Y-%m-%d") || Time.zone.today.strftime("%Y-%m-%d")),
-                            class: "form-control" %>
+                            class: "form-control", id: "bulk-schedule-date" %>
                     </div>
                     <div class="col-12 col-md-6">
-                      <label class="form-label" style="font-size:12px;">เวลาเริ่มแข่ง (คู่แรก)</label>
-                      <%= time_field_tag :start_time, "09:00", class: "form-control" %>
+                      <label class="form-label" style="font-size:12px;">เวลาเริ่มแข่ง (คู่แรกของชุดนี้)</label>
+                      <%= time_field_tag :start_time, "09:00", class: "form-control", id: "bulk-start-time" %>
                     </div>
 
                     <div class="col-12 col-md-6">
-                      <label class="form-label" style="font-size:12px;">สนาม (คิวนี้ใช้สนามเดียว)</label>
+                      <label class="form-label" style="font-size:12px;">สนาม</label>
                       <%= select_tag :pitch_no,
                             options_for_select((1..6).map { |n| ["สนาม #{n}", n] }, 1),
-                            class: "form-select" %>
+                            class: "form-select", id: "bulk-pitch-no" %>
                     </div>
 
                     <div class="col-6 col-md-3">
                       <label class="form-label" style="font-size:12px;">แข่งกี่นาที/ครึ่ง</label>
-                      <%= number_field_tag :minutes_per_half, 20, class: "form-control", min: 1 %>
+                      <%= number_field_tag :minutes_per_half, 20, class: "form-control", min: 1, id: "bulk-minutes-per-half" %>
                     </div>
                     <div class="col-6 col-md-3">
                       <label class="form-label" style="font-size:12px;">มีกี่ครึ่ง</label>
-                      <%= number_field_tag :halves_count, 2, class: "form-control", min: 1 %>
+                      <%= number_field_tag :halves_count, 2, class: "form-control", min: 1, id: "bulk-halves-count" %>
                     </div>
                     <div class="col-6 col-md-3">
                       <label class="form-label" style="font-size:12px;">พักครึ่ง (นาที)</label>
-                      <%= number_field_tag :break_between_halves, 5, class: "form-control", min: 0 %>
+                      <%= number_field_tag :break_between_halves, 5, class: "form-control", min: 0, id: "bulk-break-halves" %>
                     </div>
                     <div class="col-6 col-md-3">
                       <label class="form-label" style="font-size:12px;">พักระหว่างคู่ (นาที)</label>
-                      <%= number_field_tag :break_between_matches, 5, class: "form-control", min: 0 %>
+                      <%= number_field_tag :break_between_matches, 5, class: "form-control", min: 0, id: "bulk-break-matches" %>
                     </div>
                   </div>
 
                   <hr />
+
+                  <div id="bulk-batches-container" style="display:none;">
+                    <div class="fw-bold" style="font-size:13px;margin-bottom:8px;">ชุดที่บันทึกแล้ว</div>
+                    <div id="bulk-batches-list" style="margin-bottom:12px;"></div>
+                    <hr />
+                  </div>
+
                   <% divisions = @tournament.tournament_divisions.order(:position, :id).to_a %>
                   <% all_matches = @all_matches_for_all_match || [] %>
                   <% default_date = (@selected_day || Time.zone.today).to_date %>
@@ -1639,11 +1819,11 @@
                                                 .map(&:id) %>
 
                   <div class="fw-bold" style="font-size:13px;">1) กำหนดคิวเตะ (เรียงตามที่คลิก)</div>
-                  <div class="text-muted" style="font-size:12px;margin-top:4px;">คลิกคู่ด้านล่างเพื่อเพิ่มเข้าคิว สามารถลบ/ล้างได้ และระบบจะคำนวณเวลาเรียงตามคิวนี้</div>
+                  <div class="text-muted" style="font-size:12px;margin-top:4px;">คลิกคู่ด้านล่างเพื่อเพิ่มเข้าคิว หากต้องการตั้งเวลาต่างกันในแต่ละชุด ให้กดปุ่ม "เพิ่มชุดนี้ & ตั้งค่าชุดถัดไป"</div>
 
                   <div id="bulk-schedule-root" data-preselected-ids="<%= preselected_ids.join(',') %>">
                     <div class="d-flex align-items-center justify-content-between" style="gap:10px;">
-                      <div class="fw-bold" style="font-size:12px;">คิวที่เลือก</div>
+                      <div class="fw-bold" style="font-size:12px;">คิวชุดปัจจุบัน</div>
                       <button type="button" class="btn btn-sm btn-outline-danger" id="bulk-schedule-clear">Clear</button>
                     </div>
 

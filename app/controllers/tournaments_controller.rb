@@ -272,66 +272,129 @@ class TournamentsController < ApplicationController
       return redirect_to fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
     end
 
-    match_ids = Array(params[:match_ids]).map(&:to_i).uniq
-    if match_ids.empty?
-      return redirect_to fixture_tournament_path(@tournament), alert: "กรุณาเลือกคู่ที่ต้องการตั้งเวลา"
-    end
-
-    minutes_per_half = params[:minutes_per_half].to_i
-    halves_count = params[:halves_count].to_i
-    break_between_halves_min = params[:break_between_halves].to_i
-    break_between_matches_min = params[:break_between_matches].to_i
-    pitch_no = params[:pitch_no].to_i
-    date_str = params[:schedule_date].to_s.strip
-    start_time_str = params[:start_time].to_s.strip
-
-    minutes_per_half = 10 if minutes_per_half <= 0
-    halves_count = 2 if halves_count <= 0
-    break_between_halves_min = 0 if break_between_halves_min < 0
-    break_between_matches_min = 0 if break_between_matches_min < 0
-    pitch_no = 1 if pitch_no <= 0
-    pitch_no = 6 if pitch_no > 6
-
-    begin
-      schedule_date = Date.parse(date_str)
-    rescue ArgumentError
-      schedule_date = nil
-    end
-
-    if schedule_date.blank? || start_time_str.blank?
-      return redirect_to fixture_tournament_path(@tournament), alert: "กรุณาเลือกวันที่ และเวลาเริ่มแข่ง"
-    end
-
-    begin
-      start_at = Time.zone.parse("#{schedule_date} #{start_time_str}")
-    rescue ArgumentError, TypeError
-      start_at = nil
-    end
-
-    if start_at.blank?
-      return redirect_to fixture_tournament_path(@tournament), alert: "เวลาเริ่มแข่งไม่ถูกต้อง"
-    end
-
     divisions = @tournament.tournament_divisions.select(:id)
-    matches_by_id = Match.where(tournament_division_id: divisions, id: match_ids).index_by(&:id)
-    ordered_matches = match_ids.filter_map { |id| matches_by_id[id] }
+    first_schedule_date = nil
+    total_matches_updated = 0
 
-    if ordered_matches.empty?
-      return redirect_to fixture_tournament_path(@tournament), alert: "ไม่พบคู่ที่เลือก"
-    end
+    if params[:batches].present?
+      Match.transaction do
+        params[:batches].each do |_batch_idx, batch_params|
+          batch_match_ids = Array(batch_params[:match_ids]).map(&:to_i).uniq
+          next if batch_match_ids.empty?
 
-    match_minutes = (minutes_per_half * halves_count) + (halves_count > 1 ? ((halves_count - 1) * break_between_halves_min) : 0)
-    match_minutes = 1 if match_minutes <= 0
+          minutes_per_half = batch_params[:minutes_per_half].to_i
+          halves_count = batch_params[:halves_count].to_i
+          break_between_halves_min = batch_params[:break_between_halves].to_i
+          break_between_matches_min = batch_params[:break_between_matches].to_i
+          pitch_no = batch_params[:pitch_no].to_i
+          date_str = batch_params[:schedule_date].to_s.strip
+          start_time_str = batch_params[:start_time].to_s.strip
 
-    current_kickoff = start_at
-    Match.transaction do
-      ordered_matches.each do |m|
-        m.update!(kickoff_at: current_kickoff, pitch_no: pitch_no)
-        current_kickoff = current_kickoff + match_minutes.minutes + break_between_matches_min.minutes
+          minutes_per_half = 10 if minutes_per_half <= 0
+          halves_count = 2 if halves_count <= 0
+          break_between_halves_min = 0 if break_between_halves_min < 0
+          break_between_matches_min = 0 if break_between_matches_min < 0
+          pitch_no = 1 if pitch_no <= 0
+          pitch_no = 6 if pitch_no > 6
+
+          begin
+            schedule_date = Date.parse(date_str)
+          rescue ArgumentError
+            next
+          end
+
+          first_schedule_date ||= schedule_date
+
+          begin
+            start_at = Time.zone.parse("#{schedule_date} #{start_time_str}")
+          rescue ArgumentError, TypeError
+            next
+          end
+
+          next if start_at.blank?
+
+          matches_by_id = Match.where(tournament_division_id: divisions, id: batch_match_ids).index_by(&:id)
+          ordered_matches = batch_match_ids.filter_map { |id| matches_by_id[id] }
+          next if ordered_matches.empty?
+
+          match_minutes = (minutes_per_half * halves_count) + (halves_count > 1 ? ((halves_count - 1) * break_between_halves_min) : 0)
+          match_minutes = 1 if match_minutes <= 0
+
+          current_kickoff = start_at
+          ordered_matches.each do |m|
+            m.update!(kickoff_at: current_kickoff, pitch_no: pitch_no)
+            current_kickoff = current_kickoff + match_minutes.minutes + break_between_matches_min.minutes
+            total_matches_updated += 1
+          end
+        end
       end
-    end
 
-    redirect_to fixture_tournament_path(@tournament, day: schedule_date.strftime("%Y-%m-%d")), notice: "ตั้งเวลาแข่งเรียบร้อยแล้ว"
+      if total_matches_updated > 0
+        redirect_to fixture_tournament_path(@tournament, day: first_schedule_date&.strftime("%Y-%m-%d")), notice: "ตั้งเวลาแข่งเรียบร้อยแล้ว #{total_matches_updated} คู่"
+      else
+        redirect_to fixture_tournament_path(@tournament), alert: "ไม่พบคู่ที่เลือก"
+      end
+    else
+      match_ids = Array(params[:match_ids]).map(&:to_i).uniq
+      if match_ids.empty?
+        return redirect_to fixture_tournament_path(@tournament), alert: "กรุณาเลือกคู่ที่ต้องการตั้งเวลา"
+      end
+
+      minutes_per_half = params[:minutes_per_half].to_i
+      halves_count = params[:halves_count].to_i
+      break_between_halves_min = params[:break_between_halves].to_i
+      break_between_matches_min = params[:break_between_matches].to_i
+      pitch_no = params[:pitch_no].to_i
+      date_str = params[:schedule_date].to_s.strip
+      start_time_str = params[:start_time].to_s.strip
+
+      minutes_per_half = 10 if minutes_per_half <= 0
+      halves_count = 2 if halves_count <= 0
+      break_between_halves_min = 0 if break_between_halves_min < 0
+      break_between_matches_min = 0 if break_between_matches_min < 0
+      pitch_no = 1 if pitch_no <= 0
+      pitch_no = 6 if pitch_no > 6
+
+      begin
+        schedule_date = Date.parse(date_str)
+      rescue ArgumentError
+        schedule_date = nil
+      end
+
+      if schedule_date.blank? || start_time_str.blank?
+        return redirect_to fixture_tournament_path(@tournament), alert: "กรุณาเลือกวันที่ และเวลาเริ่มแข่ง"
+      end
+
+      begin
+        start_at = Time.zone.parse("#{schedule_date} #{start_time_str}")
+      rescue ArgumentError, TypeError
+        start_at = nil
+      end
+
+      if start_at.blank?
+        return redirect_to fixture_tournament_path(@tournament), alert: "เวลาเริ่มแข่งไม่ถูกต้อง"
+      end
+
+      matches_by_id = Match.where(tournament_division_id: divisions, id: match_ids).index_by(&:id)
+      ordered_matches = match_ids.filter_map { |id| matches_by_id[id] }
+
+      if ordered_matches.empty?
+        return redirect_to fixture_tournament_path(@tournament), alert: "ไม่พบคู่ที่เลือก"
+      end
+
+      match_minutes = (minutes_per_half * halves_count) + (halves_count > 1 ? ((halves_count - 1) * break_between_halves_min) : 0)
+      match_minutes = 1 if match_minutes <= 0
+
+      current_kickoff = start_at
+      Match.transaction do
+        ordered_matches.each do |m|
+          m.update!(kickoff_at: current_kickoff, pitch_no: pitch_no)
+          current_kickoff = current_kickoff + match_minutes.minutes + break_between_matches_min.minutes
+        end
+      end
+
+      redirect_to fixture_tournament_path(@tournament, day: schedule_date.strftime("%Y-%m-%d")), notice: "ตั้งเวลาแข่งเรียบร้อยแล้ว"
+    end
   rescue ActiveRecord::RecordInvalid => e
     redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
   end
