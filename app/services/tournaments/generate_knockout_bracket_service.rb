@@ -121,8 +121,33 @@ module Tournaments
       # โหมด knockout_only ต้องใช้ pattern A1-A4/B1-B4 ไม่ใช่ pattern 1A/2B จากรอบแบ่งกลุ่ม
       if @knockout_only && @bracket_size == 8
         assign_first_round_labels_for_knockout_only_8_team!
+      elsif groups.size == 3 && @bracket_size == 4
+        assign_first_round_labels_for_three_groups(groups)
       elsif groups.size == 2
         assign_first_round_labels_from_groups(groups)
+      end
+    end
+
+    # 3 สาย เข้ารอบ 4 ทีม: 1A vs BP1 (รองแชมป์ที่ดีที่สุด), 1B vs 1C
+    def assign_first_round_labels_for_three_groups(groups)
+      first_round_matches = @division.matches.knockout.where(round_number: 1).order(:position, :id).to_a
+      return unless first_round_matches.size == 2
+
+      ordered_groups = groups.sort_by(&:name)
+      a_name = ordered_groups[0].name.presence || "A"
+      b_name = ordered_groups[1].name.presence || "B"
+      c_name = ordered_groups[2].name.presence || "C"
+
+      # SF1: 1A vs BP1 (รองแชมป์ที่ดีที่สุด)
+      # SF2: 1B vs 1C
+      slot_pairs = [
+        ["1#{a_name}", "BP1"],
+        ["1#{b_name}", "1#{c_name}"]
+      ]
+
+      first_round_matches.each_with_index do |match, idx|
+        home_label, away_label = slot_pairs[idx]
+        match.update!(home_slot_label: home_label, away_slot_label: away_label)
       end
     end
 

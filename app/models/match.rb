@@ -22,11 +22,29 @@ class Match < ApplicationRecord
   end
 
   def home_name
-    home_team&.name.presence || home_slot_label.presence || "-"
+    home_team&.name.presence || format_slot_label(home_slot_label) || "-"
   end
 
   def away_name
-    away_team&.name.presence || away_slot_label.presence || "-"
+    away_team&.name.presence || format_slot_label(away_slot_label) || "-"
+  end
+
+  def format_slot_label(label)
+    return nil if label.blank?
+    case label
+    when "BP1"
+      "รองแชมป์ที่ดีที่สุด"
+    when /\A1([A-Z])\z/
+      "ที่1 สาย#{$1}"
+    when /\A2([A-Z])\z/
+      "ที่2 สาย#{$1}"
+    when /\A3([A-Z])\z/
+      "ที่3 สาย#{$1}"
+    when /\A4([A-Z])\z/
+      "ที่4 สาย#{$1}"
+    else
+      label
+    end
   end
 
   private
