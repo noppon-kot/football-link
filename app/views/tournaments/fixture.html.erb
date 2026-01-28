@@ -51,6 +51,9 @@
             <% if @tournament.location_name.present? %>
               · <%= @tournament.location_name %>
             <% end %>
+            <% if @next_day_matches_total_pages > 1 %>
+              · หน้า <%= @day_page %>/<%= @next_day_matches_total_pages %>
+            <% end %>
           </div>
         </div>
       </div>
@@ -407,6 +410,26 @@
               </div>
             </div>
           </div>
+
+          <% if @next_day_matches_total_pages > 1 %>
+            <div class="mb-3" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+              <span style="font-size:12px;color:#78909c;margin-right:4px;">หน้า:</span>
+              <% (1..@next_day_matches_total_pages).each do |page_num| %>
+                <% is_current = page_num == @day_page %>
+                <%= link_to page_num,
+                            fixture_tournament_path(@tournament,
+                              day: (@selected_day&.strftime('%Y-%m-%d') || params[:day]),
+                              pitch: (@selected_pitch.presence || params[:pitch]),
+                              mine: (params[:mine].presence),
+                              day_page: page_num),
+                            class: "btn btn-sm #{is_current ? 'btn-success' : 'btn-outline-success'}",
+                            style: "min-width:36px;font-weight:700;font-size:14px;line-height:1;padding:8px 10px;" %>
+              <% end %>
+              <span style="font-size:12px;color:#78909c;margin-left:8px;">
+                (คู่ที่ <%= ((@day_page - 1) * @day_per_page) + 1 %>-<%= [(@day_page * @day_per_page), @next_day_matches_total].min %> จาก <%= @next_day_matches_total %> คู่)
+              </span>
+            </div>
+          <% end %>
 
           <div id="next-match-capture">
             <% if @next_match_day.present? && @next_day_matches_total.positive? %>

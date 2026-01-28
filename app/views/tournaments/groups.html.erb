@@ -33,6 +33,88 @@
           <% color_class = color_classes[idx % color_classes.size] %>
 
           <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
+            <% div_groups = div.groups.order(:name).to_a %>
+            <% div_has_groups = div_groups.any? && div.matches.any? %>
+            <% groups_share_card_id = "groups-share-card-#{div.id}" %>
+
+            <% if div_has_groups %>
+              <% div_current_assignments = {} %>
+              <% div.matches.each do |m| %>
+                <% if m.home_slot_label.present? && m.home_team_id.present? %>
+                  <% div_current_assignments[m.home_slot_label] ||= m.home_team_id %>
+                <% end %>
+                <% if m.away_slot_label.present? && m.away_team_id.present? %>
+                  <% div_current_assignments[m.away_slot_label] ||= m.away_team_id %>
+                <% end %>
+              <% end %>
+
+              <% max_teams_per_group = 0 %>
+              <% div_groups.each do |grp| %>
+                <% grp_slots = (div.matches.where(group: grp).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq) %>
+                <% max_teams_per_group = [max_teams_per_group, grp_slots.size].max %>
+              <% end %>
+
+              <% groups_count = div_groups.size %>
+              <% rows_count = (groups_count / 2.0).ceil %>
+              <% row_height = 60 + (max_teams_per_group * 56) %>
+              <% share_card_height = 320 + (rows_count * row_height) %>
+              <% share_card_height = [share_card_height, 1800].min %>
+
+              <div id="<%= groups_share_card_id %>" style="position:fixed;left:-10000px;top:0;width:1080px;height:<%= share_card_height %>px;overflow:hidden;">
+                <div data-theme-root style="position:relative;width:1080px;height:<%= share_card_height %>px;background:#071b14;">
+                  <div style="position:absolute;inset:0;background-image:url('<%= asset_path("banner2.png") %>');background-size:cover;background-position:center;filter:brightness(0.45);"></div>
+                  <div data-theme-gradient style="position:absolute;inset:0;background:linear-gradient(135deg, rgba(6,58,42,0.88) 0%, rgba(11,74,51,0.78) 45%, rgba(10,47,34,0.88) 100%);"></div>
+
+                  <div style="position:absolute;left:54px;right:54px;top:48px;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;">
+                    <div>
+                      <div data-theme-title style="font-size:50px;font-weight:900;letter-spacing:0.4px;line-height:1.05;color:#d7ff59;text-transform:uppercase;">
+                        <%= @tournament.title %>
+                      </div>
+                      <div style="margin-top:12px;font-size:30px;font-weight:900;color:rgba(255,255,255,0.92);letter-spacing:0.8px;">การแบ่งสาย</div>
+                      <div style="margin-top:8px;font-size:18px;color:rgba(255,255,255,0.88);">รุ่น <%= div.name %> · <%= groups_count %> สาย</div>
+                    </div>
+                  </div>
+
+                  <div style="position:absolute;left:54px;right:54px;top:220px;bottom:100px;overflow:hidden;">
+                    <div style="display:flex;flex-wrap:wrap;gap:20px;">
+                      <% div_groups.each do |grp| %>
+                        <% grp_slots = (div.matches.where(group: grp).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                        <% next if grp_slots.empty? %>
+                        <div style="flex:0 0 calc(50% - 10px);background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:14px;padding:16px;">
+                          <div style="font-size:18px;font-weight:900;color:#d7ff59;margin-bottom:12px;">สาย <%= grp.name %></div>
+                          <% grp_slots.each_with_index do |slot_label, slot_idx| %>
+                            <% assigned_team_id = div_current_assignments[slot_label] %>
+                            <% assigned_reg = regs.find { |r| r.team_id == assigned_team_id } %>
+                            <% team = assigned_reg&.team %>
+                            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;<%= 'border-top:1px solid rgba(255,255,255,0.12);' if slot_idx > 0 %>">
+                              <div style="width:36px;text-align:center;font-size:16px;font-weight:900;color:rgba(255,255,255,0.7);">
+                                <%= slot_label %>
+                              </div>
+                              <% if team&.logo&.attached? %>
+                                <%= image_tag team.logo, style: "width:36px;height:36px;border-radius:999px;object-fit:cover;background:rgba(255,255,255,0.12);", crossorigin: "anonymous" %>
+                              <% else %>
+                                <div style="width:36px;height:36px;border-radius:999px;background:rgba(255,255,255,0.12);"></div>
+                              <% end %>
+                              <div style="flex:1;font-size:18px;font-weight:700;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                <%= team&.name.presence || "-" %>
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <div style="position:absolute;left:54px;right:54px;bottom:36px;display:flex;justify-content:flex-end;">
+                    <div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);padding:10px 14px;border-radius:14px;white-space:nowrap;">
+                      <%= image_tag "dernsai_icon.png", alt: "DERNSAI", style: "width:28px;height:28px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.08);padding:4px;", crossorigin: "anonymous" %>
+                      <span style="font-size:14px;font-weight:800;letter-spacing:0.6px;">DERNSAI.COM</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+
             <div class="d-flex align-items-center justify-content-between mb-2" style="gap:8px;">
               <div class="d-flex align-items-center" style="gap:8px;">
                 <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
@@ -41,6 +123,20 @@
                   <div style="font-size:11px;color:#78909c;">จำนวนทีมในรุ่นนี้ <%= regs.count %> ทีม</div>
                 </div>
               </div>
+
+              <div class="d-flex align-items-center" style="gap:6px;">
+                <% if div_has_groups %>
+                  <button type="button"
+                          class="btn btn-sm btn-success js-groups-export"
+                          data-target="<%= groups_share_card_id %>"
+                          data-filename="groups_<%= @tournament.title.to_s.gsub(' ', '_') %>_<%= div.name.to_s.gsub(' ', '_') %>.png"
+                          title="ดาวน์โหลดรูปแบ่งสาย"
+                          style="line-height:1;padding:6px 8px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                      <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                    </svg>
+                  </button>
+                <% end %>
 
               <% if can_manage_registrations?(@tournament) %>
                 <button type="button"
@@ -55,6 +151,7 @@
                   <span style="margin-left:6px;">แบ่งสายการแข่งขัน</span>
                 </button>
               <% end %>
+              </div>
             </div>
 
             <% if can_manage_registrations?(@tournament) %>
@@ -383,6 +480,162 @@
     </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+  (function() {
+    if (window.__groupsExportInitialized) return;
+    window.__groupsExportInitialized = true;
+
+    function ensureWaitOverlay() {
+      var el = document.getElementById('global-wait-overlay');
+      if (el) return el;
+      el = document.createElement('div');
+      el.id = 'global-wait-overlay';
+      el.style.display = 'none';
+      el.style.position = 'fixed';
+      el.style.inset = '0';
+      el.style.zIndex = '2000';
+      el.style.background = 'rgba(0,0,0,0.55)';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.padding = '16px';
+      el.innerHTML = '' +
+        '<div style="background:#ffffff;border-radius:14px;padding:16px 18px;min-width:220px;max-width:92vw;box-shadow:0 12px 30px rgba(0,0,0,0.25);">' +
+        '  <div class="d-flex align-items-center" style="gap:10px;">' +
+        '    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>' +
+        '    <div style="font-weight:700;">กำลังประมวลผล...</div>' +
+        '  </div>' +
+        '  <div class="text-muted" style="font-size:12px;margin-top:6px;">กรุณารอสักครู่</div>' +
+        '</div>';
+      document.body.appendChild(el);
+      return el;
+    }
+
+    function showWaitOverlay() {
+      var el = ensureWaitOverlay();
+      el.style.display = 'flex';
+    }
+
+    function hideWaitOverlay() {
+      var el = document.getElementById('global-wait-overlay');
+      if (el) el.style.display = 'none';
+    }
+
+    function ensureModal() {
+      var existing = document.getElementById('groups-snapshot-modal');
+      if (existing) return existing;
+
+      var modal = document.createElement('div');
+      modal.id = 'groups-snapshot-modal';
+      modal.style.display = 'none';
+      modal.style.position = 'fixed';
+      modal.style.inset = '0';
+      modal.style.zIndex = '1055';
+      modal.style.background = 'rgba(0,0,0,0.72)';
+      modal.style.padding = '16px';
+      modal.style.overflow = 'auto';
+
+      modal.innerHTML = '' +
+        '<div style="min-height:100%;display:flex;align-items:center;justify-content:center;">' +
+        '  <div style="position:relative;max-width:min(500px, 96vw);width:100%;">' +
+        '    <div style="position:absolute;top:-10px;right:-10px;display:flex;gap:8px;">' +
+        '      <button type="button" data-groups-snapshot-download title="Save" aria-label="Save" style="width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;line-height:1;display:flex;align-items:center;justify-content:center;">' +
+        '        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+        '          <path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm-5 18a3 3 0 1 1 0-6 3 3 0 0 1 0 6ZM6 8V5h9v3H6Z" fill="currentColor"/>' +
+        '        </svg>' +
+        '      </button>' +
+        '      <button type="button" data-groups-snapshot-close style="width:40px;height:40px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);background:rgba(0,0,0,0.55);color:#fff;font-size:22px;line-height:1;">×</button>' +
+        '    </div>' +
+        '    <img data-groups-snapshot-modal-img alt="Groups snapshot" style="width:100%;height:auto;border-radius:14px;display:block;background:#fff;" />' +
+        '  </div>' +
+        '</div>';
+
+      document.body.appendChild(modal);
+
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+      modal.querySelector('[data-groups-snapshot-close]').addEventListener('click', function() {
+        modal.style.display = 'none';
+      });
+
+      modal.querySelector('[data-groups-snapshot-download]').addEventListener('click', function() {
+        var img = modal.querySelector('[data-groups-snapshot-modal-img]');
+        if (!img || !img.src) return;
+
+        var filename = modal.getAttribute('data-filename') || 'groups.png';
+        if (img.src.indexOf('data:image') === 0) {
+          var a = document.createElement('a');
+          a.href = img.src;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          window.open(img.src, '_blank');
+        }
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          modal.style.display = 'none';
+        }
+      });
+
+      return modal;
+    }
+
+    function setModalImage(src, filename) {
+      var modal = ensureModal();
+      var modalImg = modal.querySelector('[data-groups-snapshot-modal-img]');
+      modalImg.src = src;
+      modal.setAttribute('data-current-src', src);
+      if (filename) modal.setAttribute('data-filename', filename);
+      modal.style.display = 'block';
+    }
+
+    document.addEventListener('click', async function(e) {
+      var btn = e.target.closest('.js-groups-export');
+      if (!btn) return;
+
+      if (btn.getAttribute('data-busy') === '1') return;
+      btn.setAttribute('data-busy', '1');
+
+      var targetId = btn.getAttribute('data-target');
+      if (!targetId) return;
+
+      var target = document.getElementById(targetId);
+      if (!target) return;
+
+      var filename = btn.getAttribute('data-filename') || 'groups.png';
+
+      var oldText = btn.innerText;
+      try {
+        btn.disabled = true;
+        showWaitOverlay();
+
+        var canvas = await html2canvas(target, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true
+        });
+        var dataUrl = canvas.toDataURL('image/png');
+        setModalImage(dataUrl, filename);
+      } catch (err) {
+        console.error(err);
+        alert('สร้างรูปไม่สำเร็จ');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = oldText;
+        btn.setAttribute('data-busy', '0');
+        hideWaitOverlay();
+      }
+    });
+  })();
+</script>
 
 <script>
   (function() {

@@ -174,12 +174,16 @@ class TournamentsController < ApplicationController
                           Match.none
                         end
 
-    # แสดงทุกคู่ของวันนั้น (ไม่แบ่งหน้า)
+    # แบ่งหน้า 10 คู่ต่อหน้า
     @next_day_matches_total = @next_day_matches.count
-    @day_per_page = @next_day_matches_total
-    @day_page = 1
-    @next_day_matches_total_pages = 1
-    @next_day_matches_page = @next_day_matches
+    @day_per_page = 10
+    @day_page = params[:day_page].to_i
+    @day_page = 1 if @day_page <= 0
+    @next_day_matches_total_pages = (@next_day_matches_total.to_f / @day_per_page).ceil
+    @next_day_matches_total_pages = 1 if @next_day_matches_total_pages <= 0
+    @day_page = @next_day_matches_total_pages if @day_page > @next_day_matches_total_pages
+    day_offset = (@day_page - 1) * @day_per_page
+    @next_day_matches_page = @next_day_matches.offset(day_offset).limit(@day_per_page)
 
     all_matches_base = Match.where(tournament_division_id: divisions)
     if show_mine
