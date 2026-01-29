@@ -506,8 +506,8 @@
           </div>
 
           <div class="modal fade" id="fixtureDownloadModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-xl">
-              <div class="modal-content">
+            <div class="modal-dialog modal-dialog-centered" style="max-width:fit-content;">
+              <div class="modal-content" style="width:auto;">
                 <div class="modal-header">
                   <div class="fw-bold">ดาวน์โหลดรูปตารางแข่ง</div>
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -537,17 +537,17 @@
                   </div>
                   
                   <div id="download-preview-container" style="max-height:60vh;overflow:auto;">
-                    <div id="download-preview-capture" style="background:#fff;padding:12px;">
-                      <table class="table table-sm align-middle mb-0" style="font-size:13px;">
+                    <div id="download-preview-capture" style="background:#fff;padding:16px;width:600px;">
+                      <table class="table table-sm align-middle mb-0" style="font-size:14px;width:100%;">
                         <thead style="background:#f1f5f9;">
                           <tr>
-                            <th style="width:55px;white-space:nowrap;padding:6px 4px;">คู่ที่</th>
-                            <th style="width:45px;padding:6px 4px;">เวลา</th>
-                            <th style="width:40px;padding:6px 4px;">รุ่น</th>
-                            <th style="width:60px;padding:6px 4px;">สาย/รอบ</th>
-                            <th style="padding:6px 8px;">ทีมเหย้า</th>
-                            <th style="padding:6px 8px;">ทีมเยือน</th>
-                            <th style="width:50px;text-align:center;padding:6px 4px;">สกอร์</th>
+                            <th style="white-space:nowrap;padding:8px 6px;">คู่ที่</th>
+                            <th style="white-space:nowrap;padding:8px 6px;">เวลา</th>
+                            <th style="white-space:nowrap;padding:8px 6px;">รุ่น</th>
+                            <th style="white-space:nowrap;padding:8px 6px;">สาย/รอบ</th>
+                            <th style="white-space:nowrap;padding:8px 8px;">ทีมเหย้า</th>
+                            <th style="white-space:nowrap;padding:8px 8px;">ทีมเยือน</th>
+                            <th style="white-space:nowrap;text-align:center;padding:8px 6px;">สกอร์</th>
                           </tr>
                         </thead>
                         <tbody id="download-preview-body">
@@ -566,27 +566,27 @@
                                                group_name.present? ? group_name : "-"
                                              end %>
                             <tr data-match-row="<%= idx + 1 %>">
-                              <td style="color:#0ea5e9;font-weight:600;white-space:nowrap;padding:5px 4px;">คู่ที่ <%= idx + 1 %></td>
-                              <td style="white-space:nowrap;padding:5px 4px;"><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %></td>
-                              <td style="white-space:nowrap;padding:5px 4px;"><%= match.tournament_division&.name || "-" %></td>
-                              <td style="white-space:nowrap;padding:5px 4px;"><%= round_title %></td>
-                              <td style="padding:5px 8px;">
-                                <div class="d-flex align-items-center" style="gap:6px;white-space:nowrap;">
+                              <td style="color:#0ea5e9;font-weight:600;white-space:nowrap;padding:10px 6px;">คู่ที่ <%= idx + 1 %></td>
+                              <td style="white-space:nowrap;padding:10px 6px;"><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %></td>
+                              <td style="white-space:nowrap;padding:10px 6px;"><%= match.tournament_division&.name || "-" %></td>
+                              <td style="white-space:nowrap;padding:10px 6px;"><%= round_title %></td>
+                              <td style="white-space:nowrap;padding:10px 8px;">
+                                <div class="d-flex align-items-center" style="gap:6px;">
                                   <% if match.home_team&.logo&.attached? %>
                                     <%= image_tag match.home_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;" %>
                                   <% end %>
                                   <span><%= match.home_name %></span>
                                 </div>
                               </td>
-                              <td style="padding:5px 8px;">
-                                <div class="d-flex align-items-center" style="gap:6px;white-space:nowrap;">
+                              <td style="white-space:nowrap;padding:10px 8px;">
+                                <div class="d-flex align-items-center" style="gap:6px;">
                                   <% if match.away_team&.logo&.attached? %>
                                     <%= image_tag match.away_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;" %>
                                   <% end %>
                                   <span><%= match.away_name %></span>
                                 </div>
                               </td>
-                              <td style="text-align:center;white-space:nowrap;padding:5px 4px;">
+                              <td style="text-align:center;white-space:nowrap;padding:10px 6px;">
                                 <% if match.home_score.present? && match.away_score.present? %>
                                   <strong><%= match.home_score %> - <%= match.away_score %></strong>
                                 <% else %>
