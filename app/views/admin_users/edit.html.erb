@@ -1,10 +1,11 @@
 <div class="container py-3">
   <div class="d-flex justify-content-between align-items-center" style="gap:10px;">
-    <h1 class="h5 mb-0">ตั้งค่า Package ผู้ใช้</h1>
+    <h1 class="h5 mb-0">ตั้งค่าผู้ใช้</h1>
     <%= link_to "กลับ", admin_users_path, class: "btn btn-sm btn-outline-secondary" %>
   </div>
 
   <div class="card shadow-sm mt-3">
+    <div class="card-header fw-bold">ข้อมูลผู้ใช้</div>
     <div class="card-body">
       <div class="mb-2" style="font-size:13px;">
         <div><strong>ID:</strong> <%= @user.id %></div>
@@ -29,8 +30,51 @@
           </div>
         </div>
 
-        <%= f.submit "บันทึก", class: "btn btn-success" %>
+        <%= f.submit "บันทึก Package", class: "btn btn-success" %>
       <% end %>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mt-3">
+    <div class="card-header fw-bold">ผู้จัดการรายการ (Tournament Staff)</div>
+    <div class="card-body">
+      <% managed_tournaments = @user.tournament_staffs.includes(:tournament).order(created_at: :desc) %>
+      <% if managed_tournaments.any? %>
+        <div class="mb-3">
+          <div class="text-muted mb-2" style="font-size:12px;">รายการที่ผู้ใช้นี้เป็นผู้จัดการ:</div>
+          <div class="d-flex flex-wrap" style="gap:8px;">
+            <% managed_tournaments.each do |staff| %>
+              <div class="d-flex align-items-center" style="background:#f1f5f9;padding:6px 10px;border-radius:6px;gap:8px;">
+                <span style="font-size:13px;"><%= staff.tournament.title %></span>
+                <%= button_to remove_tournament_staff_admin_user_path(@user, tournament_id: staff.tournament_id),
+                      method: :delete,
+                      class: "btn btn-sm btn-outline-danger",
+                      style: "padding:2px 6px;font-size:11px;line-height:1;",
+                      data: { confirm: "ต้องการลบ #{staff.tournament.title} ออกจากรายการที่จัดการ?" } do %>
+                  <svg viewBox="0 0 24 24" width="12" height="12"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="currentColor"/></svg>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% else %>
+        <div class="text-muted mb-3" style="font-size:13px;">ยังไม่มีรายการที่ผู้ใช้นี้เป็นผู้จัดการ</div>
+      <% end %>
+
+      <hr>
+
+      <div class="text-muted mb-2" style="font-size:12px;">เพิ่มรายการที่ต้องการให้ผู้ใช้นี้เป็นผู้จัดการ:</div>
+      <%= form_with url: add_tournament_staff_admin_user_path(@user), method: :post, local: true, class: "d-flex", style: "gap:8px;" do |f| %>
+        <%= f.select :tournament_id,
+              options_for_select(@tournaments.reject { |t| @managed_tournament_ids.include?(t.id) }.map { |t| ["##{t.id} - #{t.title}", t.id] }),
+              { include_blank: "-- เลือกรายการ --" },
+              class: "form-select",
+              style: "max-width:400px;" %>
+        <%= f.submit "เพิ่มผู้จัดการ", class: "btn btn-primary" %>
+      <% end %>
+      <div class="text-muted" style="font-size:11px;margin-top:6px;">
+        ผู้จัดการรายการสามารถจัดการ แบ่งสาย/โปรแกรม/คะแนน ของรายการนั้นๆ ได้
+      </div>
     </div>
   </div>
 </div>
