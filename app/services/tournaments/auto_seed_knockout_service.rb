@@ -22,6 +22,8 @@ module Tournaments
         seed_for_4_teams(groups, standings_by_group)
       when groups.size == 3 && @bracket_size == 4
         seed_for_4_teams_from_three_groups(groups, standings_by_group)
+      when groups.size == 3 && @bracket_size == 8
+        seed_for_8_teams_from_three_groups(groups, standings_by_group)
       when groups.size >= 2
         # กรณีอื่นๆ (16/32/64 ทีม หรือมากกว่า 3 สาย)
         # ใช้ generic seeding: เอาอันดับ 1,2,3... จากแต่ละสายมาจับคู่ข้ามสาย
@@ -97,84 +99,83 @@ module Tournaments
       standings_by_group
     end
 
-    # 3 กลุ่ม เข้ารอบ 4 ทีม: เอาแชมป์กลุ่มทั้ง 3 + รองแชมป์ที่ดีที่สุด 1 ทีม
-    # ถ้ามีรองแชมป์ที่ดีที่สุดมากกว่า 1 ทีมที่แต้ม/ผลต่าง/ประตูได้เท่ากันหมด ให้ฝ่ายจัดเลือกเอง
-    # return nil ถ้าสำเร็จ, หรือข้อความ error ถ้าตัดสินไม่ได้
+    # 3 กลุ่ม เข้ารอบ 4 ทีม: จัดอันดับตามผลงานที่ดีที่สุด
+    # หลักการ:
+    # - เอาแชมป์กลุ่มทั้ง 3 + รองแชมป์ที่ดีที่สุด 1 ทีม = 4 ทีม
+    # - จัดอันดับ 1-4 ตามผลงาน (แต้ม > ผลต่างประตู > ประตูได้)
+    # - จับคู่: อันดับ 1 vs อันดับ 4, อันดับ 2 vs อันดับ 3
+    # - **สำคัญ:** ทีมจากสายเดียวกันต้องไม่เจอกันในรอบแรก
     def seed_for_4_teams_from_three_groups(groups, standings_by_group)
       return if groups.any? { |g| standings_by_group[g.id].blank? }
 
-      # เรียงกลุ่มตามชื่อเพื่อให้ A,B,C มีลำดับชัดเจน
       ordered_groups = groups.sort_by(&:name)
 
-      # แชมป์กลุ่ม (อันดับ 1 ของแต่ละกลุ่ม)
-      group_winners = []
+      # รวบรวมแชมป์กลุ่มทั้ง 3 สาย พร้อมสถิติ
+      all_qualifiers = []
 
       ordered_groups.each do |g|
         standings = standings_by_group[g.id]
         next if standings.blank?
 
-        # หาอันดับ 1 จากแต้ม > ผลต่างประตู > ประตูได้
-        decorated = standings.map do |team_id, s|
-          goal_diff = s[:gf] - s[:ga]
-          [team_id, s[:pts], goal_diff, s[:gf]]
-        end
-
-        best = decorated.max_by { |_, pts, gd, gf| [pts, gd, gf] }
-        best_id, best_pts, best_gd, best_gf = best
-
-        # ตรวจว่ามีหลายทีมในสายนี้ที่สถิติแต้ม/ผลต่าง/ประตูได้เท่ากันหมดหรือไม่
-        tied_best = decorated.select { |_, pts, gd, gf| [pts, gd, gf] == [best_pts, best_gd, best_gf] }
-        if tied_best.size > 1
-          # แชมป์กลุ่มตัดสินไม่ได้ ปล่อยให้ผู้จัดเลือกเองในหน้า knockout
-          group_winners << nil
-        else
-          group_winners << best_id
-        end
+        # อันดับ 1 ของสาย
+        team_id, stats = standings[0]
+        all_qualifiers << { team_id: team_id, stats: stats, rank: 1, group: g.name }
       end
 
-      # รวบรวมรองแชมป์ (อันดับ 2) เป็น candidate
+      # เพิ่มรองแชมป์ที่ดีที่สุด 1 ทีม
       runner_up_candidates = []
-
       ordered_groups.each do |g|
         standings = standings_by_group[g.id]
         next if standings.size < 2
-        team_id, stats = standings[1] # อันดับ 2
-        runner_up_candidates << [team_id, stats]
+        team_id, stats = standings[1]
+        runner_up_candidates << { team_id: team_id, stats: stats, rank: 2, group: g.name }
       end
 
-      return if runner_up_candidates.empty?
-
-      # หารองแชมป์ที่ดีที่สุด: แต้ม > ผลต่างประตู > ประตูได้ > ชื่อทีม
-      decorated = runner_up_candidates.map do |team_id, s|
-        team = Team.find(team_id)
-        goal_diff = s[:gf] - s[:ga]
-        [team_id, s[:pts], goal_diff, s[:gf], team.name]
+      # หารองแชมป์ที่ดีที่สุด
+      if runner_up_candidates.any?
+        best_runner_up = runner_up_candidates.max_by do |q|
+          s = q[:stats]
+          gd = s[:gf] - s[:ga]
+          [s[:pts], gd, s[:gf]]
+        end
+        all_qualifiers << best_runner_up if best_runner_up
       end
 
-      # หาค่าสูงสุด
-      max_vals = decorated.max_by { |_, pts, gd, gf, name| [pts, gd, gf, name] }
-      best_team_id, max_pts, max_gd, max_gf, max_name = max_vals
+      return if all_qualifiers.size < 4
 
-      # ดูว่ามีกี่ทีมที่มีค่านี้เท่ากันหมด
-      tied = decorated.select { |_, pts, gd, gf, name| [pts, gd, gf, name] == [max_pts, max_gd, max_gf, max_name] }
-
-      if tied.size > 1
-        # รองแชมป์ที่ดีที่สุดตัดสินไม่ได้ ปล่อยให้ผู้จัดเลือกทีมที่ 4 เอง
-        best_runner_up_id = nil
-      else
-        best_runner_up_id = best_team_id
+      # จัดอันดับ 1-4 ตามผลงาน (แต้ม > ผลต่างประตู > ประตูได้)
+      ranked_qualifiers = all_qualifiers.sort_by do |q|
+        s = q[:stats]
+        gd = s[:gf] - s[:ga]
+        [-s[:pts], -gd, -s[:gf]] # เรียงจากมากไปน้อย
       end
 
-      # จัดรอบ 4 ทีม: SF1 = A1 vs รองแชมป์ที่ดีที่สุด, SF2 = B1 vs C1
-      a_top, b_top, c_top = group_winners
+      rank1 = ranked_qualifiers[0]
+      rank2 = ranked_qualifiers[1]
+      rank3 = ranked_qualifiers[2]
+      rank4 = ranked_qualifiers[3]
 
       sf_matches = @division.matches.knockout.where(round_number: 1).order(:position, :id).to_a
       return unless sf_matches.size == 2
 
-      assignments = [
-        [a_top, best_runner_up_id],
-        [b_top, c_top]
-      ]
+      # จับคู่โดยป้องกันไม่ให้ทีมจากสายเดียวกันเจอกัน
+      # Default: SF1 = R1 vs R4, SF2 = R2 vs R3
+      # ถ้า R1 กับ R4 มาจากสายเดียวกัน → สลับเป็น R1 vs R3, R2 vs R4
+      # ถ้า R2 กับ R3 มาจากสายเดียวกัน → สลับเป็น R1 vs R3, R2 vs R4
+      
+      if rank1[:group] == rank4[:group] || rank2[:group] == rank3[:group]
+        # สลับคู่: R1 vs R3, R2 vs R4
+        assignments = [
+          [rank1[:team_id], rank3[:team_id]],
+          [rank2[:team_id], rank4[:team_id]]
+        ]
+      else
+        # Default: R1 vs R4, R2 vs R3
+        assignments = [
+          [rank1[:team_id], rank4[:team_id]],
+          [rank2[:team_id], rank3[:team_id]]
+        ]
+      end
 
       sf_matches.each_with_index do |match, idx|
         home_id, away_id = assignments[idx]
@@ -183,6 +184,144 @@ module Tournaments
         attrs[:away_team_id] = away_id if away_id.present?
         match.update!(attrs) if attrs.any?
       end
+    end
+
+    # 3 กลุ่ม เข้ารอบ 8 ทีม: จัดอันดับตามผลงานที่ดีที่สุด
+    # หลักการ:
+    # - เอาอันดับ 1-2 จากทุกสาย (6 ทีม) + รองแชมป์ที่ดีที่สุด 2 ทีม (BP) = 8 ทีม
+    # - จัดอันดับ 1-8 ตามผลงาน (แต้ม > ผลต่างประตู > ประตูได้)
+    # - จับคู่: R1 vs R8, R2 vs R7, R3 vs R6, R4 vs R5
+    # - **สำคัญ:** ทีมจากสายเดียวกันต้องไม่เจอกันในรอบแรก
+    def seed_for_8_teams_from_three_groups(groups, standings_by_group)
+      return if groups.any? { |g| standings_by_group[g.id].blank? }
+
+      ordered_groups = groups.sort_by(&:name)
+
+      # รวบรวมอันดับ 1-2 จากทุกสาย พร้อมสถิติ
+      all_qualifiers = []
+
+      ordered_groups.each do |g|
+        standings = standings_by_group[g.id]
+        next if standings.blank?
+
+        # อันดับ 1 และ 2 ของสาย
+        [0, 1].each do |rank_idx|
+          next if rank_idx >= standings.size
+          team_id, stats = standings[rank_idx]
+          all_qualifiers << { team_id: team_id, stats: stats, rank: rank_idx + 1, group: g.name }
+        end
+      end
+
+      # เพิ่ม BP (อันดับ 3 ที่ดีที่สุด) จนครบ 8 ทีม
+      bp_needed = 8 - all_qualifiers.size
+      if bp_needed > 0
+        bp_candidates = []
+        ordered_groups.each do |g|
+          standings = standings_by_group[g.id]
+          next if standings.size < 3
+          team_id, stats = standings[2] # อันดับ 3
+          played = [stats[:played], 1].max
+          bp_candidates << { 
+            team_id: team_id, 
+            stats: stats, 
+            rank: 3, 
+            group: g.name,
+            pts_avg: stats[:pts].to_f / played,
+            gd_avg: (stats[:gf] - stats[:ga]).to_f / played,
+            gf_avg: stats[:gf].to_f / played
+          }
+        end
+
+        # เรียง BP ตามค่าเฉลี่ย
+        bp_candidates.sort_by! { |c| [-c[:pts_avg], -c[:gd_avg], -c[:gf_avg]] }
+        bp_candidates.first(bp_needed).each do |bp|
+          all_qualifiers << { team_id: bp[:team_id], stats: bp[:stats], rank: 3, group: bp[:group] }
+        end
+      end
+
+      return if all_qualifiers.size < 8
+
+      # จัดอันดับ 1-8 ตามผลงาน (แต้ม > ผลต่างประตู > ประตูได้)
+      # ใช้ค่าเฉลี่ยต่อนัดเพื่อความยุติธรรม
+      ranked_qualifiers = all_qualifiers.sort_by do |q|
+        s = q[:stats]
+        played = [s[:played], 1].max
+        pts_avg = s[:pts].to_f / played
+        gd_avg = (s[:gf] - s[:ga]).to_f / played
+        gf_avg = s[:gf].to_f / played
+        [-pts_avg, -gd_avg, -gf_avg]
+      end
+
+      qf_matches = @division.matches.knockout.where(round_number: 1).order(:position, :id).to_a
+      return unless qf_matches.size == 4
+
+      # จับคู่โดยป้องกันไม่ให้ทีมจากสายเดียวกันเจอกัน
+      # Default: R1 vs R8, R2 vs R7, R3 vs R6, R4 vs R5
+      assignments = pair_without_same_group(ranked_qualifiers)
+
+      qf_matches.each_with_index do |match, idx|
+        next if idx >= assignments.size
+        home_id, away_id = assignments[idx]
+        attrs = {}
+        attrs[:home_team_id] = home_id if home_id.present?
+        attrs[:away_team_id] = away_id if away_id.present?
+        match.update!(attrs) if attrs.any?
+      end
+    end
+
+    # จับคู่ 8 ทีมโดยไม่ให้ทีมจากสายเดียวกันเจอกัน
+    # Input: ranked_qualifiers (sorted by performance, best first)
+    # Output: array of [home_team_id, away_team_id] pairs
+    def pair_without_same_group(ranked)
+      # Default pairing: R1 vs R8, R2 vs R7, R3 vs R6, R4 vs R5
+      default_pairs = [
+        [ranked[0], ranked[7]],
+        [ranked[1], ranked[6]],
+        [ranked[2], ranked[5]],
+        [ranked[3], ranked[4]]
+      ]
+
+      # ตรวจสอบว่ามีคู่ไหนที่มาจากสายเดียวกัน
+      conflicts = []
+      default_pairs.each_with_index do |pair, idx|
+        if pair[0][:group] == pair[1][:group]
+          conflicts << idx
+        end
+      end
+
+      # ถ้าไม่มี conflict ใช้ default
+      if conflicts.empty?
+        return default_pairs.map { |p| [p[0][:team_id], p[1][:team_id]] }
+      end
+
+      # มี conflict: ลองสลับคู่เพื่อแก้ปัญหา
+      # ใช้ greedy approach: สลับ opponent ระหว่างคู่ที่ conflict
+      result_pairs = default_pairs.dup
+
+      conflicts.each do |conflict_idx|
+        # หาคู่อื่นที่สามารถสลับได้
+        (0...4).each do |other_idx|
+          next if other_idx == conflict_idx
+          
+          # ลองสลับ opponent
+          pair_a = result_pairs[conflict_idx]
+          pair_b = result_pairs[other_idx]
+          
+          # สลับ: A1 vs B2, B1 vs A2
+          new_pair_a = [pair_a[0], pair_b[1]]
+          new_pair_b = [pair_b[0], pair_a[1]]
+          
+          # ตรวจว่าสลับแล้วไม่ conflict
+          if new_pair_a[0][:group] != new_pair_a[1][:group] && 
+             new_pair_b[0][:group] != new_pair_b[1][:group]
+            result_pairs[conflict_idx] = new_pair_a
+            result_pairs[other_idx] = new_pair_b
+            break
+          end
+        end
+      end
+
+      result_pairs.map { |p| [p[0][:team_id], p[1][:team_id]] }
     end
 
     # Generic seeding สำหรับทุกขนาด bracket และจำนวนสาย

@@ -79,6 +79,9 @@ Rails.application.routes.draw do
       patch :update_knockout_teams
       patch :update_points
       patch :update_scores
+      post :add_team_to_group
+      post :add_match
+      post :resolve_knockout_slots
     end
   end
 

@@ -15,9 +15,21 @@
       </div>
 
       <div class="card shadow-sm mb-3">
-        <div class="card-header d-flex align-items-center justify-content-between" style="gap:10px;">
-          <div class="fw-bold">จัดการตารางแข่ง</div>
-          <span title="ตั้งค่าเวลาแข่งแบบชุด" data-bs-toggle="tooltip" data-bs-placement="top" style="display:inline-block;">
+        <div class="card-header">
+          <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:10px;">
+            <div class="fw-bold">จัดการตารางแข่ง</div>
+            <div class="d-flex flex-wrap" style="gap:8px;">
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addMatchModal"
+                    aria-label="เพิ่มคู่แข่งขัน"
+                    style="line-height:1;padding:6px 10px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+              </svg>
+              <span style="margin-left:4px;">เพิ่มคู่แข่งขัน</span>
+            </button>
             <button type="button"
                     class="btn btn-sm btn-outline-secondary"
                     data-bs-toggle="modal"
@@ -29,7 +41,32 @@
               </svg>
               <span style="margin-left:6px;">ตั้งเวลาเป็นชุด</span>
             </button>
-          </span>
+            </div>
+          </div>
+          <% total_matches = @all_matches.size %>
+          <% scheduled_matches = @all_matches.count { |m| m.kickoff_at.present? } %>
+          <% unscheduled_matches = total_matches - scheduled_matches %>
+          <div class="d-flex align-items-center flex-wrap mt-2 pt-2 border-top" style="gap:12px;">
+            <div class="d-flex align-items-center" style="gap:6px;">
+              <span class="badge bg-success"><%= scheduled_matches %></span>
+              <span style="font-size:12px;color:#546e7a;">จัดเวลาแล้ว</span>
+            </div>
+            <div class="d-flex align-items-center" style="gap:6px;">
+              <span class="badge bg-warning text-dark"><%= unscheduled_matches %></span>
+              <span style="font-size:12px;color:#546e7a;">ยังไม่จัดเวลา</span>
+            </div>
+            <div class="ms-auto d-flex align-items-center" style="gap:8px;">
+              <span style="font-size:12px;color:#78909c;">แสดง:</span>
+              <div class="btn-group btn-group-sm" role="group">
+                <input type="radio" class="btn-check" name="filter-schedule" id="filter-all" value="all" checked>
+                <label class="btn btn-outline-secondary" for="filter-all" style="font-size:11px;">ทั้งหมด</label>
+                <input type="radio" class="btn-check" name="filter-schedule" id="filter-scheduled" value="scheduled">
+                <label class="btn btn-outline-secondary" for="filter-scheduled" style="font-size:11px;">จัดแล้ว</label>
+                <input type="radio" class="btn-check" name="filter-schedule" id="filter-unscheduled" value="unscheduled">
+                <label class="btn btn-outline-secondary" for="filter-unscheduled" style="font-size:11px;">ยังไม่จัด</label>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="card-body">
           <% if @divisions.any? && @all_matches.any? %>
@@ -65,23 +102,26 @@
                 <% end %>
 
                 <% sorted_group_keys = matches_by_group.keys.sort_by do |group_key| %>
-                  <% if group_key.start_with?("KO_") %>
-                    <% round_code = group_key.sub("KO_", "") %>
-                    <% case round_code
-                       when "R64" then 1
-                       when "R32" then 2
-                       when "R16" then 3
-                       when "QF"  then 4
-                       when "SF"  then 5
-                       when "FINAL" then 6
-                       when "3RD" then 7
-                       else 8
+                  <% if group_key.to_s.start_with?("KO_") %>
+                    <% round_code = group_key.to_s.sub("KO_", "") %>
+                    <% ko_order = case round_code
+                       when "R64" then 10
+                       when "R32" then 11
+                       when "R16" then 12
+                       when "QF"  then 13
+                       when "SF"  then 14
+                       when "FINAL" then 15
+                       when "3RD" then 16
+                       else 17
                        end %>
+                    <% [1, ko_order, group_key.to_s] %>
                   <% else %>
-                    <% [0, group_key] %>
+                    <% [0, 0, group_key.to_s] %>
                   <% end %>
                 <% end %>
 
+                <%= form_with url: update_scores_tournament_path(@tournament), method: :patch, local: true do |f| %>
+                <%= hidden_field_tag :from_manage_schedule, "1" %>
                 <% sorted_group_keys.each do |group_key| %>
                   <% matches = matches_by_group[group_key] || [] %>
                   <% next if matches.empty? %>
@@ -109,34 +149,35 @@
                         <thead class="table-light">
                           <tr>
                             <th scope="col" style="width:50px;">คู่ที่</th>
-                            <th scope="col" style="width:80px;">วัน/เวลา</th>
-                            <th scope="col" style="width:50px;">สนาม</th>
+                            <th scope="col" style="width:140px;">วัน/เวลา</th>
+                            <th scope="col" style="width:70px;">สนาม</th>
                             <th scope="col">ทีมเหย้า</th>
                             <th scope="col">ทีมเยือน</th>
-                            <th scope="col" style="width:80px;" class="text-center">สกอร์</th>
+                            <th scope="col" style="width:120px;" class="text-center">สกอร์</th>
                           </tr>
                         </thead>
                         <tbody>
                           <% matches.each_with_index do |match, midx| %>
-                            <tr>
+                            <% is_scheduled = match.kickoff_at.present? %>
+                            <tr class="match-row <%= is_scheduled ? 'scheduled' : 'unscheduled' %>" 
+                                style="<%= is_scheduled ? 'background-color:#e8f5e9;' : 'background-color:#fff8e1;' %>">
                               <td>
                                 <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" do %>
                                   คู่ที่ <%= match.position || (midx + 1) %>
                                 <% end %>
                               </td>
                               <td style="white-space:nowrap;">
-                                <% if match.kickoff_at.present? %>
-                                  <%= match.kickoff_at.strftime("%d/%m %H:%M") %>
-                                <% else %>
-                                  <span class="text-muted">-</span>
-                                <% end %>
+                                <%= datetime_local_field_tag "matches[#{match.id}][kickoff_at]",
+                                      (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
+                                      class: "form-control form-control-sm",
+                                      style: "font-size:11px;padding:2px 4px;" %>
                               </td>
                               <td>
-                                <% if match.pitch_no.present? && match.pitch_no > 0 %>
-                                  สนาม <%= match.pitch_no %>
-                                <% else %>
-                                  <span class="text-muted">-</span>
-                                <% end %>
+                                <%= number_field_tag "matches[#{match.id}][pitch_no]",
+                                      match.pitch_no,
+                                      class: "form-control form-control-sm",
+                                      style: "width:50px;font-size:11px;padding:2px 4px;",
+                                      min: 0, max: 99 %>
                               </td>
                               <td>
                                 <div class="d-flex align-items-center" style="gap:6px;">
@@ -155,11 +196,36 @@
                                 </div>
                               </td>
                               <td class="text-center">
-                                <% if match.home_score.present? && match.away_score.present? %>
-                                  <strong><%= match.home_score %> - <%= match.away_score %></strong>
-                                <% else %>
-                                  <span class="text-muted">-</span>
-                                <% end %>
+                                <div class="d-flex align-items-center justify-content-center" style="gap:4px;">
+                                  <%= select_tag "matches[#{match.id}][home_score]",
+                                        options_for_select((0..20).to_a, match.home_score),
+                                        include_blank: "-",
+                                        class: "form-select form-select-sm js-score-select",
+                                        style: "width:45px;font-size:11px;padding:2px;",
+                                        data: { match_id: match.id, side: "home" } %>
+                                  <span>-</span>
+                                  <%= select_tag "matches[#{match.id}][away_score]",
+                                        options_for_select((0..20).to_a, match.away_score),
+                                        include_blank: "-",
+                                        class: "form-select form-select-sm js-score-select",
+                                        style: "width:45px;font-size:11px;padding:2px;",
+                                        data: { match_id: match.id, side: "away" } %>
+                                </div>
+                                <% # แสดง dropdown จุดโทษถ้าสกอร์เสมอ %>
+                                <% is_draw = match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
+                                <div class="mt-1 js-penalty-container" 
+                                     id="penalty-container-<%= match.id %>"
+                                     data-match-id="<%= match.id %>"
+                                     style="<%= is_draw ? '' : 'display:none;' %>">
+                                  <%= select_tag "matches[#{match.id}][penalty_winner_side]",
+                                        options_for_select([
+                                          ["ไม่มียิงจุดโทษ", ""],
+                                          ["#{match.home_name.presence || 'เหย้า'} ชนะจุดโทษ", "home"],
+                                          ["#{match.away_name.presence || 'เยือน'} ชนะจุดโทษ", "away"]
+                                        ], match.penalty_winner_side),
+                                        class: "form-select form-select-sm",
+                                        style: "font-size:10px;padding:2px 4px;" %>
+                                </div>
                               </td>
                             </tr>
                           <% end %>
@@ -167,6 +233,16 @@
                       </table>
                     </div>
                   </div>
+                <% end %>
+
+                <div class="text-end mt-3 mb-2">
+                  <button type="submit" class="btn btn-sm btn-primary">
+                    <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                      <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" fill="currentColor"/>
+                    </svg>
+                    บันทึกการเปลี่ยนแปลง
+                  </button>
+                </div>
                 <% end %>
               </div>
             <% end %>
@@ -555,4 +631,287 @@
     document.addEventListener('turbo:load', initBulkScheduleQueue);
     document.addEventListener('DOMContentLoaded', initBulkScheduleQueue);
   })();
+</script>
+
+<% # Modal for adding new match %>
+<div class="modal fade" id="addMatchModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="fw-bold">เพิ่มคู่แข่งขัน</div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <%= form_with url: add_match_tournament_path(@tournament), method: :post, local: true, id: "addMatchForm" do |f| %>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:13px;">รุ่น <span class="text-danger">*</span></label>
+              <%= f.select :division_id,
+                    options_for_select(@divisions.map { |d| [d.name, d.id] }),
+                    { include_blank: "-- เลือกรุ่น --" },
+                    class: "form-select", id: "addMatch_division", required: true %>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:13px;">ประเภท <span class="text-danger">*</span></label>
+              <%= f.select :stage,
+                    options_for_select([["รอบแบ่งกลุ่ม", "group_stage"], ["รอบน็อคเอาท์", "knockout"]]),
+                    {},
+                    class: "form-select", id: "addMatch_stage" %>
+            </div>
+            <div class="col-md-6" id="addMatch_groupContainer">
+              <label class="form-label" style="font-size:13px;">สาย</label>
+              <select name="group_id" class="form-select" id="addMatch_group">
+                <option value="">-- เลือกสาย --</option>
+              </select>
+            </div>
+            <div class="col-md-6" id="addMatch_roundContainer" style="display:none;">
+              <label class="form-label" style="font-size:13px;">รอบ</label>
+              <%= f.select :round_label,
+                    options_for_select([["รอบ 64 ทีม", "R64"], ["รอบ 32 ทีม", "R32"], ["รอบ 16 ทีม", "R16"], ["รอบ 8 ทีม", "QF"], ["รอบ 4 ทีม", "SF"], ["ชิงชนะเลิศ", "FINAL"], ["ชิงที่ 3", "3RD"]]),
+                    { include_blank: "-- เลือกรอบ --" },
+                    class: "form-select", id: "addMatch_round" %>
+            </div>
+            <div class="col-12"><hr class="my-1"></div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:13px;">ทีมเหย้า</label>
+              <select name="home_team_id" class="form-select" id="addMatch_homeTeam">
+                <option value="">-- เลือกทีม --</option>
+              </select>
+              <input type="text" name="home_slot_label" class="form-control form-control-sm mt-1" placeholder="หรือใส่ Slot เช่น 1A, W1" style="font-size:12px;">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:13px;">ทีมเยือน</label>
+              <select name="away_team_id" class="form-select" id="addMatch_awayTeam">
+                <option value="">-- เลือกทีม --</option>
+              </select>
+              <input type="text" name="away_slot_label" class="form-control form-control-sm mt-1" placeholder="หรือใส่ Slot เช่น 2B, L1" style="font-size:12px;">
+            </div>
+            <div class="col-12"><hr class="my-1"></div>
+            <div class="col-md-4">
+              <label class="form-label" style="font-size:13px;">วันที่แข่ง</label>
+              <input type="date" name="kickoff_date" class="form-control" id="addMatch_date">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" style="font-size:13px;">เวลา</label>
+              <input type="time" name="kickoff_time" class="form-control" id="addMatch_time">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" style="font-size:13px;">สนาม</label>
+              <input type="text" name="pitch_no" class="form-control" placeholder="เช่น 1, A">
+            </div>
+            <div class="col-12">
+              <div class="form-check mt-2">
+                <input type="checkbox" name="auto_shift_time" value="1" class="form-check-input" id="addMatch_autoShift">
+                <label class="form-check-label" for="addMatch_autoShift" style="font-size:12px;">
+                  เลื่อนเวลาคู่อื่นอัตโนมัติ (ถ้าเวลาซ้ำ)
+                </label>
+              </div>
+              <div id="addMatch_shiftOptions" style="display:none;margin-top:8px;padding:10px;background:#f8f9fa;border-radius:6px;">
+                <label class="form-label" style="font-size:12px;">ระยะเวลาต่อคู่ (นาที)</label>
+                <input type="number" name="match_duration" value="30" min="10" max="120" class="form-control form-control-sm" style="width:100px;">
+                <div class="text-muted" style="font-size:11px;margin-top:4px;">คู่ที่เวลา >= เวลาที่เลือก จะถูกเลื่อนออกไป</div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mt-3" style="gap:8px;">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+            <button type="submit" class="btn btn-sm btn-primary">เพิ่มคู่แข่งขัน</button>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var divisionsData = <%= raw @divisions.map { |d| 
+    # Get teams by group from team_registrations AND matches
+    teams_by_group = {}
+    d.groups.each do |g|
+      # Get teams from team_registrations with this group
+      reg_team_ids = d.team_registrations.confirmed_for_competition.where(group_id: g.id).pluck(:team_id).compact
+      # Also get teams from matches in this group (for backward compatibility)
+      match_team_ids = d.matches.group_stage.where(group_id: g.id).pluck(:home_team_id, :away_team_id).flatten.compact.uniq
+      # Combine both
+      all_team_ids = (reg_team_ids + match_team_ids).uniq
+      teams = Team.where(id: all_team_ids).pluck(:id, :name).map { |id, name| { id: id, name: name } }
+      teams_by_group[g.id] = teams
+    end
+    
+    { 
+      id: d.id, 
+      name: d.name,
+      groups: d.groups.order(:name).map { |g| { id: g.id, name: g.name } },
+      teams: d.team_registrations.confirmed_for_competition.includes(:team).map { |r| { id: r.team_id, name: r.team&.name || r.team_name } },
+      teams_by_group: teams_by_group
+    } 
+  }.to_json %>;
+
+  function initAddMatchModal() {
+    var divSelect = document.getElementById('addMatch_division');
+    var stageSelect = document.getElementById('addMatch_stage');
+    var groupSelect = document.getElementById('addMatch_group');
+    var groupContainer = document.getElementById('addMatch_groupContainer');
+    var roundContainer = document.getElementById('addMatch_roundContainer');
+    var homeTeamSelect = document.getElementById('addMatch_homeTeam');
+    var awayTeamSelect = document.getElementById('addMatch_awayTeam');
+
+    if (!divSelect) return;
+
+    function updateGroups() {
+      var divId = parseInt(divSelect.value, 10);
+      var div = divisionsData.find(function(d) { return d.id === divId; });
+      
+      groupSelect.innerHTML = '<option value="">-- เลือกสาย --</option>';
+      if (div && div.groups) {
+        div.groups.forEach(function(g) {
+          var opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = 'สาย ' + g.name;
+          groupSelect.appendChild(opt);
+        });
+      }
+    }
+
+    function updateTeams() {
+      var divId = parseInt(divSelect.value, 10);
+      var div = divisionsData.find(function(d) { return d.id === divId; });
+      var groupId = parseInt(groupSelect.value, 10);
+      var stage = stageSelect.value;
+      
+      homeTeamSelect.innerHTML = '<option value="">-- เลือกทีม --</option>';
+      awayTeamSelect.innerHTML = '<option value="">-- เลือกทีม --</option>';
+      
+      if (!div) return;
+      
+      var teams = [];
+      
+      // If group stage and group selected, filter by group
+      if (stage === 'group_stage' && groupId && div.teams_by_group && div.teams_by_group[groupId]) {
+        teams = div.teams_by_group[groupId];
+      } else {
+        // Otherwise show all teams in division
+        teams = div.teams || [];
+      }
+      
+      teams.forEach(function(t) {
+        var opt1 = document.createElement('option');
+        opt1.value = t.id;
+        opt1.textContent = t.name;
+        homeTeamSelect.appendChild(opt1);
+        
+        var opt2 = document.createElement('option');
+        opt2.value = t.id;
+        opt2.textContent = t.name;
+        awayTeamSelect.appendChild(opt2);
+      });
+    }
+
+    function updateStageUI() {
+      var stage = stageSelect.value;
+      if (stage === 'knockout') {
+        groupContainer.style.display = 'none';
+        roundContainer.style.display = 'block';
+      } else {
+        groupContainer.style.display = 'block';
+        roundContainer.style.display = 'none';
+      }
+    }
+
+    divSelect.addEventListener('change', function() {
+      updateGroups();
+      updateTeams();
+    });
+
+    groupSelect.addEventListener('change', function() {
+      updateTeams();
+    });
+
+    stageSelect.addEventListener('change', function() {
+      updateStageUI();
+      updateTeams();
+    });
+
+    // Auto-shift checkbox toggle
+    var autoShiftCheckbox = document.getElementById('addMatch_autoShift');
+    var shiftOptions = document.getElementById('addMatch_shiftOptions');
+    if (autoShiftCheckbox && shiftOptions) {
+      autoShiftCheckbox.addEventListener('change', function() {
+        shiftOptions.style.display = this.checked ? 'block' : 'none';
+      });
+    }
+
+    // Initialize
+    updateGroups();
+    updateTeams();
+    updateStageUI();
+  }
+
+  document.addEventListener('turbo:load', initAddMatchModal);
+  document.addEventListener('DOMContentLoaded', initAddMatchModal);
+})();
+
+// Filter scheduled/unscheduled matches
+(function() {
+  function initScheduleFilter() {
+    var filterRadios = document.querySelectorAll('input[name="filter-schedule"]');
+    var matchRows = document.querySelectorAll('.match-row');
+    
+    if (!filterRadios.length || !matchRows.length) return;
+    
+    filterRadios.forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        var filterValue = this.value;
+        
+        matchRows.forEach(function(row) {
+          if (filterValue === 'all') {
+            row.style.display = '';
+          } else if (filterValue === 'scheduled') {
+            row.style.display = row.classList.contains('scheduled') ? '' : 'none';
+          } else if (filterValue === 'unscheduled') {
+            row.style.display = row.classList.contains('unscheduled') ? '' : 'none';
+          }
+        });
+      });
+    });
+  }
+  
+  document.addEventListener('turbo:load', initScheduleFilter);
+  document.addEventListener('DOMContentLoaded', initScheduleFilter);
+})();
+
+// Show/hide penalty dropdown when score is a draw
+(function() {
+  function initPenaltyToggle() {
+    var scoreSelects = document.querySelectorAll('.js-score-select');
+    
+    scoreSelects.forEach(function(select) {
+      select.addEventListener('change', function() {
+        var matchId = this.dataset.matchId;
+        var penaltyContainer = document.getElementById('penalty-container-' + matchId);
+        if (!penaltyContainer) return;
+        
+        // Find both score selects for this match
+        var homeSelect = document.querySelector('.js-score-select[data-match-id="' + matchId + '"][data-side="home"]');
+        var awaySelect = document.querySelector('.js-score-select[data-match-id="' + matchId + '"][data-side="away"]');
+        
+        if (!homeSelect || !awaySelect) return;
+        
+        var homeScore = homeSelect.value;
+        var awayScore = awaySelect.value;
+        
+        // Show penalty dropdown only if both scores are filled and equal
+        if (homeScore !== '' && awayScore !== '' && homeScore === awayScore) {
+          penaltyContainer.style.display = 'block';
+        } else {
+          penaltyContainer.style.display = 'none';
+        }
+      });
+    });
+  }
+  
+  document.addEventListener('turbo:load', initPenaltyToggle);
+  document.addEventListener('DOMContentLoaded', initPenaltyToggle);
+})();
 </script>

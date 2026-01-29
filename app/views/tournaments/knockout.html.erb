@@ -72,7 +72,14 @@
                           <tbody>
                             <% round_matches.each_with_index do |match, idx| %>
                               <tr>
-                                <td class="text-center" style="font-size:12px;white-space:nowrap;">คู่ที่ <%= idx + 1 %></td>
+                                <td class="text-center" style="font-size:12px;white-space:nowrap;">
+                                  คู่ที่ <%= idx + 1 %>
+                                  <% if match.home_slot_label.present? || match.away_slot_label.present? %>
+                                    <div style="font-size:10px;color:#0ea5e9;font-weight:600;">
+                                      <%= match.home_slot_label || "?" %> vs <%= match.away_slot_label || "?" %>
+                                    </div>
+                                  <% end %>
+                                </td>
                                 <td>
                                   <div class="d-flex align-items-center" style="gap:6px;">
                                     <% if match.home_team&.logo&.attached? %>
@@ -81,7 +88,7 @@
                                                     style: "width:24px;height:24px;object-fit:cover;" %>
                                     <% end %>
                                     <select name="matches[<%= match.id %>][home_team_id]" class="form-select form-select-sm" style="max-width:220px;">
-                                      <option value="">- เลือกทีมฝั่งซ้าย -</option>
+                                      <option value=""><%= match.home_slot_label.present? ? "#{match.home_slot_label} - เลือกทีม" : "- เลือกทีมฝั่งซ้าย -" %></option>
                                       <% division_teams.each do |team| %>
                                         <option value="<%= team.id %>" <%= 'selected' if match.home_team_id == team.id %>>
                                           <%= team.name %>
@@ -98,7 +105,7 @@
                                                     style: "width:24px;height:24px;object-fit:cover;" %>
                                     <% end %>
                                     <select name="matches[<%= match.id %>][away_team_id]" class="form-select form-select-sm" style="max-width:220px;">
-                                      <option value="">- เลือกทีมฝั่งขวา -</option>
+                                      <option value=""><%= match.away_slot_label.present? ? "#{match.away_slot_label} - เลือกทีม" : "- เลือกทีมฝั่งขวา -" %></option>
                                       <% division_teams.each do |team| %>
                                         <option value="<%= team.id %>" <%= 'selected' if match.away_team_id == team.id %>>
                                           <%= team.name %>
@@ -119,7 +126,20 @@
                           </tbody>
                         </table>
                       </div>
-                      <div class="text-end" style="font-size:12px;">
+                      <div class="d-flex justify-content-between align-items-center" style="font-size:12px;">
+                        <div>
+                          <% if round_number == 1 %>
+                            <button type="button" class="btn btn-sm btn-outline-success js-auto-resolve-btn" 
+                                    data-division-id="<%= div.id %>"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#autoResolveModal_<%= div.id %>">
+                              <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                              </svg>
+                              Auto-resolve จากตารางคะแนน
+                            </button>
+                          <% end %>
+                        </div>
                         <button type="submit" class="btn btn-sm btn-outline-primary">บันทึกทีมในรอบนี้</button>
                       </div>
                     <% end %>
@@ -175,6 +195,90 @@
               <% end %>
             <% else %>
               <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการสร้างรอบน็อคเอาท์สำหรับรุ่นนี้</p>
+            <% end %>
+
+            <% # Modal for Auto-resolve from standings %>
+            <% if can_manage_registrations?(@tournament) && knockout_matches.any? %>
+              <% groups = div.groups.order(:name).to_a %>
+              <div class="modal fade" id="autoResolveModal_<%= div.id %>" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <div>
+                        <div class="fw-bold">Auto-resolve ทีมจากตารางคะแนน</div>
+                        <div class="text-muted" style="font-size:12px;">รุ่น <%= div.name %></div>
+                      </div>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p class="text-muted mb-3" style="font-size:12px;">
+                        ระบบจะดึงอันดับทีมจากตารางคะแนนแต่ละสาย แล้วแทนที่ Slot (เช่น 1A, 2B) ด้วยทีมจริง
+                      </p>
+
+                      <% first_round_matches = knockout_matches.select { |m| m.round_number == 1 } %>
+                      <% if first_round_matches.any? %>
+                        <div class="mb-3">
+                          <div class="fw-bold mb-2" style="font-size:13px;">คู่แข่งขันรอบแรก (Slot Pattern)</div>
+                          <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                              <thead class="table-light">
+                                <tr>
+                                  <th style="width:60px;">คู่ที่</th>
+                                  <th>ทีมเหย้า (Slot)</th>
+                                  <th>ทีมเยือน (Slot)</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <% first_round_matches.each_with_index do |match, idx| %>
+                                  <tr>
+                                    <td><%= idx + 1 %></td>
+                                    <td>
+                                      <span class="badge bg-primary"><%= match.home_slot_label || "ไม่ระบุ" %></span>
+                                      <% if match.home_team.present? %>
+                                        <span class="ms-2"><%= match.home_team.name %></span>
+                                      <% end %>
+                                    </td>
+                                    <td>
+                                      <span class="badge bg-info"><%= match.away_slot_label || "ไม่ระบุ" %></span>
+                                      <% if match.away_team.present? %>
+                                        <span class="ms-2"><%= match.away_team.name %></span>
+                                      <% end %>
+                                    </td>
+                                  </tr>
+                                <% end %>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div class="alert alert-info" style="font-size:12px;">
+                          <strong>หมายเหตุ:</strong>
+                          <ul class="mb-0 ps-3">
+                            <li><strong>1A</strong> = อันดับ 1 สาย A</li>
+                            <li><strong>2B</strong> = อันดับ 2 สาย B</li>
+                            <li><strong>W1</strong> = ผู้ชนะคู่ที่ 1 (สำหรับรอบถัดไป)</li>
+                          </ul>
+                        </div>
+
+                        <%= form_with url: resolve_knockout_slots_tournament_path(@tournament), method: :post, local: true do |f| %>
+                          <%= hidden_field_tag :division_id, div.id %>
+                          <div class="d-flex justify-content-end" style="gap:8px;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                            <button type="submit" class="btn btn-sm btn-success">
+                              <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                              </svg>
+                              Resolve ทีมจากตารางคะแนน
+                            </button>
+                          </div>
+                        <% end %>
+                      <% else %>
+                        <p class="text-muted">ไม่พบคู่แข่งขันรอบแรก</p>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </div>
             <% end %>
           </div>
         <% end %>

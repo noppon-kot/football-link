@@ -78,7 +78,7 @@
                   <div style="position:absolute;left:54px;right:54px;top:220px;bottom:100px;overflow:hidden;">
                     <div style="display:flex;flex-wrap:wrap;gap:20px;">
                       <% div_groups.each do |grp| %>
-                        <% grp_slots = (div.matches.where(group: grp).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                        <% grp_slots = (div.matches.where(group: grp).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort_by { |s| s.to_s.scan(/\d+/).first.to_i }) %>
                         <% next if grp_slots.empty? %>
                         <div style="flex:0 0 calc(50% - 10px);background:rgba(10,18,36,0.70);border:1px solid rgba(255,255,255,0.14);border-radius:14px;padding:16px;">
                           <div style="font-size:18px;font-weight:900;color:#d7ff59;margin-bottom:12px;">สาย <%= grp.name %></div>
@@ -139,6 +139,19 @@
                 <% end %>
 
               <% if can_manage_registrations?(@tournament) %>
+                <% if div_has_groups %>
+                  <button type="button"
+                          class="btn btn-sm btn-outline-primary"
+                          data-bs-toggle="modal"
+                          data-bs-target="#addTeamToGroupModal_<%= div.id %>"
+                          aria-label="เพิ่มทีมเข้าสาย"
+                          style="line-height:1;padding:6px 10px;white-space:nowrap;flex:0 0 auto;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/>
+                    </svg>
+                    <span style="margin-left:4px;">เพิ่มทีมเข้าสาย</span>
+                  </button>
+                <% end %>
                 <button type="button"
                         class="btn btn-sm btn-outline-secondary"
                         data-bs-toggle="modal"
@@ -260,6 +273,58 @@
                 </div>
               </div>
 
+              <% # Modal for adding team to existing group %>
+              <% if div_has_groups %>
+                <% unassigned_regs = regs.reject { |r| div_current_assignments.values.include?(r.team_id) } %>
+                <div class="modal fade" id="addTeamToGroupModal_<%= div.id %>" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <div>
+                          <div class="fw-bold">เพิ่มทีมเข้าสาย</div>
+                          <div class="text-muted" style="font-size:12px;">รุ่น <%= div.name %></div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <% if unassigned_regs.any? %>
+                          <%= form_with url: add_team_to_group_tournament_path(@tournament), method: :post, local: true do |f| %>
+                            <div class="mb-3">
+                              <label class="form-label" style="font-size:13px;">เลือกทีม</label>
+                              <%= f.select :team_registration_id,
+                                    options_for_select(unassigned_regs.map { |r| [r.team&.name || r.team_name, r.id] }),
+                                    { include_blank: "-- เลือกทีม --" },
+                                    class: "form-select" %>
+                            </div>
+                            <div class="mb-3">
+                              <label class="form-label" style="font-size:13px;">เลือกสาย</label>
+                              <%= f.select :group_id,
+                                    options_for_select(div_groups.map { |g| ["สาย #{g.name}", g.id] }),
+                                    { include_blank: "-- เลือกสาย --" },
+                                    class: "form-select" %>
+                            </div>
+                            <div class="text-muted mb-3" style="font-size:11px;">
+                              หมายเหตุ: ทีมจะถูกเพิ่มเข้าสายที่เลือก แต่ยังไม่มีคู่แข่งขันอัตโนมัติ ต้องไปเพิ่มคู่แข่งขันเองในหน้าจัดโปรแกรม
+                            </div>
+                            <div class="d-flex justify-content-end" style="gap:8px;">
+                              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                              <button type="submit" class="btn btn-sm btn-primary">เพิ่มทีมเข้าสาย</button>
+                            </div>
+                          <% end %>
+                        <% else %>
+                          <div class="text-muted text-center py-3">
+                            <p class="mb-0">ทีมทั้งหมดในรุ่นนี้ถูกจัดเข้าสายแล้ว</p>
+                          </div>
+                          <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+
               <% has_played_matches = div.matches.where.not(home_score: nil, away_score: nil).exists? %>
               <% knockout_only_mode = div.matches.knockout.exists? && !div.matches.group_stage.exists? && div.groups.count == 2 %>
               <% knockout_only_bracket_size = nil %>
@@ -290,7 +355,7 @@
                           <% group_slots = ko_first_round_slots.select { |s| s.to_s.start_with?(side) || s.to_s.end_with?(side) } %>
                           <% group_slots = group_slots.sort_by { |s| s.to_s.scan(/\d+/).first.to_i } %>
                         <% else %>
-                          <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                          <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort_by { |s| s.to_s.scan(/\d+/).first.to_i }) %>
                         <% end %>
                         <% next if group_slots.empty? %>
 
@@ -360,7 +425,7 @@
                             <% group_slots = ko_first_round_slots.select { |s| s.to_s.start_with?(side) || s.to_s.end_with?(side) } %>
                             <% group_slots = group_slots.sort_by { |s| s.to_s.scan(/\d+/).first.to_i } %>
                           <% else %>
-                            <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                            <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort_by { |s| s.to_s.scan(/\d+/).first.to_i }) %>
                           <% end %>
                           <% next if group_slots.empty? %>
 
@@ -426,7 +491,7 @@
 
                   <div class="row g-2">
                     <% div.groups.order(:name).each do |group| %>
-                      <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort) %>
+                      <% group_slots = (div.matches.where(group: group).pluck(:home_slot_label, :away_slot_label).flatten.compact.uniq.sort_by { |s| s.to_s.scan(/\d+/).first.to_i }) %>
                       <% next if group_slots.empty? %>
 
                       <div class="col-12 col-md-6">

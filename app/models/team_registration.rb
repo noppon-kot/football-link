@@ -3,6 +3,7 @@ class TeamRegistration < ApplicationRecord
   belongs_to :tournament
   belongs_to :tournament_division, optional: true
   belongs_to :manager_user, class_name: "User", optional: true
+  belongs_to :group, optional: true
 
   has_many :team_registration_managers, dependent: :destroy
   has_many :manager_users, through: :team_registration_managers, source: :user

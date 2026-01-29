@@ -13,6 +13,8 @@ module Tournaments
       return false if @group_count <= 0 || @slots_per_group <= 0
 
       ActiveRecord::Base.transaction do
+        # ล้าง group_id ใน team_registrations ก่อนลบ groups (เพื่อป้องกัน foreign key violation)
+        @division.team_registrations.update_all(group_id: nil)
         @division.groups.destroy_all
         @division.matches.destroy_all
 

@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -488,6 +488,8 @@ class TournamentsController < ApplicationController
 
       # ล้างข้อมูลรอบแบ่งกลุ่มเดิมทิ้งทั้งหมดของรุ่นนี้ (ถ้ามี) แล้วสร้างสาย A/B ใหม่
       division.matches.group_stage.destroy_all
+      # ล้าง group_id ใน team_registrations ก่อนลบ groups (เพื่อป้องกัน foreign key violation)
+      division.team_registrations.update_all(group_id: nil)
       division.groups.destroy_all
 
       group_a = division.groups.create!(name: "A")
@@ -655,7 +657,7 @@ class TournamentsController < ApplicationController
         match = Match.find_by(id: match_id)
         next unless match
 
-        permitted = attrs.permit(:home_score, :away_score, :kickoff_at, :penalty_winner_side, :home_team_id, :away_team_id)
+        permitted = attrs.permit(:home_score, :away_score, :kickoff_at, :penalty_winner_side, :home_team_id, :away_team_id, :pitch_no)
 
         update_attrs = {}
 
@@ -705,6 +707,16 @@ class TournamentsController < ApplicationController
           end
         end
 
+        # สนาม (pitch_no)
+        unless permitted[:pitch_no].nil?
+          pitch_no_val = permitted[:pitch_no].to_s.strip
+          if pitch_no_val.blank?
+            update_attrs[:pitch_no] = nil if match.pitch_no.present?
+          elsif match.pitch_no.to_s != pitch_no_val
+            update_attrs[:pitch_no] = pitch_no_val.to_i
+          end
+        end
+
         # จุดโทษ: เชื่อค่าจาก dropdown โดยตรง
         winner_side_param = permitted[:penalty_winner_side]
         unless winner_side_param.nil?
@@ -730,9 +742,18 @@ class TournamentsController < ApplicationController
     redirect_params[:day] = (last_kickoff_day || (params[:day].presence && Date.parse(params[:day])) rescue nil)&.strftime("%Y-%m-%d")
     redirect_params[:page] = params[:page] if params[:page].present?
 
-    redirect_to fixture_tournament_path(@tournament, redirect_params), notice: notice_msg
+    # ถ้ามาจากหน้า manage_schedule ให้กลับไปหน้านั้น
+    if params[:from_manage_schedule].present?
+      redirect_to manage_schedule_tournament_path(@tournament), notice: notice_msg
+    else
+      redirect_to fixture_tournament_path(@tournament, redirect_params), notice: notice_msg
+    end
   rescue ActiveRecord::RecordInvalid => e
-    redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
+    if params[:from_manage_schedule].present?
+      redirect_to manage_schedule_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
+    else
+      redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
+    end
   end
 
   def new
@@ -814,6 +835,187 @@ class TournamentsController < ApplicationController
 
     @tournament.destroy
     redirect_to tournaments_path, notice: "ลบรายการแข่งขันเรียบร้อยแล้ว"
+  end
+
+  def add_team_to_group
+    unless can_manage_registrations?(@tournament)
+      return redirect_to groups_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    team_registration = @tournament.team_registrations.find(params[:team_registration_id])
+    group = Group.find(params[:group_id])
+
+    # Verify group belongs to same division as team registration
+    unless team_registration.tournament_division_id == group.tournament_division_id
+      return redirect_to groups_tournament_path(@tournament), alert: "ทีมและสายไม่อยู่ในรุ่นเดียวกัน"
+    end
+
+    division = group.tournament_division
+    new_team = team_registration.team
+    
+    # Find next available slot label for this group
+    existing_slots = division.matches.where(group: group)
+                            .pluck(:home_slot_label, :away_slot_label)
+                            .flatten.compact.uniq
+    
+    # Extract numbers from existing slots (e.g., "A1" -> 1, "B2" -> 2)
+    existing_numbers = existing_slots.map { |s| s.to_s.scan(/\d+/).first.to_i }.compact
+    next_number = (existing_numbers.max || 0) + 1
+    new_slot_label = "#{group.name}#{next_number}"
+
+    # Get existing teams in this group from matches
+    existing_team_ids = division.matches.group_stage.where(group: group)
+                               .pluck(:home_team_id, :away_team_id)
+                               .flatten.compact.uniq
+
+    Match.transaction do
+      # Update team registration with group
+      team_registration.update!(group_id: group.id)
+
+      # Create matches against all existing teams in the group
+      existing_team_ids.each do |opponent_id|
+        opponent = Team.find_by(id: opponent_id)
+        next unless opponent
+
+        # Find opponent's slot label
+        opponent_slot = existing_slots.find do |slot|
+          match = division.matches.group_stage.where(group: group)
+                         .where("home_team_id = ? OR away_team_id = ?", opponent_id, opponent_id)
+                         .first
+          next unless match
+          (match.home_team_id == opponent_id && match.home_slot_label == slot) ||
+          (match.away_team_id == opponent_id && match.away_slot_label == slot)
+        end
+
+        # Create match: new team vs opponent
+        Match.create!(
+          tournament_division: division,
+          group: group,
+          stage: :group_stage,
+          home_team_id: new_team.id,
+          away_team_id: opponent_id,
+          home_slot_label: new_slot_label,
+          away_slot_label: opponent_slot
+        )
+      end
+    end
+
+    matches_created = existing_team_ids.size
+    redirect_to groups_tournament_path(@tournament), notice: "เพิ่มทีม #{new_team.name} เข้าสาย #{group.name} เรียบร้อยแล้ว (Slot: #{new_slot_label}, สร้าง #{matches_created} คู่แข่งขัน)"
+  rescue ActiveRecord::RecordNotFound
+    redirect_to groups_tournament_path(@tournament), alert: "ไม่พบทีมหรือสายที่ระบุ"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to groups_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
+  end
+
+  def add_match
+    unless can_manage_registrations?(@tournament)
+      return redirect_to manage_schedule_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    division = @tournament.tournament_divisions.find(params[:division_id])
+    
+    # Parse kickoff datetime from date and time fields
+    kickoff_at = nil
+    if params[:kickoff_date].present? && params[:kickoff_time].present?
+      kickoff_at = Time.zone.parse("#{params[:kickoff_date]} #{params[:kickoff_time]}")
+    elsif params[:kickoff_date].present?
+      kickoff_at = Time.zone.parse("#{params[:kickoff_date]} 00:00")
+    end
+
+    match_attrs = {
+      tournament_division: division,
+      stage: params[:stage] || :group_stage,
+      home_team_id: params[:home_team_id].presence,
+      away_team_id: params[:away_team_id].presence,
+      home_slot_label: params[:home_slot_label].presence,
+      away_slot_label: params[:away_slot_label].presence,
+      kickoff_at: kickoff_at,
+      pitch_no: params[:pitch_no].presence
+    }
+
+    # Set group if group stage
+    if params[:group_id].present?
+      match_attrs[:group_id] = params[:group_id]
+    end
+
+    # Set round info if knockout
+    if params[:stage] == "knockout"
+      match_attrs[:round_label] = params[:round_label].presence
+      match_attrs[:round_number] = params[:round_number].presence
+    end
+
+    Match.transaction do
+      # Auto-shift existing matches if requested
+      if params[:auto_shift_time] == "1" && kickoff_at.present?
+        match_duration = (params[:match_duration].presence || 30).to_i.minutes
+        
+        # Get all tournament matches at or after the new match time
+        division_ids = @tournament.tournament_divisions.pluck(:id)
+        matches_to_shift = Match.where(tournament_division_id: division_ids)
+                                .where("kickoff_at >= ?", kickoff_at)
+                                .order(:kickoff_at)
+        
+        # Shift each match by match_duration
+        matches_to_shift.each do |m|
+          m.update!(kickoff_at: m.kickoff_at + match_duration)
+        end
+      end
+
+      Match.create!(match_attrs)
+    end
+
+    redirect_path = params[:return_to].presence || manage_schedule_tournament_path(@tournament)
+    redirect_to redirect_path, notice: "เพิ่มคู่แข่งขันเรียบร้อยแล้ว"
+  rescue ActiveRecord::RecordNotFound
+    redirect_to manage_schedule_tournament_path(@tournament), alert: "ไม่พบรุ่นที่ระบุ"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to manage_schedule_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
+  end
+
+  def resolve_knockout_slots
+    unless can_manage_registrations?(@tournament)
+      return redirect_to knockout_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    division = @tournament.tournament_divisions.find(params[:division_id])
+    
+    # Get standings for each group
+    standings_by_group = calculate_standings_for_division(division)
+    
+    # Get first round knockout matches
+    first_round_matches = division.matches.knockout.where(round_number: 1)
+    
+    resolved_count = 0
+    Match.transaction do
+      first_round_matches.each do |match|
+        home_resolved = resolve_slot_to_team(match.home_slot_label, standings_by_group, division)
+        away_resolved = resolve_slot_to_team(match.away_slot_label, standings_by_group, division)
+        
+        update_attrs = {}
+        if home_resolved && match.home_team_id.blank?
+          update_attrs[:home_team_id] = home_resolved[:team_id]
+        end
+        if away_resolved && match.away_team_id.blank?
+          update_attrs[:away_team_id] = away_resolved[:team_id]
+        end
+        
+        if update_attrs.any?
+          match.update!(update_attrs)
+          resolved_count += 1
+        end
+      end
+    end
+
+    if resolved_count > 0
+      redirect_to knockout_tournament_path(@tournament), notice: "Resolve ทีมจากตารางคะแนนเรียบร้อยแล้ว (#{resolved_count} คู่)"
+    else
+      redirect_to knockout_tournament_path(@tournament), notice: "ไม่มีคู่ที่ต้อง resolve หรือทีมถูกกำหนดไว้แล้ว"
+    end
+  rescue ActiveRecord::RecordNotFound
+    redirect_to knockout_tournament_path(@tournament), alert: "ไม่พบรุ่นที่ระบุ"
+  rescue ActiveRecord::RecordInvalid => e
+    redirect_to knockout_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
   end
 
   private
@@ -923,5 +1125,87 @@ class TournamentsController < ApplicationController
     end
 
     messages.join(" ") if messages.any?
+  end
+
+  def calculate_standings_for_division(division)
+    standings = {}
+    
+    division.groups.each do |group|
+      group_matches = division.matches.group_stage.where(group: group)
+                              .where.not(home_score: nil, away_score: nil)
+      
+      team_stats = Hash.new { |h, k| h[k] = { played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0, pts: 0, team_id: nil, team_name: nil } }
+      
+      # Get all teams in this group from matches
+      group_matches.each do |m|
+        if m.home_team_id.present?
+          team_stats[m.home_team_id][:team_id] = m.home_team_id
+          team_stats[m.home_team_id][:team_name] = m.home_name
+        end
+        if m.away_team_id.present?
+          team_stats[m.away_team_id][:team_id] = m.away_team_id
+          team_stats[m.away_team_id][:team_name] = m.away_name
+        end
+      end
+      
+      # Calculate stats
+      group_matches.each do |m|
+        next unless m.home_team_id.present? && m.away_team_id.present?
+        
+        home_id = m.home_team_id
+        away_id = m.away_team_id
+        home_score = m.home_score.to_i
+        away_score = m.away_score.to_i
+        
+        team_stats[home_id][:played] += 1
+        team_stats[home_id][:gf] += home_score
+        team_stats[home_id][:ga] += away_score
+        
+        team_stats[away_id][:played] += 1
+        team_stats[away_id][:gf] += away_score
+        team_stats[away_id][:ga] += home_score
+        
+        if home_score > away_score
+          team_stats[home_id][:won] += 1
+          team_stats[home_id][:pts] += 3
+          team_stats[away_id][:lost] += 1
+        elsif home_score < away_score
+          team_stats[away_id][:won] += 1
+          team_stats[away_id][:pts] += 3
+          team_stats[home_id][:lost] += 1
+        else
+          team_stats[home_id][:draw] += 1
+          team_stats[home_id][:pts] += 1
+          team_stats[away_id][:draw] += 1
+          team_stats[away_id][:pts] += 1
+        end
+      end
+      
+      # Sort by points, then goal difference, then goals for
+      sorted_teams = team_stats.values.sort_by { |t| [-t[:pts], -(t[:gf] - t[:ga]), -t[:gf]] }
+      
+      standings[group.name] = sorted_teams
+    end
+    
+    standings
+  end
+
+  def resolve_slot_to_team(slot_label, standings_by_group, division)
+    return nil if slot_label.blank?
+    
+    # Parse slot label like "1A", "2B", etc.
+    match_data = slot_label.to_s.match(/^(\d+)([A-Z])$/i)
+    return nil unless match_data
+    
+    rank = match_data[1].to_i
+    group_name = match_data[2].upcase
+    
+    group_standings = standings_by_group[group_name]
+    return nil unless group_standings && group_standings.size >= rank
+    
+    team = group_standings[rank - 1]
+    return nil unless team && team[:team_id].present?
+    
+    { team_id: team[:team_id], team_name: team[:team_name] }
   end
 end
