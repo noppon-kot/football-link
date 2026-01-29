@@ -547,8 +547,8 @@
       </div>
 
       <div class="modal fade" id="standingsDownloadModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:fit-content;">
-          <div class="modal-content" style="width:auto;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:95vw;width:auto;">
+          <div class="modal-content" style="max-width:100%;">
             <div class="modal-header">
               <div class="fw-bold">ดาวน์โหลดตารางคะแนน</div>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -575,8 +575,8 @@
                 </div>
               </div>
               
-              <div id="standings-download-preview-container" style="max-height:60vh;overflow:auto;padding:16px;">
-                <div id="standings-download-capture" style="background:#fff;padding:16px;display:inline-block;">
+              <div id="standings-download-preview-container" style="max-height:50vh;overflow:auto;padding:16px;">
+                <div id="standings-download-capture" style="background:#fff;padding:16px;display:inline-block;min-width:400px;">
                   <div id="standings-compact-tables" style="display:flex;flex-wrap:wrap;gap:16px;">
                   </div>
                   <div style="margin-top:12px;padding-top:8px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;align-items:center;gap:4px;">
@@ -718,30 +718,30 @@
               var tableDiv = document.createElement('div');
               tableDiv.style.cssText = 'display:inline-block;';
               
-              var html = '<div style="background:#f8f9fa;padding:6px 10px;border-radius:6px 6px 0 0;font-weight:700;font-size:12px;white-space:nowrap;">รุ่น ' + div.name + ' · สาย ' + g.name + '</div>';
-              html += '<table style="border-collapse:collapse;font-size:12px;">';
+              var html = '<div style="background:#f8f9fa;padding:8px 12px;border-radius:6px 6px 0 0;font-weight:700;font-size:13px;white-space:nowrap;">รุ่น ' + div.name + ' · สาย ' + g.name + '</div>';
+              html += '<table style="border-collapse:collapse;font-size:13px;width:100%;">';
               html += '<thead style="background:#e2e8f0;"><tr>';
-              html += '<th style="padding:5px 6px;text-align:center;white-space:nowrap;">#</th>';
-              html += '<th style="padding:5px 8px;white-space:nowrap;">ทีม</th>';
-              html += '<th style="padding:5px 6px;text-align:center;font-weight:900;white-space:nowrap;">คะแนน</th>';
-              html += '<th style="padding:5px 6px;text-align:center;white-space:nowrap;">แข่ง</th>';
-              html += '<th style="padding:5px 6px;text-align:center;white-space:nowrap;">ชนะ</th>';
-              html += '<th style="padding:5px 6px;text-align:center;white-space:nowrap;">เสมอ</th>';
-              html += '<th style="padding:5px 6px;text-align:center;white-space:nowrap;">แพ้</th>';
-              html += '<th style="padding:5px 6px;text-align:center;white-space:nowrap;">ประตู</th>';
+              html += '<th style="padding:8px 10px;text-align:center;white-space:nowrap;width:40px;">#</th>';
+              html += '<th style="padding:8px 16px;white-space:nowrap;min-width:150px;">ทีม</th>';
+              html += '<th style="padding:8px 12px;text-align:center;font-weight:900;white-space:nowrap;">คะแนน</th>';
+              html += '<th style="padding:8px 12px;text-align:center;white-space:nowrap;">แข่ง</th>';
+              html += '<th style="padding:8px 12px;text-align:center;white-space:nowrap;">ชนะ</th>';
+              html += '<th style="padding:8px 12px;text-align:center;white-space:nowrap;">เสมอ</th>';
+              html += '<th style="padding:8px 12px;text-align:center;white-space:nowrap;">แพ้</th>';
+              html += '<th style="padding:8px 12px;text-align:center;white-space:nowrap;">ประตู</th>';
               html += '</tr></thead><tbody>';
               
               g.teams.forEach(function(t, idx) {
                 var bgColor = idx === 0 ? '#fffde7' : (idx % 2 === 0 ? '#fff' : '#f9fafb');
                 html += '<tr style="background:' + bgColor + ';">';
-                html += '<td style="padding:4px 6px;text-align:center;font-weight:600;">' + (idx + 1) + '</td>';
-                html += '<td style="padding:4px 8px;white-space:nowrap;">' + t.name + '</td>';
-                html += '<td style="padding:4px 6px;text-align:center;font-weight:900;">' + t.pts + '</td>';
-                html += '<td style="padding:4px 6px;text-align:center;">' + t.played + '</td>';
-                html += '<td style="padding:4px 6px;text-align:center;">' + t.won + '</td>';
-                html += '<td style="padding:4px 6px;text-align:center;">' + t.draw + '</td>';
-                html += '<td style="padding:4px 6px;text-align:center;">' + t.lost + '</td>';
-                html += '<td style="padding:4px 6px;text-align:center;">' + t.gf + '</td>';
+                html += '<td style="padding:10px 10px;text-align:center;font-weight:600;">' + (idx + 1) + '</td>';
+                html += '<td style="padding:10px 16px;white-space:nowrap;">' + t.name + '</td>';
+                html += '<td style="padding:10px 12px;text-align:center;font-weight:900;">' + t.pts + '</td>';
+                html += '<td style="padding:10px 12px;text-align:center;">' + t.played + '</td>';
+                html += '<td style="padding:10px 12px;text-align:center;">' + t.won + '</td>';
+                html += '<td style="padding:10px 12px;text-align:center;">' + t.draw + '</td>';
+                html += '<td style="padding:10px 12px;text-align:center;">' + t.lost + '</td>';
+                html += '<td style="padding:10px 12px;text-align:center;">' + t.gf + '</td>';
                 html += '</tr>';
               });
               
