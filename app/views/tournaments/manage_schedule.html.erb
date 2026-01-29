@@ -52,6 +52,17 @@
               </svg>
               <span style="margin-left:4px;">ล้างตาราง</span>
             </button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-warning"
+                    data-bs-toggle="modal"
+                    data-bs-target="#regenerateKnockoutModal"
+                    aria-label="สร้างรอบน็อคเอาท์ใหม่"
+                    style="line-height:1;padding:6px 10px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="currentColor"/>
+              </svg>
+              <span style="margin-left:4px;">สร้างน็อคเอาท์ใหม่</span>
+            </button>
             </div>
           </div>
           <% total_matches = @all_matches.size %>
@@ -155,94 +166,68 @@
 
                   <div class="mb-2">
                     <div class="fw-bold" style="font-size:12px;color:#546e7a;margin-bottom:6px;"><%= group_label %></div>
-                    <div class="table-responsive">
-                      <table class="table table-sm align-middle mb-0" style="font-size:12px;">
-                        <thead class="table-light">
-                          <tr>
-                            <th scope="col" style="width:50px;">คู่ที่</th>
-                            <th scope="col" style="width:140px;">วัน/เวลา</th>
-                            <th scope="col" style="width:70px;">สนาม</th>
-                            <th scope="col">ทีมเหย้า</th>
-                            <th scope="col">ทีมเยือน</th>
-                            <th scope="col" style="width:120px;" class="text-center">สกอร์</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <% matches.each_with_index do |match, midx| %>
-                            <% is_scheduled = match.kickoff_at.present? %>
-                            <tr class="match-row <%= is_scheduled ? 'scheduled' : 'unscheduled' %>" 
-                                style="<%= is_scheduled ? 'background-color:#e8f5e9;' : 'background-color:#fff8e1;' %>">
-                              <td>
-                                <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" do %>
-                                  คู่ที่ <%= match.position || (midx + 1) %>
-                                <% end %>
-                              </td>
-                              <td style="white-space:nowrap;">
-                                <%= datetime_local_field_tag "matches[#{match.id}][kickoff_at]",
-                                      (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
-                                      class: "form-control form-control-sm",
-                                      style: "font-size:11px;padding:2px 4px;" %>
-                              </td>
-                              <td>
-                                <%= number_field_tag "matches[#{match.id}][pitch_no]",
-                                      match.pitch_no,
-                                      class: "form-control form-control-sm",
-                                      style: "width:50px;font-size:11px;padding:2px 4px;",
-                                      min: 0, max: 99 %>
-                              </td>
-                              <td>
-                                <div class="d-flex align-items-center" style="gap:6px;">
-                                  <% if match.home_team&.logo&.attached? %>
-                                    <%= image_tag match.home_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
-                                  <% end %>
-                                  <span><%= match.home_name %></span>
-                                </div>
-                              </td>
-                              <td>
-                                <div class="d-flex align-items-center" style="gap:6px;">
-                                  <% if match.away_team&.logo&.attached? %>
-                                    <%= image_tag match.away_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
-                                  <% end %>
-                                  <span><%= match.away_name %></span>
-                                </div>
-                              </td>
-                              <td class="text-center">
-                                <div class="d-flex align-items-center justify-content-center" style="gap:4px;">
-                                  <%= select_tag "matches[#{match.id}][home_score]",
-                                        options_for_select((0..20).to_a, match.home_score),
-                                        include_blank: "-",
-                                        class: "form-select form-select-sm js-score-select",
-                                        style: "width:45px;font-size:11px;padding:2px;",
-                                        data: { match_id: match.id, side: "home" } %>
-                                  <span>-</span>
-                                  <%= select_tag "matches[#{match.id}][away_score]",
-                                        options_for_select((0..20).to_a, match.away_score),
-                                        include_blank: "-",
-                                        class: "form-select form-select-sm js-score-select",
-                                        style: "width:45px;font-size:11px;padding:2px;",
-                                        data: { match_id: match.id, side: "away" } %>
-                                </div>
-                                <% # แสดง dropdown จุดโทษถ้าสกอร์เสมอ %>
-                                <% is_draw = match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
-                                <div class="mt-1 js-penalty-container" 
-                                     id="penalty-container-<%= match.id %>"
-                                     data-match-id="<%= match.id %>"
-                                     style="<%= is_draw ? '' : 'display:none;' %>">
-                                  <%= select_tag "matches[#{match.id}][penalty_winner_side]",
-                                        options_for_select([
-                                          ["ไม่มียิงจุดโทษ", ""],
-                                          ["#{match.home_name.presence || 'เหย้า'} ชนะจุดโทษ", "home"],
-                                          ["#{match.away_name.presence || 'เยือน'} ชนะจุดโทษ", "away"]
-                                        ], match.penalty_winner_side),
-                                        class: "form-select form-select-sm",
-                                        style: "font-size:10px;padding:2px 4px;" %>
-                                </div>
-                              </td>
-                            </tr>
-                          <% end %>
-                        </tbody>
-                      </table>
-                    </div>
+                    <%# Single responsive layout - card style that works on all screens %>
+                    <% matches.each_with_index do |match, midx| %>
+                      <% is_scheduled = match.kickoff_at.present? %>
+                      <div class="card mb-2" style="<%= is_scheduled ? 'border-left:3px solid #4caf50;' : 'border-left:3px solid #ff9800;' %>">
+                        <div class="card-body p-2">
+                          <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-secondary">คู่ที่ <%= match.position || (midx + 1) %></span>
+                            <div class="d-flex align-items-center" style="gap:8px;">
+                              <span style="font-size:10px;color:#78909c;">สนาม</span>
+                              <%= number_field_tag "matches[#{match.id}][pitch_no]",
+                                    match.pitch_no,
+                                    class: "form-control form-control-sm",
+                                    style: "width:50px;font-size:11px;padding:2px 4px;",
+                                    min: 0, max: 99 %>
+                            </div>
+                          </div>
+                          <div class="mb-2">
+                            <%= datetime_local_field_tag "matches[#{match.id}][kickoff_at]",
+                                  (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
+                                  class: "form-control form-control-sm",
+                                  style: "font-size:11px;" %>
+                          </div>
+                          <div class="d-flex align-items-center justify-content-between" style="gap:8px;">
+                            <div class="text-truncate" style="flex:1;font-size:12px;">
+                              <%= match.home_name %>
+                            </div>
+                            <div class="d-flex align-items-center" style="gap:4px;">
+                              <%= select_tag "matches[#{match.id}][home_score]",
+                                    options_for_select((0..20).to_a, match.home_score),
+                                    include_blank: "-",
+                                    class: "form-select form-select-sm js-score-select",
+                                    style: "width:45px;font-size:11px;padding:2px;",
+                                    data: { match_id: match.id, side: "home" } %>
+                              <span style="font-size:12px;font-weight:bold;">-</span>
+                              <%= select_tag "matches[#{match.id}][away_score]",
+                                    options_for_select((0..20).to_a, match.away_score),
+                                    include_blank: "-",
+                                    class: "form-select form-select-sm js-score-select",
+                                    style: "width:45px;font-size:11px;padding:2px;",
+                                    data: { match_id: match.id, side: "away" } %>
+                            </div>
+                            <div class="text-truncate text-end" style="flex:1;font-size:12px;">
+                              <%= match.away_name %>
+                            </div>
+                          </div>
+                          <% is_draw = match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
+                          <div class="mt-1 js-penalty-container" 
+                               id="penalty-container-<%= match.id %>"
+                               data-match-id="<%= match.id %>"
+                               style="<%= is_draw ? '' : 'display:none;' %>">
+                            <%= select_tag "matches[#{match.id}][penalty_winner_side]",
+                                  options_for_select([
+                                    ["ไม่มียิงจุดโทษ", ""],
+                                    ["#{match.home_name.presence || 'เหย้า'} ชนะ PK", "home"],
+                                    ["#{match.away_name.presence || 'เยือน'} ชนะ PK", "away"]
+                                  ], match.penalty_winner_side),
+                                  class: "form-select form-select-sm",
+                                  style: "font-size:10px;" %>
+                          </div>
+                        </div>
+                      </div>
+                    <% end %>
                   </div>
                 <% end %>
 
@@ -979,6 +964,70 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
           <button type="submit" class="btn btn-sm btn-danger">ยืนยันการล้าง</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<%# Modal สำหรับสร้างรอบน็อคเอาท์ใหม่ %>
+<div class="modal fade" id="regenerateKnockoutModal" tabindex="-1" aria-labelledby="regenerateKnockoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="regenerateKnockoutModalLabel">สร้างรอบน็อคเอาท์ใหม่</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <%= form_with url: regenerate_knockout_tournament_path(@tournament), method: :post, local: true do |f| %>
+        <div class="modal-body">
+          <div class="alert alert-info" style="font-size:13px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:6px;">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
+            </svg>
+            จะลบเฉพาะแมตช์รอบน็อคเอาท์แล้วสร้างใหม่ <strong>ไม่กระทบ</strong> รอบแบ่งสายและทีมที่จัดไว้
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" style="font-size:13px;font-weight:500;">เลือกรุ่น</label>
+            <select name="division_id" class="form-select form-select-sm" required>
+              <% @tournament.tournament_divisions.each do |div| %>
+                <option value="<%= div.id %>"><%= div.name %></option>
+              <% end %>
+            </select>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label" style="font-size:12px;">จำนวนทีมในรอบน็อคเอาท์</label>
+              <select name="bracket_size" class="form-select form-select-sm">
+                <option value="4">4 ทีม</option>
+                <option value="8" selected>8 ทีม</option>
+                <option value="16">16 ทีม</option>
+                <option value="32">32 ทีม</option>
+              </select>
+            </div>
+
+            <div class="col-6">
+              <label class="form-label" style="font-size:12px;">รูปแบบการจับคู่</label>
+              <select name="knockout_pattern" class="form-select form-select-sm">
+                <option value="cross">A vs C, B vs D (ข้ามสาย)</option>
+                <option value="adjacent">A vs B, C vs D (สายติดกัน)</option>
+                <option value="adjacent_cross">A vs B, C vs D (ผู้ชนะข้ามกลุ่ม)</option>
+              </select>
+            </div>
+
+            <div class="col-6">
+              <label class="form-label" style="font-size:12px;">แมตช์ชิงที่ 3</label>
+              <select name="include_third_place" class="form-select form-select-sm">
+                <option value="">ไม่มี</option>
+                <option value="1">มี</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-sm btn-warning">สร้างรอบน็อคเอาท์ใหม่</button>
         </div>
       <% end %>
     </div>

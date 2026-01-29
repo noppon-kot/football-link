@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -796,6 +796,38 @@ class TournamentsController < ApplicationController
     end
 
     redirect_to manage_schedule_tournament_path(@tournament), notice: message
+  rescue StandardError => e
+    redirect_to manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
+  end
+
+  def regenerate_knockout
+    unless can_manage_registrations?(@tournament)
+      return redirect_to groups_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    division_id = params[:division_id]
+    knockout_pattern = params[:knockout_pattern] || "cross"
+    bracket_size = params[:bracket_size].to_i
+    include_third_place = params[:include_third_place] == "1"
+
+    division = @tournament.tournament_divisions.find(division_id)
+
+    ActiveRecord::Base.transaction do
+      # ลบเฉพาะ knockout matches (stage = 1)
+      division.matches.where(stage: 1).destroy_all
+
+      # อัพเดท knockout_pattern
+      division.update!(knockout_pattern: knockout_pattern)
+
+      # สร้าง knockout bracket ใหม่
+      Tournaments::GenerateKnockoutBracketService.new(
+        division: division,
+        bracket_size: bracket_size,
+        include_third_place: include_third_place
+      ).call
+    end
+
+    redirect_to manage_schedule_tournament_path(@tournament), notice: "สร้างรอบน็อคเอาท์ใหม่เรียบร้อยแล้ว"
   rescue StandardError => e
     redirect_to manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
   end

@@ -83,6 +83,7 @@ Rails.application.routes.draw do
       post :add_match
       post :resolve_knockout_slots
       delete :clear_schedule
+      post :regenerate_knockout
     end
   end
 
