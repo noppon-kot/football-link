@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout, :adjust_times]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -846,6 +846,51 @@ class TournamentsController < ApplicationController
     end
 
     redirect_to manage_schedule_tournament_path(@tournament), notice: "สร้างรอบน็อคเอาท์ใหม่เรียบร้อยแล้ว"
+  rescue StandardError => e
+    redirect_to manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
+  end
+
+  # ปรับเวลาคู่แข่งขันจากคู่ที่เลือกไป
+  def adjust_times
+    unless can_manage_registrations?(@tournament)
+      return redirect_to manage_schedule_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    from_match_id = params[:from_match_id]
+    minutes_per_half = params[:minutes_per_half].present? ? params[:minutes_per_half].to_i : 20
+    halves_count = params[:halves_count].present? ? params[:halves_count].to_i : 2
+    break_between_halves = params[:break_between_halves].present? ? params[:break_between_halves].to_i : 5
+    break_between_matches = params[:break_between_matches].present? ? params[:break_between_matches].to_i : 5
+
+    from_match = Match.find_by(id: from_match_id)
+    unless from_match && from_match.kickoff_at.present?
+      return redirect_to manage_schedule_tournament_path(@tournament), alert: "ไม่พบคู่แข่งขันที่เลือก หรือคู่นั้นยังไม่ได้กำหนดเวลา"
+    end
+
+    # คำนวณ match duration (นาที)
+    match_duration = (minutes_per_half * halves_count) + ((halves_count - 1) * break_between_halves)
+
+    # หาคู่ที่มีเวลาหลังจากคู่ที่เลือก เรียงตามเวลา
+    division_ids = @tournament.tournament_divisions.pluck(:id)
+    matches_to_adjust = Match
+      .where(tournament_division_id: division_ids)
+      .where("kickoff_at >= ?", from_match.kickoff_at)
+      .order(:kickoff_at)
+      .to_a
+
+    return redirect_to manage_schedule_tournament_path(@tournament), notice: "ไม่มีคู่ที่ต้องปรับเวลา" if matches_to_adjust.empty?
+
+    Match.transaction do
+      current_time = from_match.kickoff_at
+
+      matches_to_adjust.each_with_index do |match, idx|
+        match.update!(kickoff_at: current_time)
+        # เวลาคู่ถัดไป = เวลาปัจจุบัน + match_duration + break_between_matches
+        current_time = current_time + match_duration.minutes + break_between_matches.minutes
+      end
+    end
+
+    redirect_to manage_schedule_tournament_path(@tournament), notice: "ปรับเวลา #{matches_to_adjust.size} คู่เรียบร้อยแล้ว (#{minutes_per_half} นาที/ครึ่ง)"
   rescue StandardError => e
     redirect_to manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
   end
