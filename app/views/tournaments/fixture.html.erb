@@ -537,17 +537,17 @@
                   </div>
                   
                   <div id="download-preview-container" style="max-height:60vh;overflow:auto;">
-                    <div id="download-preview-capture" style="background:#fff;padding:16px;">
+                    <div id="download-preview-capture" style="background:#fff;padding:12px;">
                       <table class="table table-sm align-middle mb-0" style="font-size:13px;">
                         <thead style="background:#f1f5f9;">
                           <tr>
-                            <th style="width:60px;white-space:nowrap;">คู่ที่</th>
-                            <th style="width:50px;">เวลา</th>
-                            <th style="width:50px;">รุ่น</th>
-                            <th style="width:70px;">สาย/รอบ</th>
-                            <th>ทีมเหย้า</th>
-                            <th>ทีมเยือน</th>
-                            <th style="width:60px;text-align:center;">สกอร์</th>
+                            <th style="width:55px;white-space:nowrap;padding:6px 4px;">คู่ที่</th>
+                            <th style="width:45px;padding:6px 4px;">เวลา</th>
+                            <th style="width:40px;padding:6px 4px;">รุ่น</th>
+                            <th style="width:60px;padding:6px 4px;">สาย/รอบ</th>
+                            <th style="padding:6px 8px;">ทีมเหย้า</th>
+                            <th style="padding:6px 8px;">ทีมเยือน</th>
+                            <th style="width:50px;text-align:center;padding:6px 4px;">สกอร์</th>
                           </tr>
                         </thead>
                         <tbody id="download-preview-body">
@@ -566,27 +566,27 @@
                                                group_name.present? ? group_name : "-"
                                              end %>
                             <tr data-match-row="<%= idx + 1 %>">
-                              <td style="color:#0ea5e9;font-weight:600;">คู่ที่ <%= idx + 1 %></td>
-                              <td><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %></td>
-                              <td><%= match.tournament_division&.name || "-" %></td>
-                              <td><%= round_title %></td>
-                              <td>
-                                <div class="d-flex align-items-center" style="gap:6px;">
+                              <td style="color:#0ea5e9;font-weight:600;white-space:nowrap;padding:5px 4px;">คู่ที่ <%= idx + 1 %></td>
+                              <td style="white-space:nowrap;padding:5px 4px;"><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %></td>
+                              <td style="white-space:nowrap;padding:5px 4px;"><%= match.tournament_division&.name || "-" %></td>
+                              <td style="white-space:nowrap;padding:5px 4px;"><%= round_title %></td>
+                              <td style="padding:5px 8px;">
+                                <div class="d-flex align-items-center" style="gap:6px;white-space:nowrap;">
                                   <% if match.home_team&.logo&.attached? %>
-                                    <%= image_tag match.home_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;" %>
+                                    <%= image_tag match.home_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;" %>
                                   <% end %>
-                                  <%= match.home_name %>
+                                  <span><%= match.home_name %></span>
                                 </div>
                               </td>
-                              <td>
-                                <div class="d-flex align-items-center" style="gap:6px;">
+                              <td style="padding:5px 8px;">
+                                <div class="d-flex align-items-center" style="gap:6px;white-space:nowrap;">
                                   <% if match.away_team&.logo&.attached? %>
-                                    <%= image_tag match.away_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;" %>
+                                    <%= image_tag match.away_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;" %>
                                   <% end %>
-                                  <%= match.away_name %>
+                                  <span><%= match.away_name %></span>
                                 </div>
                               </td>
-                              <td style="text-align:center;">
+                              <td style="text-align:center;white-space:nowrap;padding:5px 4px;">
                                 <% if match.home_score.present? && match.away_score.present? %>
                                   <strong><%= match.home_score %> - <%= match.away_score %></strong>
                                 <% else %>
@@ -597,6 +597,10 @@
                           <% end %>
                         </tbody>
                       </table>
+                      <div style="margin-top:12px;padding-top:8px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;align-items:center;gap:4px;">
+                        <%= image_tag "dernsai_icon.png", alt: "DERNSAI", style: "width:16px;height:16px;border-radius:4px;object-fit:contain;" %>
+                        <span style="font-size:10px;font-weight:600;color:#94a3b8;">DERNSAI.COM</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1474,7 +1478,12 @@
               if (captureEl && typeof html2canvas !== 'undefined') {
                 html2canvas(captureEl, { scale: 2, useCORS: true }).then(function(canvas) {
                   var link = document.createElement('a');
-                  link.download = 'fixture-page-' + selectedPage + '.png';
+                  var dateStr = '<%= @selected_day&.strftime("%d%b%Y")&.downcase || "nodate" %>';
+                  var perPage = parseInt(perPageSelect.value, 10) || 10;
+                  var startMatch = ((selectedPage - 1) * perPage) + 1;
+                  var endMatch = Math.min(selectedPage * perPage, totalMatches);
+                  var timestamp = Date.now().toString(36);
+                  link.download = 'fixture_' + dateStr + '_match' + startMatch + '-' + endMatch + '_' + timestamp + '.png';
                   link.href = canvas.toDataURL('image/png');
                   link.click();
                 });

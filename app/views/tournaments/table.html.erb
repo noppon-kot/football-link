@@ -97,7 +97,14 @@
       </style>
 
       <div class="card shadow-sm">
-        <div class="card-header fw-bold">ตารางคะแนน</div>
+        <div class="card-header d-flex align-items-center justify-content-between" style="gap:10px;">
+          <div class="fw-bold">ตารางคะแนน</div>
+          <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#standingsDownloadModal" title="ดาวน์โหลดตารางคะแนน" style="line-height:1;padding:6px 8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+              <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
         <div class="card-body">
           <% if can_manage_registrations?(@tournament) %>
             <p class="mb-2" style="font-size:13px;color:#78909c;">
@@ -538,6 +545,253 @@
           <% end %>
         </div>
       </div>
+
+      <div class="modal fade" id="standingsDownloadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+          <div class="modal-content">
+            <div class="modal-header">
+              <div class="fw-bold">ดาวน์โหลดตารางคะแนน</div>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding:0;">
+              <div class="p-3 border-bottom" style="background:#f8f9fa;">
+                <div class="d-flex align-items-center flex-wrap" style="gap:12px;">
+                  <div>
+                    <label class="form-label mb-1" style="font-size:11px;color:#6b7280;">เลือกรุ่น</label>
+                    <select id="standings-download-division" class="form-select form-select-sm" style="width:auto;min-width:120px;">
+                      <% divisions.each do |div| %>
+                        <option value="<%= div.id %>"><%= div.name %></option>
+                      <% end %>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label mb-1" style="font-size:11px;color:#6b7280;">เลือกสาย</label>
+                    <div id="standings-download-groups" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    </div>
+                  </div>
+                  <div class="ms-auto">
+                    <button type="button" id="standings-select-all" class="btn btn-sm btn-outline-secondary" style="font-size:11px;">เลือกทั้งหมด</button>
+                  </div>
+                </div>
+              </div>
+              
+              <div id="standings-download-preview-container" style="max-height:60vh;overflow:auto;padding:16px;">
+                <div id="standings-download-capture" style="background:#fff;padding:16px;">
+                  <div id="standings-compact-tables" style="display:flex;flex-wrap:wrap;gap:16px;">
+                  </div>
+                  <div style="margin-top:12px;padding-top:8px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;align-items:center;gap:4px;">
+                    <%= image_tag "dernsai_icon.png", alt: "DERNSAI", style: "width:16px;height:16px;border-radius:4px;object-fit:contain;" %>
+                    <span style="font-size:10px;font-weight:600;color:#94a3b8;">DERNSAI.COM</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">ปิด</button>
+              <button type="button" id="standings-download-btn" class="btn btn-sm btn-success">
+                <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                  <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                </svg>
+                ดาวน์โหลดรูป
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        (function() {
+          var divisionsData = <%= raw divisions.map { |div|
+            groups = div.groups.order(:name)
+            div_matches = all_matches.select { |m| m.tournament_division_id == div.id }
+            
+            groups_data = groups.map { |group|
+              group_matches = div_matches.select { |m| m.group_id == group.id }
+              team_ids = (group_matches.map(&:home_team_id) + group_matches.map(&:away_team_id)).compact.uniq
+              
+              stats = {}
+              team_ids.each { |tid| stats[tid] = { played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0, pts: 0 } }
+              
+              group_matches.each do |match|
+                next if match.home_team_id.blank? || match.away_team_id.blank?
+                next unless match.home_score.present? && match.away_score.present?
+                
+                h_id = match.home_team_id
+                a_id = match.away_team_id
+                hs = match.home_score.to_i
+                as = match.away_score.to_i
+                
+                stats[h_id][:played] += 1
+                stats[a_id][:played] += 1
+                stats[h_id][:gf] += hs; stats[h_id][:ga] += as
+                stats[a_id][:gf] += as; stats[a_id][:ga] += hs
+                
+                if hs > as
+                  stats[h_id][:won] += 1; stats[h_id][:pts] += (div.points_win || 3)
+                  stats[a_id][:lost] += 1; stats[a_id][:pts] += (div.points_loss || 0)
+                elsif hs < as
+                  stats[a_id][:won] += 1; stats[a_id][:pts] += (div.points_win || 3)
+                  stats[h_id][:lost] += 1; stats[h_id][:pts] += (div.points_loss || 0)
+                else
+                  stats[h_id][:draw] += 1; stats[h_id][:pts] += (div.points_draw || 1)
+                  stats[a_id][:draw] += 1; stats[a_id][:pts] += (div.points_draw || 1)
+                end
+              end
+              
+              teams_sorted = team_ids.map { |tid|
+                team = Team.find(tid)
+                s = stats[tid]
+                { id: tid, name: team.name, pts: s[:pts], played: s[:played], won: s[:won], draw: s[:draw], lost: s[:lost], gf: s[:gf], ga: s[:ga] }
+              }.sort_by { |t| [-t[:pts], -(t[:gf] - t[:ga]), -t[:gf], t[:name]] }
+              
+              { id: group.id, name: group.name, teams: teams_sorted }
+            }.select { |g| g[:teams].any? }
+            
+            { id: div.id, name: div.name, groups: groups_data }
+          }.to_json %>;
+
+          var divSelect = document.getElementById('standings-download-division');
+          var groupsContainer = document.getElementById('standings-download-groups');
+          var tablesContainer = document.getElementById('standings-compact-tables');
+          var downloadBtn = document.getElementById('standings-download-btn');
+          var selectAllBtn = document.getElementById('standings-select-all');
+          var selectedGroups = {};
+
+          function getCurrentDivision() {
+            var divId = parseInt(divSelect.value, 10);
+            return divisionsData.find(function(d) { return d.id === divId; });
+          }
+
+          function updateGroupCheckboxes() {
+            var div = getCurrentDivision();
+            if (!div) return;
+            
+            selectedGroups = {};
+            groupsContainer.innerHTML = '';
+            
+            div.groups.forEach(function(g) {
+              selectedGroups[g.id] = true;
+              
+              var label = document.createElement('label');
+              label.className = 'btn btn-sm btn-outline-success';
+              label.style.cssText = 'font-size:12px;padding:4px 10px;';
+              
+              var checkbox = document.createElement('input');
+              checkbox.type = 'checkbox';
+              checkbox.checked = true;
+              checkbox.value = g.id;
+              checkbox.style.display = 'none';
+              checkbox.addEventListener('change', function() {
+                selectedGroups[g.id] = this.checked;
+                label.classList.toggle('active', this.checked);
+                label.classList.toggle('btn-success', this.checked);
+                label.classList.toggle('btn-outline-success', !this.checked);
+                renderTables();
+              });
+              
+              label.appendChild(checkbox);
+              label.appendChild(document.createTextNode('สาย ' + g.name));
+              label.classList.add('active', 'btn-success');
+              label.classList.remove('btn-outline-success');
+              
+              groupsContainer.appendChild(label);
+            });
+            
+            renderTables();
+          }
+
+          function renderTables() {
+            var div = getCurrentDivision();
+            if (!div) return;
+            
+            var selectedGroupIds = Object.keys(selectedGroups).filter(function(k) { return selectedGroups[k]; }).map(Number);
+            var groupsToRender = div.groups.filter(function(g) { return selectedGroupIds.includes(g.id); });
+            
+            tablesContainer.innerHTML = '';
+            
+            if (groupsToRender.length === 0) {
+              tablesContainer.innerHTML = '<div class="text-muted" style="padding:20px;">กรุณาเลือกสายที่ต้องการ</div>';
+              return;
+            }
+            
+            var tableWidth = groupsToRender.length === 1 ? '100%' : 'calc(50% - 8px)';
+            
+            groupsToRender.forEach(function(g) {
+              var tableDiv = document.createElement('div');
+              tableDiv.style.cssText = 'width:' + tableWidth + ';min-width:280px;';
+              
+              var html = '<div style="background:#f8f9fa;padding:8px 12px;border-radius:6px 6px 0 0;font-weight:700;font-size:13px;">รุ่น ' + div.name + ' · สาย ' + g.name + '</div>';
+              html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+              html += '<thead style="background:#e2e8f0;"><tr>';
+              html += '<th style="padding:6px 4px;text-align:center;width:30px;">#</th>';
+              html += '<th style="padding:6px 4px;">ทีม</th>';
+              html += '<th style="padding:6px 4px;text-align:center;width:35px;font-weight:900;">คะแนน</th>';
+              html += '<th style="padding:6px 4px;text-align:center;width:30px;">แข่ง</th>';
+              html += '<th style="padding:6px 4px;text-align:center;width:55px;">ช/ส/พ</th>';
+              html += '<th style="padding:6px 4px;text-align:center;width:45px;">ประตู</th>';
+              html += '</tr></thead><tbody>';
+              
+              g.teams.forEach(function(t, idx) {
+                var bgColor = idx === 0 ? '#fffde7' : (idx % 2 === 0 ? '#fff' : '#f9fafb');
+                html += '<tr style="background:' + bgColor + ';">';
+                html += '<td style="padding:5px 4px;text-align:center;font-weight:600;">' + (idx + 1) + '</td>';
+                html += '<td style="padding:5px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">' + t.name + '</td>';
+                html += '<td style="padding:5px 4px;text-align:center;font-weight:900;">' + t.pts + '</td>';
+                html += '<td style="padding:5px 4px;text-align:center;">' + t.played + '</td>';
+                html += '<td style="padding:5px 4px;text-align:center;">' + t.won + '/' + t.draw + '/' + t.lost + '</td>';
+                html += '<td style="padding:5px 4px;text-align:center;">' + t.gf + '</td>';
+                html += '</tr>';
+              });
+              
+              html += '</tbody></table>';
+              tableDiv.innerHTML = html;
+              tablesContainer.appendChild(tableDiv);
+            });
+          }
+
+          if (divSelect) {
+            divSelect.addEventListener('change', updateGroupCheckboxes);
+          }
+
+          if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', function() {
+              var checkboxes = groupsContainer.querySelectorAll('input[type="checkbox"]');
+              var allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+              
+              checkboxes.forEach(function(cb) {
+                cb.checked = !allChecked;
+                cb.dispatchEvent(new Event('change'));
+              });
+            });
+          }
+
+          if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+              var captureEl = document.getElementById('standings-download-capture');
+              if (captureEl && typeof html2canvas !== 'undefined') {
+                html2canvas(captureEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(function(canvas) {
+                  var link = document.createElement('a');
+                  var div = getCurrentDivision();
+                  var divName = div ? div.name.replace(/\s+/g, '').toLowerCase() : 'all';
+                  var selectedGroupIds = Object.keys(selectedGroups).filter(function(k) { return selectedGroups[k]; }).map(Number);
+                  var groupNames = div ? div.groups.filter(function(g) { return selectedGroupIds.includes(g.id); }).map(function(g) { return g.name; }).join('') : '';
+                  var timestamp = Date.now().toString(36);
+                  link.download = 'table_' + divName + '_group' + (groupNames || 'all') + '_' + timestamp + '.png';
+                  link.href = canvas.toDataURL('image/png');
+                  link.click();
+                });
+              }
+            });
+          }
+
+          var modal = document.getElementById('standingsDownloadModal');
+          if (modal) {
+            modal.addEventListener('shown.bs.modal', function() {
+              updateGroupCheckboxes();
+            });
+          }
+        })();
+      </script>
     </div>
   </div>
 
