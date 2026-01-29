@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -536,6 +536,11 @@ class TournamentsController < ApplicationController
         return redirect_to target_path, alert: "กรุณาเลือกจำนวนทีมที่เข้ารอบน็อคเอาท์"
       end
 
+      # บันทึก knockout_pattern ถ้ามีการเลือก
+      if params[:knockout_pattern].present?
+        division.update(knockout_pattern: params[:knockout_pattern])
+      end
+
       # ตรวจจำนวนสายไม่ให้เกินจำนวนทีม (อย่างน้อย 2 ทีมต่อสาย)
       total_teams = division.team_registrations.confirmed_for_competition.distinct.count(:team_id)
       group_count = params[:group_count].to_i
@@ -754,6 +759,45 @@ class TournamentsController < ApplicationController
     else
       redirect_to fixture_tournament_path(@tournament), alert: e.record.errors.full_messages.join(", ")
     end
+  end
+
+  def clear_schedule
+    unless can_manage_registrations?(@tournament)
+      return redirect_to manage_schedule_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    division_id = params[:division_id]
+    clear_type = params[:clear_type] || "schedule" # schedule, scores, all
+
+    matches_scope = if division_id.present?
+      Match.where(tournament_division_id: division_id)
+    else
+      Match.joins(:tournament_division).where(tournament_divisions: { tournament_id: @tournament.id })
+    end
+
+    ActiveRecord::Base.transaction do
+      case clear_type
+      when "schedule"
+        # ล้างเฉพาะตารางแข่ง (วัน/เวลา, สนาม) - pitch_no reset เป็น 1 (default)
+        matches_scope.update_all(kickoff_at: nil, pitch_no: 1)
+      when "scores"
+        # ล้างเฉพาะสกอร์
+        matches_scope.update_all(home_score: nil, away_score: nil, decided_by_penalty: false, penalty_winner_side: nil)
+      when "all"
+        # ล้างทั้งหมด (ตาราง + สกอร์) - pitch_no reset เป็น 1 (default)
+        matches_scope.update_all(kickoff_at: nil, pitch_no: 1, home_score: nil, away_score: nil, decided_by_penalty: false, penalty_winner_side: nil)
+      end
+    end
+
+    message = case clear_type
+    when "schedule" then "ล้างตารางแข่ง (วัน/เวลา, สนาม) เรียบร้อยแล้ว"
+    when "scores" then "ล้างสกอร์เรียบร้อยแล้ว"
+    when "all" then "ล้างตารางแข่งและสกอร์เรียบร้อยแล้ว"
+    end
+
+    redirect_to manage_schedule_tournament_path(@tournament), notice: message
+  rescue StandardError => e
+    redirect_to manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
   end
 
   def new

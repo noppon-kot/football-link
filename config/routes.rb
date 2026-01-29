@@ -82,6 +82,7 @@ Rails.application.routes.draw do
       post :add_team_to_group
       post :add_match
       post :resolve_knockout_slots
+      delete :clear_schedule
     end
   end
 

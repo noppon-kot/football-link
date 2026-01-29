@@ -157,41 +157,115 @@ module Tournaments
     end
 
     # 4 สาย: A vs C, B vs D (แชมป์กลุ่มเจอกัน, รองแชมป์เจอกัน)
-    # Pattern: สายที่ห่างกัน 2 เจอกัน
+    # 4 สาย: รองรับ 3 รูปแบบ
+    # - "cross" (default): สายที่ห่างกันเจอกัน (A vs C, B vs D)
+    # - "adjacent": สายที่ติดกันเจอกัน ผู้ชนะเจอกันเอง (A vs B → ผู้ชนะเจอกัน, C vs D → ผู้ชนะเจอกัน)
+    # - "adjacent_cross": สายที่ติดกันเจอกัน ผู้ชนะข้ามกลุ่ม (A vs B, C vs D → ผู้ชนะข้ามไปเจอกลุ่มอื่น)
     def assign_first_round_labels_4_groups(first_round_matches, group_names)
       # group_names = ["A", "B", "C", "D"]
       a, b, c, d = group_names[0], group_names[1], group_names[2], group_names[3]
       
+      # ดึง knockout_pattern จาก division
+      knockout_pattern = @division.knockout_pattern.presence || "cross"
+      
       slot_pairs = case @bracket_size
       when 4
-        # 4 ทีม: แชมป์กลุ่มเท่านั้น
-        # 1A vs 1C, 1B vs 1D
-        [
-          ["1#{a}", "1#{c}"],
-          ["1#{b}", "1#{d}"]
-        ]
+        case knockout_pattern
+        when "adjacent"
+          # Adjacent: สายที่ติดกันเจอกัน
+          # 1A vs 1B, 1C vs 1D
+          [
+            ["1#{a}", "1#{b}"],
+            ["1#{c}", "1#{d}"]
+          ]
+        when "adjacent_cross"
+          # Adjacent Cross: สายที่ติดกันเจอกัน แต่ผู้ชนะข้ามกลุ่ม
+          # 1A vs 1B, 1C vs 1D (เหมือน adjacent แต่ bracket จัดให้ผู้ชนะข้ามกลุ่ม)
+          # จัดลำดับให้: คู่1 vs คู่2 ในรอบรอง
+          [
+            ["1#{a}", "1#{b}"],
+            ["1#{c}", "1#{d}"]
+          ]
+        else
+          # Cross (default): สายที่ห่างกันเจอกัน
+          # 1A vs 1C, 1B vs 1D
+          [
+            ["1#{a}", "1#{c}"],
+            ["1#{b}", "1#{d}"]
+          ]
+        end
       when 8
-        # 8 ทีม: แชมป์ + รองแชมป์
-        # 1A vs 2C, 1C vs 2A, 1B vs 2D, 1D vs 2B
-        [
-          ["1#{a}", "2#{c}"],
-          ["1#{c}", "2#{a}"],
-          ["1#{b}", "2#{d}"],
-          ["1#{d}", "2#{b}"]
-        ]
+        case knockout_pattern
+        when "adjacent"
+          # Adjacent: สายที่ติดกันเจอกัน (A vs B, C vs D)
+          # คู่1: 1A vs 2B, คู่2: 1C vs 2D, คู่3: 1B vs 2A, คู่4: 1D vs 2C
+          # ผู้ชนะคู่ 1-2 เจอกัน, ผู้ชนะคู่ 3-4 เจอกัน
+          [
+            ["1#{a}", "2#{b}"],
+            ["1#{c}", "2#{d}"],
+            ["1#{b}", "2#{a}"],
+            ["1#{d}", "2#{c}"]
+          ]
+        when "adjacent_cross"
+          # Adjacent Cross: สายที่ติดกันเจอกัน แต่ผู้ชนะข้ามกลุ่ม
+          # คู่1: 1A vs 2B, คู่2: 1B vs 2A, คู่3: 1C vs 2D, คู่4: 1D vs 2C
+          # ผู้ชนะคู่ 1 vs ผู้ชนะคู่ 3, ผู้ชนะคู่ 2 vs ผู้ชนะคู่ 4
+          # (สาย A/B ข้ามไปเจอ สาย C/D ในรอบรอง)
+          [
+            ["1#{a}", "2#{b}"],
+            ["1#{b}", "2#{a}"],
+            ["1#{c}", "2#{d}"],
+            ["1#{d}", "2#{c}"]
+          ]
+        else
+          # Cross (default): สายที่ห่างกันเจอกัน (A vs C, B vs D)
+          # 1A vs 2C, 1C vs 2A, 1B vs 2D, 1D vs 2B
+          [
+            ["1#{a}", "2#{c}"],
+            ["1#{c}", "2#{a}"],
+            ["1#{b}", "2#{d}"],
+            ["1#{d}", "2#{b}"]
+          ]
+        end
       when 16
-        # 16 ทีม: อันดับ 1-4 จากทุกสาย
-        # จับคู่ให้ทีมจากสายเดียวกันไม่เจอกันในรอบแรก
-        [
-          ["1#{a}", "4#{c}"],
-          ["2#{c}", "3#{a}"],
-          ["1#{c}", "4#{a}"],
-          ["2#{a}", "3#{c}"],
-          ["1#{b}", "4#{d}"],
-          ["2#{d}", "3#{b}"],
-          ["1#{d}", "4#{b}"],
-          ["2#{b}", "3#{d}"]
-        ]
+        case knockout_pattern
+        when "adjacent"
+          # Adjacent: สายที่ติดกันเจอกัน
+          [
+            ["1#{a}", "4#{b}"],
+            ["2#{b}", "3#{a}"],
+            ["1#{b}", "4#{a}"],
+            ["2#{a}", "3#{b}"],
+            ["1#{c}", "4#{d}"],
+            ["2#{d}", "3#{c}"],
+            ["1#{d}", "4#{c}"],
+            ["2#{c}", "3#{d}"]
+          ]
+        when "adjacent_cross"
+          # Adjacent Cross: สายที่ติดกันเจอกัน แต่ผู้ชนะข้ามกลุ่ม
+          [
+            ["1#{a}", "4#{b}"],
+            ["2#{b}", "3#{a}"],
+            ["1#{c}", "4#{d}"],
+            ["2#{d}", "3#{c}"],
+            ["1#{b}", "4#{a}"],
+            ["2#{a}", "3#{b}"],
+            ["1#{d}", "4#{c}"],
+            ["2#{c}", "3#{d}"]
+          ]
+        else
+          # Cross (default): สายที่ห่างกันเจอกัน
+          [
+            ["1#{a}", "4#{c}"],
+            ["2#{c}", "3#{a}"],
+            ["1#{c}", "4#{a}"],
+            ["2#{a}", "3#{c}"],
+            ["1#{b}", "4#{d}"],
+            ["2#{d}", "3#{b}"],
+            ["1#{d}", "4#{b}"],
+            ["2#{b}", "3#{d}"]
+          ]
+        end
       else
         []
       end
@@ -203,58 +277,145 @@ module Tournaments
       end
     end
 
-    # 8 สาย: A vs E, B vs F, C vs G, D vs H (สายที่ห่างกัน 4 เจอกัน)
+    # 8 สาย: รองรับ 2 รูปแบบ
+    # - "cross" (default): สายที่ห่างกัน 4 เจอกัน (A vs E, B vs F, C vs G, D vs H)
+    # - "adjacent": สายที่ติดกันเจอกัน (A vs B, C vs D, E vs F, G vs H)
     def assign_first_round_labels_8_groups(first_round_matches, group_names)
       # group_names = ["A", "B", "C", "D", "E", "F", "G", "H"]
       a, b, c, d, e, f, g, h = group_names[0..7]
       
+      # ดึง knockout_pattern จาก division
+      knockout_pattern = @division.knockout_pattern.presence || "cross"
+      
       slot_pairs = case @bracket_size
       when 8
-        # 8 ทีม: แชมป์กลุ่มเท่านั้น
-        # 1A vs 1E, 1B vs 1F, 1C vs 1G, 1D vs 1H
-        [
-          ["1#{a}", "1#{e}"],
-          ["1#{b}", "1#{f}"],
-          ["1#{c}", "1#{g}"],
-          ["1#{d}", "1#{h}"]
-        ]
+        case knockout_pattern
+        when "adjacent"
+          # Adjacent: สายที่ติดกันเจอกัน
+          # 1A vs 1B, 1C vs 1D, 1E vs 1F, 1G vs 1H
+          [
+            ["1#{a}", "1#{b}"],
+            ["1#{c}", "1#{d}"],
+            ["1#{e}", "1#{f}"],
+            ["1#{g}", "1#{h}"]
+          ]
+        when "adjacent_cross"
+          # Adjacent Cross: สายที่ติดกันเจอกัน แต่ผู้ชนะข้ามกลุ่ม
+          # จัดให้ A/B เจอกันรอบชิง, C/D เจอกันรอบชิง, E/F เจอกันรอบชิง, G/H เจอกันรอบชิง
+          # คู่1: 1A vs 1B, คู่2: 1C vs 1D → ผู้ชนะข้ามกลุ่ม
+          # คู่3: 1E vs 1F, คู่4: 1G vs 1H → ผู้ชนะข้ามกลุ่ม
+          [
+            ["1#{a}", "1#{b}"],
+            ["1#{e}", "1#{f}"],
+            ["1#{c}", "1#{d}"],
+            ["1#{g}", "1#{h}"]
+          ]
+        else
+          # Cross (default): สายที่ห่างกัน 4 เจอกัน
+          # 1A vs 1E, 1B vs 1F, 1C vs 1G, 1D vs 1H
+          [
+            ["1#{a}", "1#{e}"],
+            ["1#{b}", "1#{f}"],
+            ["1#{c}", "1#{g}"],
+            ["1#{d}", "1#{h}"]
+          ]
+        end
       when 16
-        # 16 ทีม: แชมป์ + รองแชมป์
-        # 1A vs 2E, 1E vs 2A, 1B vs 2F, 1F vs 2B, 1C vs 2G, 1G vs 2C, 1D vs 2H, 1H vs 2D
-        [
-          ["1#{a}", "2#{e}"],
-          ["1#{e}", "2#{a}"],
-          ["1#{b}", "2#{f}"],
-          ["1#{f}", "2#{b}"],
-          ["1#{c}", "2#{g}"],
-          ["1#{g}", "2#{c}"],
-          ["1#{d}", "2#{h}"],
-          ["1#{h}", "2#{d}"]
-        ]
+        case knockout_pattern
+        when "adjacent"
+          # Adjacent: สายที่ติดกันเจอกัน (A vs B, C vs D, E vs F, G vs H)
+          # คู่1: 1A vs 2B, คู่2: 1B vs 2A (ผู้ชนะเจอกัน)
+          # คู่3: 1C vs 2D, คู่4: 1D vs 2C (ผู้ชนะเจอกัน)
+          # คู่5: 1E vs 2F, คู่6: 1F vs 2E (ผู้ชนะเจอกัน)
+          # คู่7: 1G vs 2H, คู่8: 1H vs 2G (ผู้ชนะเจอกัน)
+          [
+            ["1#{a}", "2#{b}"],
+            ["1#{b}", "2#{a}"],
+            ["1#{c}", "2#{d}"],
+            ["1#{d}", "2#{c}"],
+            ["1#{e}", "2#{f}"],
+            ["1#{f}", "2#{e}"],
+            ["1#{g}", "2#{h}"],
+            ["1#{h}", "2#{g}"]
+          ]
+        when "adjacent_cross"
+          # Adjacent Cross: สายที่ติดกันเจอกัน แต่ผู้ชนะข้ามกลุ่ม
+          # A/B เจอกันรอบชิง, C/D เจอกันรอบชิง, E/F เจอกันรอบชิง, G/H เจอกันรอบชิง
+          # จัดลำดับ: คู่1 vs คู่3, คู่2 vs คู่4, คู่5 vs คู่7, คู่6 vs คู่8
+          [
+            ["1#{a}", "2#{b}"],
+            ["1#{b}", "2#{a}"],
+            ["1#{e}", "2#{f}"],
+            ["1#{f}", "2#{e}"],
+            ["1#{c}", "2#{d}"],
+            ["1#{d}", "2#{c}"],
+            ["1#{g}", "2#{h}"],
+            ["1#{h}", "2#{g}"]
+          ]
+        else
+          # Cross (default): สายที่ห่างกัน 4 เจอกัน
+          # 1A vs 2E, 1E vs 2A, 1B vs 2F, 1F vs 2B, 1C vs 2G, 1G vs 2C, 1D vs 2H, 1H vs 2D
+          [
+            ["1#{a}", "2#{e}"],
+            ["1#{e}", "2#{a}"],
+            ["1#{b}", "2#{f}"],
+            ["1#{f}", "2#{b}"],
+            ["1#{c}", "2#{g}"],
+            ["1#{g}", "2#{c}"],
+            ["1#{d}", "2#{h}"],
+            ["1#{h}", "2#{d}"]
+          ]
+        end
       when 32
-        # 32 ทีม: อันดับ 1-4 จากทุกสาย
-        pairs = []
-        # A/E bracket
-        pairs << ["1#{a}", "4#{e}"]
-        pairs << ["2#{e}", "3#{a}"]
-        pairs << ["1#{e}", "4#{a}"]
-        pairs << ["2#{a}", "3#{e}"]
-        # B/F bracket
-        pairs << ["1#{b}", "4#{f}"]
-        pairs << ["2#{f}", "3#{b}"]
-        pairs << ["1#{f}", "4#{b}"]
-        pairs << ["2#{b}", "3#{f}"]
-        # C/G bracket
-        pairs << ["1#{c}", "4#{g}"]
-        pairs << ["2#{g}", "3#{c}"]
-        pairs << ["1#{g}", "4#{c}"]
-        pairs << ["2#{c}", "3#{g}"]
-        # D/H bracket
-        pairs << ["1#{d}", "4#{h}"]
-        pairs << ["2#{h}", "3#{d}"]
-        pairs << ["1#{h}", "4#{d}"]
-        pairs << ["2#{d}", "3#{h}"]
-        pairs
+        if knockout_pattern == "adjacent"
+          # Adjacent: สายที่ติดกันเจอกัน
+          pairs = []
+          # A/B bracket
+          pairs << ["1#{a}", "4#{b}"]
+          pairs << ["2#{b}", "3#{a}"]
+          pairs << ["1#{b}", "4#{a}"]
+          pairs << ["2#{a}", "3#{b}"]
+          # C/D bracket
+          pairs << ["1#{c}", "4#{d}"]
+          pairs << ["2#{d}", "3#{c}"]
+          pairs << ["1#{d}", "4#{c}"]
+          pairs << ["2#{c}", "3#{d}"]
+          # E/F bracket
+          pairs << ["1#{e}", "4#{f}"]
+          pairs << ["2#{f}", "3#{e}"]
+          pairs << ["1#{f}", "4#{e}"]
+          pairs << ["2#{e}", "3#{f}"]
+          # G/H bracket
+          pairs << ["1#{g}", "4#{h}"]
+          pairs << ["2#{h}", "3#{g}"]
+          pairs << ["1#{h}", "4#{g}"]
+          pairs << ["2#{g}", "3#{h}"]
+          pairs
+        else
+          # Cross (default): สายที่ห่างกัน 4 เจอกัน
+          pairs = []
+          # A/E bracket
+          pairs << ["1#{a}", "4#{e}"]
+          pairs << ["2#{e}", "3#{a}"]
+          pairs << ["1#{e}", "4#{a}"]
+          pairs << ["2#{a}", "3#{e}"]
+          # B/F bracket
+          pairs << ["1#{b}", "4#{f}"]
+          pairs << ["2#{f}", "3#{b}"]
+          pairs << ["1#{f}", "4#{b}"]
+          pairs << ["2#{b}", "3#{f}"]
+          # C/G bracket
+          pairs << ["1#{c}", "4#{g}"]
+          pairs << ["2#{g}", "3#{c}"]
+          pairs << ["1#{g}", "4#{c}"]
+          pairs << ["2#{c}", "3#{g}"]
+          # D/H bracket
+          pairs << ["1#{d}", "4#{h}"]
+          pairs << ["2#{h}", "3#{d}"]
+          pairs << ["1#{h}", "4#{d}"]
+          pairs << ["2#{d}", "3#{h}"]
+          pairs
+        end
       else
         []
       end

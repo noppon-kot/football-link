@@ -255,6 +255,15 @@
                           </select>
                         </div>
 
+                        <div class="col-6 col-md-3 js-field-knockout-pattern">
+                          <label class="form-label" style="font-size:12px;">รูปแบบการจับคู่</label>
+                          <select name="knockout_pattern" class="form-select form-select-sm">
+                            <option value="cross" <%= 'selected' if div.knockout_pattern == 'cross' %>>A vs C, B vs D (ข้ามสาย)</option>
+                            <option value="adjacent" <%= 'selected' if div.knockout_pattern == 'adjacent' %>>A vs B, C vs D (สายติดกัน)</option>
+                            <option value="adjacent_cross" <%= 'selected' if div.knockout_pattern == 'adjacent_cross' %>>A vs B, C vs D (ผู้ชนะข้ามกลุ่ม)</option>
+                          </select>
+                        </div>
+
                         <div class="col-6 col-md-3 js-field-third-place">
                           <label class="form-label" style="font-size:12px;">แมตช์ชิงที่ 3</label>
                           <select name="include_third_place" class="form-select form-select-sm js-include-third-place">

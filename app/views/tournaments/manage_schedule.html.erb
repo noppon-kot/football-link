@@ -41,6 +41,17 @@
               </svg>
               <span style="margin-left:6px;">ตั้งเวลาเป็นชุด</span>
             </button>
+            <button type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    data-bs-toggle="modal"
+                    data-bs-target="#clearScheduleModal"
+                    aria-label="ล้างตารางแข่ง"
+                    style="line-height:1;padding:6px 10px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
+              </svg>
+              <span style="margin-left:4px;">ล้างตาราง</span>
+            </button>
             </div>
           </div>
           <% total_matches = @all_matches.size %>
@@ -915,3 +926,61 @@
   document.addEventListener('DOMContentLoaded', initPenaltyToggle);
 })();
 </script>
+
+<%# Modal สำหรับล้างตารางแข่ง %>
+<div class="modal fade" id="clearScheduleModal" tabindex="-1" aria-labelledby="clearScheduleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="clearScheduleModalLabel">ล้างตารางแข่ง</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <%= form_with url: clear_schedule_tournament_path(@tournament), method: :delete, local: true do |f| %>
+        <div class="modal-body">
+          <div class="alert alert-warning" style="font-size:13px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:6px;">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/>
+            </svg>
+            <strong>คำเตือน:</strong> การล้างตารางจะไม่สามารถย้อนกลับได้
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" style="font-size:13px;font-weight:500;">เลือกรุ่นที่ต้องการล้าง</label>
+            <select name="division_id" class="form-select form-select-sm">
+              <option value="">ทุกรุ่น</option>
+              <% @tournament.tournament_divisions.each do |div| %>
+                <option value="<%= div.id %>"><%= div.name %></option>
+              <% end %>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" style="font-size:13px;font-weight:500;">เลือกประเภทที่ต้องการล้าง</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="clear_type" id="clearTypeSchedule" value="schedule" checked>
+              <label class="form-check-label" for="clearTypeSchedule" style="font-size:13px;">
+                ล้างตารางแข่ง (วัน/เวลา, สนาม) เท่านั้น
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="clear_type" id="clearTypeScores" value="scores">
+              <label class="form-check-label" for="clearTypeScores" style="font-size:13px;">
+                ล้างสกอร์เท่านั้น
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="clear_type" id="clearTypeAll" value="all">
+              <label class="form-check-label" for="clearTypeAll" style="font-size:13px;">
+                ล้างทั้งหมด (ตาราง + สกอร์)
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-sm btn-danger">ยืนยันการล้าง</button>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
