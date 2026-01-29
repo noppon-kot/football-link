@@ -321,10 +321,10 @@ module Tournaments
     def assign_first_round_labels_3_groups_4_teams(first_round_matches, group_names)
       return unless first_round_matches.size == 2
 
-      # ใช้ label แบบ ranking: R1, R2, R3, R4 (Rank 1-4 ตามผลงาน)
+      # ใช้ label ภาษาไทย: ที่1#1 = อันดับ 1 ที่ดีที่สุดอันดับ 1, ที่1#2 = อันดับ 1 ที่ดีที่สุดอันดับ 2, ที่2#1 = รองแชมป์ที่ดีที่สุด
       slot_pairs = [
-        ["R1", "R4"],  # อันดับ 1 vs อันดับ 4
-        ["R2", "R3"]   # อันดับ 2 vs อันดับ 3
+        ["ที่1#1", "ที่2#1"],  # อันดับ 1 ที่ดีที่สุด vs รองแชมป์ที่ดีที่สุด
+        ["ที่1#2", "ที่1#3"]   # อันดับ 1 ที่ดีอันดับ 2 vs อันดับ 1 ที่ดีอันดับ 3
       ]
 
       first_round_matches.each_with_index do |match, idx|
@@ -334,18 +334,17 @@ module Tournaments
     end
 
     # 3 สาย 8 ทีม: จัดอันดับตามผลงาน
-    # QF1-4: R1 vs R8, R2 vs R7, R3 vs R6, R4 vs R5
+    # QF1-4: อันดับ 1-8 ตามผลงาน
     # (อาจสลับคู่ถ้าทีมจากสายเดียวกันเจอกัน)
     def assign_first_round_labels_3_groups_8_teams(first_round_matches, group_names)
       return unless first_round_matches.size == 4
 
-      # ใช้ label แบบ ranking: R1-R8 (Rank 1-8 ตามผลงาน)
-      # Default: R1 vs R8, R2 vs R7, R3 vs R6, R4 vs R5
+      # ใช้ label ภาษาไทย: ที่1#1 = อันดับ 1 ที่ดีที่สุด, ที่2#2 = อันดับ 2 ที่ดีอันดับ 2
       slot_pairs = [
-        ["R1", "R8"],
-        ["R2", "R7"],
-        ["R3", "R6"],
-        ["R4", "R5"]
+        ["ที่1#1", "ที่3#2"],  # อันดับ 1 ที่ดีที่สุด vs อันดับ 3 ที่ดีอันดับ 2
+        ["ที่1#2", "ที่3#1"],  # อันดับ 1 ที่ดีอันดับ 2 vs อันดับ 3 ที่ดีที่สุด
+        ["ที่1#3", "ที่2#2"],  # อันดับ 1 ที่ดีอันดับ 3 vs อันดับ 2 ที่ดีอันดับ 2
+        ["ที่2#1", "ที่2#3"]   # อันดับ 2 ที่ดีที่สุด vs อันดับ 2 ที่ดีอันดับ 3
       ]
 
       first_round_matches.each_with_index do |match, idx|
