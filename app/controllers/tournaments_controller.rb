@@ -653,7 +653,20 @@ class TournamentsController < ApplicationController
       return redirect_to fixture_tournament_path(@tournament), alert: "ไม่พบแมตช์ที่ต้องการรีเซ็ตสกอร์"
     end
 
-    matches_params = params[:matches] || {}
+    # รวม matches และ matches_mobile params (mobile layout ใช้ชื่อแยกเพื่อไม่ให้ซ้ำกับ desktop)
+    # ทั้งสอง layout อยู่ใน form เดียวกัน ดังนั้นต้อง merge ทั้งสอง
+    matches_params = (params[:matches] || {}).to_unsafe_h
+    matches_mobile_params = (params[:matches_mobile] || {}).to_unsafe_h
+    
+    # Merge: ถ้า mobile มีค่าที่ไม่ว่าง ให้ใช้ค่าจาก mobile
+    matches_mobile_params.each do |match_id, attrs|
+      next if attrs.values.all?(&:blank?)
+      matches_params[match_id] ||= {}
+      attrs.each do |key, value|
+        matches_params[match_id][key] = value if value.present? || matches_params[match_id][key].blank?
+      end
+    end
+    
     affected_division_ids = Set.new
     last_kickoff_day = nil
 
@@ -662,7 +675,12 @@ class TournamentsController < ApplicationController
         match = Match.find_by(id: match_id)
         next unless match
 
-        permitted = attrs.permit(:home_score, :away_score, :kickoff_at, :penalty_winner_side, :home_team_id, :away_team_id, :pitch_no)
+        # attrs อาจเป็น Hash หรือ ActionController::Parameters
+        permitted = if attrs.respond_to?(:permit)
+          attrs.permit(:home_score, :away_score, :kickoff_at, :penalty_winner_side, :home_team_id, :away_team_id, :pitch_no)
+        else
+          attrs.slice("home_score", "away_score", "kickoff_at", "penalty_winner_side", "home_team_id", "away_team_id", "pitch_no").with_indifferent_access
+        end
 
         update_attrs = {}
 

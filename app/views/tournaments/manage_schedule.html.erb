@@ -166,68 +166,161 @@
 
                   <div class="mb-2">
                     <div class="fw-bold" style="font-size:12px;color:#546e7a;margin-bottom:6px;"><%= group_label %></div>
-                    <%# Single responsive layout - card style that works on all screens %>
-                    <% matches.each_with_index do |match, midx| %>
-                      <% is_scheduled = match.kickoff_at.present? %>
-                      <div class="card mb-2" style="<%= is_scheduled ? 'border-left:3px solid #4caf50;' : 'border-left:3px solid #ff9800;' %>">
-                        <div class="card-body p-2">
-                          <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="badge bg-secondary">คู่ที่ <%= match.position || (midx + 1) %></span>
-                            <div class="d-flex align-items-center" style="gap:8px;">
-                              <span style="font-size:10px;color:#78909c;">สนาม</span>
-                              <%= number_field_tag "matches[#{match.id}][pitch_no]",
-                                    match.pitch_no,
-                                    class: "form-control form-control-sm",
-                                    style: "width:50px;font-size:11px;padding:2px 4px;",
-                                    min: 0, max: 99 %>
+                    <%# Mobile card layout - fields with _mobile suffix %>
+                    <div class="d-md-none">
+                      <% matches.each_with_index do |match, midx| %>
+                        <% is_scheduled = match.kickoff_at.present? %>
+                        <div class="card mb-2" style="<%= is_scheduled ? 'border-left:3px solid #4caf50;' : 'border-left:3px solid #ff9800;' %>">
+                          <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                              <span class="badge bg-secondary">คู่ที่ <%= match.position || (midx + 1) %></span>
+                              <div class="d-flex align-items-center" style="gap:8px;">
+                                <span style="font-size:10px;color:#78909c;">สนาม</span>
+                                <%= number_field_tag "matches_mobile[#{match.id}][pitch_no]",
+                                      match.pitch_no,
+                                      class: "form-control form-control-sm js-mobile-field",
+                                      style: "width:50px;font-size:11px;padding:2px 4px;",
+                                      min: 0, max: 99,
+                                      data: { match_id: match.id, field: "pitch_no" } %>
+                              </div>
                             </div>
-                          </div>
-                          <div class="mb-2">
-                            <%= datetime_local_field_tag "matches[#{match.id}][kickoff_at]",
-                                  (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
-                                  class: "form-control form-control-sm",
-                                  style: "font-size:11px;" %>
-                          </div>
-                          <div class="d-flex align-items-center justify-content-between" style="gap:8px;">
-                            <div class="text-truncate" style="flex:1;font-size:12px;">
-                              <%= match.home_name %>
+                            <div class="mb-2">
+                              <%= datetime_local_field_tag "matches_mobile[#{match.id}][kickoff_at]",
+                                    (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
+                                    class: "form-control form-control-sm js-mobile-field",
+                                    style: "font-size:11px;",
+                                    data: { match_id: match.id, field: "kickoff_at" } %>
                             </div>
-                            <div class="d-flex align-items-center" style="gap:4px;">
-                              <%= select_tag "matches[#{match.id}][home_score]",
-                                    options_for_select((0..20).to_a, match.home_score),
-                                    include_blank: "-",
-                                    class: "form-select form-select-sm js-score-select",
-                                    style: "width:45px;font-size:11px;padding:2px;",
-                                    data: { match_id: match.id, side: "home" } %>
-                              <span style="font-size:12px;font-weight:bold;">-</span>
-                              <%= select_tag "matches[#{match.id}][away_score]",
-                                    options_for_select((0..20).to_a, match.away_score),
-                                    include_blank: "-",
-                                    class: "form-select form-select-sm js-score-select",
-                                    style: "width:45px;font-size:11px;padding:2px;",
-                                    data: { match_id: match.id, side: "away" } %>
+                            <div class="d-flex align-items-center justify-content-between" style="gap:8px;">
+                              <div class="text-truncate" style="flex:1;font-size:12px;">
+                                <%= match.home_name %>
+                              </div>
+                              <div class="d-flex align-items-center" style="gap:4px;">
+                                <%= select_tag "matches_mobile[#{match.id}][home_score]",
+                                      options_for_select((0..20).to_a, match.home_score),
+                                      include_blank: "-",
+                                      class: "form-select form-select-sm js-score-select js-mobile-field",
+                                      style: "width:45px;font-size:11px;padding:2px;",
+                                      data: { match_id: match.id, side: "home", field: "home_score" } %>
+                                <span style="font-size:12px;font-weight:bold;">-</span>
+                                <%= select_tag "matches_mobile[#{match.id}][away_score]",
+                                      options_for_select((0..20).to_a, match.away_score),
+                                      include_blank: "-",
+                                      class: "form-select form-select-sm js-score-select js-mobile-field",
+                                      style: "width:45px;font-size:11px;padding:2px;",
+                                      data: { match_id: match.id, side: "away", field: "away_score" } %>
+                              </div>
+                              <div class="text-truncate text-end" style="flex:1;font-size:12px;">
+                                <%= match.away_name %>
+                              </div>
                             </div>
-                            <div class="text-truncate text-end" style="flex:1;font-size:12px;">
-                              <%= match.away_name %>
+                            <% is_draw = match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
+                            <div class="mt-1 js-penalty-container" 
+                                 id="penalty-container-mobile-<%= match.id %>"
+                                 data-match-id="<%= match.id %>"
+                                 style="<%= is_draw ? '' : 'display:none;' %>">
+                              <%= select_tag "matches_mobile[#{match.id}][penalty_winner_side]",
+                                    options_for_select([
+                                      ["ไม่มียิงจุดโทษ", ""],
+                                      ["#{match.home_name.presence || 'เหย้า'} ชนะ PK", "home"],
+                                      ["#{match.away_name.presence || 'เยือน'} ชนะ PK", "away"]
+                                    ], match.penalty_winner_side),
+                                    class: "form-select form-select-sm js-mobile-field",
+                                    style: "font-size:10px;",
+                                    data: { match_id: match.id, field: "penalty_winner_side" } %>
                             </div>
-                          </div>
-                          <% is_draw = match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
-                          <div class="mt-1 js-penalty-container" 
-                               id="penalty-container-<%= match.id %>"
-                               data-match-id="<%= match.id %>"
-                               style="<%= is_draw ? '' : 'display:none;' %>">
-                            <%= select_tag "matches[#{match.id}][penalty_winner_side]",
-                                  options_for_select([
-                                    ["ไม่มียิงจุดโทษ", ""],
-                                    ["#{match.home_name.presence || 'เหย้า'} ชนะ PK", "home"],
-                                    ["#{match.away_name.presence || 'เยือน'} ชนะ PK", "away"]
-                                  ], match.penalty_winner_side),
-                                  class: "form-select form-select-sm",
-                                  style: "font-size:10px;" %>
                           </div>
                         </div>
-                      </div>
-                    <% end %>
+                      <% end %>
+                    </div>
+                    <%# Desktop table layout %>
+                    <div class="d-none d-md-block table-responsive">
+                      <table class="table table-sm align-middle mb-0" style="font-size:12px;">
+                        <thead class="table-light">
+                          <tr>
+                            <th scope="col" style="width:50px;">คู่ที่</th>
+                            <th scope="col" style="width:160px;">วัน/เวลา</th>
+                            <th scope="col" style="width:70px;">สนาม</th>
+                            <th scope="col">ทีมเหย้า</th>
+                            <th scope="col">ทีมเยือน</th>
+                            <th scope="col" style="width:120px;" class="text-center">สกอร์</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% matches.each_with_index do |match, midx| %>
+                            <% is_scheduled = match.kickoff_at.present? %>
+                            <tr class="match-row <%= is_scheduled ? 'scheduled' : 'unscheduled' %>" 
+                                style="<%= is_scheduled ? 'background-color:#e8f5e9;' : 'background-color:#fff8e1;' %>">
+                              <td>
+                                <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" do %>
+                                  คู่ที่ <%= match.position || (midx + 1) %>
+                                <% end %>
+                              </td>
+                              <td style="white-space:nowrap;">
+                                <%= datetime_local_field_tag "matches[#{match.id}][kickoff_at]",
+                                      (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
+                                      class: "form-control form-control-sm",
+                                      style: "font-size:11px;padding:2px 4px;" %>
+                              </td>
+                              <td>
+                                <%= number_field_tag "matches[#{match.id}][pitch_no]",
+                                      match.pitch_no,
+                                      class: "form-control form-control-sm",
+                                      style: "width:50px;font-size:11px;padding:2px 4px;",
+                                      min: 0, max: 99 %>
+                              </td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.home_team&.logo&.attached? %>
+                                    <%= image_tag match.home_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.home_name %></span>
+                                </div>
+                              </td>
+                              <td>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.away_team&.logo&.attached? %>
+                                    <%= image_tag match.away_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.away_name %></span>
+                                </div>
+                              </td>
+                              <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center" style="gap:4px;">
+                                  <%= select_tag "matches[#{match.id}][home_score]",
+                                        options_for_select((0..20).to_a, match.home_score),
+                                        include_blank: "-",
+                                        class: "form-select form-select-sm js-score-select",
+                                        style: "width:45px;font-size:11px;padding:2px;",
+                                        data: { match_id: match.id, side: "home" } %>
+                                  <span>-</span>
+                                  <%= select_tag "matches[#{match.id}][away_score]",
+                                        options_for_select((0..20).to_a, match.away_score),
+                                        include_blank: "-",
+                                        class: "form-select form-select-sm js-score-select",
+                                        style: "width:45px;font-size:11px;padding:2px;",
+                                        data: { match_id: match.id, side: "away" } %>
+                                </div>
+                                <% is_draw = match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
+                                <div class="mt-1 js-penalty-container" 
+                                     id="penalty-container-<%= match.id %>"
+                                     data-match-id="<%= match.id %>"
+                                     style="<%= is_draw ? '' : 'display:none;' %>">
+                                  <%= select_tag "matches[#{match.id}][penalty_winner_side]",
+                                        options_for_select([
+                                          ["ไม่มียิงจุดโทษ", ""],
+                                          ["#{match.home_name.presence || 'เหย้า'} ชนะจุดโทษ", "home"],
+                                          ["#{match.away_name.presence || 'เยือน'} ชนะจุดโทษ", "away"]
+                                        ], match.penalty_winner_side),
+                                        class: "form-select form-select-sm",
+                                        style: "font-size:10px;padding:2px 4px;" %>
+                                </div>
+                              </td>
+                            </tr>
+                          <% end %>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 <% end %>
 
