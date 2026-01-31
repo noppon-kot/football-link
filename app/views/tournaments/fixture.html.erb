@@ -519,10 +519,10 @@
                         <div>
                           <label class="form-label mb-1" style="font-size:11px;color:#6b7280;">คู่/หน้า</label>
                           <select id="download-per-page" class="form-select form-select-sm" style="width:auto;min-width:80px;">
+                            <option value="<%= @next_day_matches_total %>" selected>ทุกคู่</option>
                             <% [5, 10, 15, 20, 25, 30].each do |n| %>
-                              <option value="<%= n %>" <%= 'selected' if n == 10 %>><%= n %></option>
+                              <option value="<%= n %>"><%= n %></option>
                             <% end %>
-                            <option value="<%= @next_day_matches_total %>">ทั้งหมด</option>
                           </select>
                         </div>
                         <div id="download-page-selector">
