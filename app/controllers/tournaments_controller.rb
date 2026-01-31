@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout, :adjust_times]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout, :adjust_times, :tiebreaker, :update_tiebreaker]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -1348,5 +1348,151 @@ class TournamentsController < ApplicationController
     return nil unless team && team[:team_id].present?
     
     { team_id: team[:team_id], team_name: team[:team_name] }
+  end
+
+  public
+
+  def tiebreaker
+    @divisions = @tournament.tournament_divisions.order(:position, :id)
+    @tiebreaker_data = {}
+
+    @divisions.each do |division|
+      groups = division.groups.order(:name)
+      division_data = { groups: [] }
+
+      groups.each do |group|
+        standings = compute_group_standings_for_tiebreaker(division, group)
+        tied_teams = find_tied_teams(standings)
+        
+        if tied_teams.any?
+          division_data[:groups] << {
+            group: group,
+            standings: standings,
+            tied_teams: tied_teams
+          }
+        end
+      end
+
+      @tiebreaker_data[division.id] = division_data if division_data[:groups].any?
+    end
+  end
+
+  def update_tiebreaker
+    unless can_manage_registrations?(@tournament)
+      return redirect_to tiebreaker_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    tiebreaker_params = params[:tiebreaker] || {}
+    
+    TeamRegistration.transaction do
+      tiebreaker_params.each do |team_reg_id, attrs|
+        team_reg = TeamRegistration.find_by(id: team_reg_id, tournament_id: @tournament.id)
+        next unless team_reg
+        
+        rank = attrs[:tiebreaker_rank].to_i
+        team_reg.update!(tiebreaker_rank: rank > 0 ? rank : nil)
+      end
+    end
+
+    # Auto seed knockout after saving tiebreaker ranks
+    division_ids = @tournament.tournament_divisions.pluck(:id)
+    auto_seed_message = auto_seed_knockout_if_ready(division_ids)
+
+    notice = "บันทึกลำดับเรียบร้อยแล้ว"
+    notice += " #{auto_seed_message}" if auto_seed_message.present?
+    
+    redirect_to tiebreaker_tournament_path(@tournament), notice: notice
+  rescue => e
+    redirect_to tiebreaker_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
+  end
+
+  private
+
+  def compute_group_standings_for_tiebreaker(division, group)
+    matches = division.matches.group_stage.where(group_id: group.id)
+    win_pts  = division.respond_to?(:points_win)  ? division.points_win  : 3
+    draw_pts = division.respond_to?(:points_draw) ? division.points_draw : 1
+    loss_pts = division.respond_to?(:points_loss) ? division.points_loss : 0
+    draw_mode = division.respond_to?(:draw_mode) ? (division.draw_mode.presence || "normal") : "normal"
+    pk_win_pts  = division.respond_to?(:points_pk_win)  && division.points_pk_win.present?  ? division.points_pk_win  : draw_pts
+    pk_loss_pts = division.respond_to?(:points_pk_loss) && division.points_pk_loss.present? ? division.points_pk_loss : draw_pts
+
+    # Get team_ids from matches instead of team_registrations
+    team_ids = (matches.pluck(:home_team_id) + matches.pluck(:away_team_id)).compact.uniq
+    
+    stats = {}
+    team_ids.each do |tid|
+      # Try to find team_registration with group_id first, then without
+      reg = TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: division.id, group_id: group.id, team_id: tid)
+      reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: division.id, team_id: tid)
+      reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, team_id: tid)
+      
+      stats[tid] = { 
+        team_id: tid, 
+        team_reg_id: reg&.id,
+        team_name: Team.find_by(id: tid)&.name || "Unknown",
+        played: 0, won: 0, draw: 0, lost: 0, gf: 0, ga: 0, pts: 0,
+        tiebreaker_rank: reg&.tiebreaker_rank
+      }
+    end
+
+    matches.each do |match|
+      next if match.home_team_id.blank? || match.away_team_id.blank?
+      next unless match.home_score.present? && match.away_score.present?
+
+      h_id = match.home_team_id
+      a_id = match.away_team_id
+      hs  = match.home_score.to_i
+      as  = match.away_score.to_i
+
+      next unless stats[h_id] && stats[a_id]
+
+      stats[h_id][:played] += 1
+      stats[a_id][:played] += 1
+      stats[h_id][:gf] += hs; stats[h_id][:ga] += as
+      stats[a_id][:gf] += as; stats[a_id][:ga] += hs
+
+      if hs > as
+        stats[h_id][:won]  += 1; stats[h_id][:pts] += win_pts
+        stats[a_id][:lost] += 1; stats[a_id][:pts] += loss_pts
+      elsif hs < as
+        stats[a_id][:won]  += 1; stats[a_id][:pts] += win_pts
+        stats[h_id][:lost] += 1; stats[h_id][:pts] += loss_pts
+      else
+        if draw_mode == "pk" && match.decided_by_penalty && match.penalty_winner_side.present?
+          winner_id, loser_id = match.penalty_winner_side == "home" ? [h_id, a_id] : [a_id, h_id]
+          stats[winner_id][:draw] += 1; stats[winner_id][:pts] += pk_win_pts
+          stats[loser_id][:draw]  += 1; stats[loser_id][:pts]  += pk_loss_pts
+        else
+          stats[h_id][:draw] += 1; stats[h_id][:pts] += draw_pts
+          stats[a_id][:draw] += 1; stats[a_id][:pts] += draw_pts
+        end
+      end
+    end
+
+    # Sort by pts, then tiebreaker_rank (if set), then goal diff, then goals for
+    stats.values.sort_by { |s| 
+      [-s[:pts], s[:tiebreaker_rank] || 999, -(s[:gf] - s[:ga]), -s[:gf], s[:team_name]] 
+    }
+  end
+
+  def find_tied_teams(standings)
+    tied_groups = []
+    
+    # Group teams by points
+    by_pts = standings.group_by { |s| s[:pts] }
+    
+    by_pts.each do |pts, teams|
+      next if teams.size < 2
+      
+      # Always show teams with same points (even if already ranked)
+      tied_groups << {
+        pts: pts,
+        teams: teams,
+        all_ranked: teams.all? { |t| t[:tiebreaker_rank].present? }
+      }
+    end
+    
+    tied_groups
   end
 end

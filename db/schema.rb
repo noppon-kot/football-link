@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_31_041912) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_31_073434) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -191,6 +191,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_31_041912) do
     t.datetime "roster_submitted_at"
     t.bigint "roster_submitted_by_user_id"
     t.bigint "group_id"
+    t.integer "tiebreaker_rank"
     t.index ["group_id"], name: "index_team_registrations_on_group_id"
     t.index ["manager_user_id"], name: "index_team_registrations_on_manager_user_id"
     t.index ["roster_locked"], name: "index_team_registrations_on_roster_locked"

@@ -91,8 +91,17 @@ module Tournaments
           end
         end
 
-        sorted = stats.map { |tid, s| [tid, s] }
-                     .sort_by { |tid, s| [-s[:pts], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] }
+        sorted = stats.map { |tid, s| 
+          # Get tiebreaker_rank from team_registration
+          team_reg = TeamRegistration.find_by(
+            tournament_id: @division.tournament_id,
+            tournament_division_id: @division.id,
+            group_id: group.id,
+            team_id: tid
+          )
+          tiebreaker = team_reg&.tiebreaker_rank || 999
+          [tid, s.merge(tiebreaker_rank: tiebreaker)]
+        }.sort_by { |tid, s| [-s[:pts], s[:tiebreaker_rank], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] }
         standings_by_group[group.id] = sorted
       end
 

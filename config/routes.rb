@@ -85,6 +85,8 @@ Rails.application.routes.draw do
       delete :clear_schedule
       post :regenerate_knockout
       patch :adjust_times
+      get :tiebreaker
+      patch :update_tiebreaker
     end
   end
 

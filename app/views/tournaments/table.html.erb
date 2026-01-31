@@ -107,9 +107,17 @@
         </div>
         <div class="card-body">
           <% if can_manage_registrations?(@tournament) %>
-            <p class="mb-2" style="font-size:13px;color:#78909c;">
-              ระบบจะคำนวณคะแนนอัตโนมัติจากผลการแข่งขันของแต่ละสาย เมื่อมีการบันทึกสกอร์แล้ว ด้านล่างจะแสดงตารางคะแนนแยกตามรุ่น
-            </p>
+            <div class="d-flex justify-content-between align-items-start mb-2" style="gap:12px;">
+              <p class="mb-0" style="font-size:13px;color:#78909c;">
+                ระบบจะคำนวณคะแนนอัตโนมัติจากผลการแข่งขันของแต่ละสาย เมื่อมีการบันทึกสกอร์แล้ว ด้านล่างจะแสดงตารางคะแนนแยกตามรุ่น
+              </p>
+              <%= link_to tiebreaker_tournament_path(@tournament), class: "btn btn-sm btn-outline-warning", style: "white-space:nowrap;" do %>
+                <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                  <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l4.59-4.58L18 11l-6 6z"/>
+                </svg>
+                จับสลาก
+              <% end %>
+            </div>
           <% end %>
 
           <% divisions = @tournament.tournament_divisions.order(:position, :id) %>
@@ -324,7 +332,11 @@
                                   <% end %>
                                 <% end %>
 
-                                <% sorted = team_ids.map { |tid| [tid, stats[tid]] }.sort_by { |tid, s| [-s[:pts], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
+                                <% sorted = team_ids.map { |tid| 
+                                  team_reg = TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, group_id: group.id, team_id: tid)
+                                  tiebreaker = team_reg&.tiebreaker_rank || 999
+                                  [tid, stats[tid].merge(tiebreaker_rank: tiebreaker)]
+                                }.sort_by { |tid, s| [-s[:pts], s[:tiebreaker_rank], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
                               <% sorted.first(10).each_with_index do |(tid, s), idx| %>
                                 <% team = Team.find(tid) %>
                                 <% gd = s[:gf] - s[:ga] %>
@@ -424,7 +436,11 @@
                                 <% end %>
                               <% end %>
 
-                              <% sorted = team_ids.map { |tid| [tid, stats[tid]] }.sort_by { |tid, s| [-s[:pts], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
+                              <% sorted = team_ids.map { |tid| 
+                                team_reg = TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, group_id: group.id, team_id: tid)
+                                tiebreaker = team_reg&.tiebreaker_rank || 999
+                                [tid, stats[tid].merge(tiebreaker_rank: tiebreaker)]
+                              }.sort_by { |tid, s| [-s[:pts], s[:tiebreaker_rank], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
 
                               <% sorted.each_with_index do |(tid, s), idx| %>
                                 <% team = Team.find(tid) %>
@@ -641,8 +657,10 @@
               teams_sorted = team_ids.map { |tid|
                 team = Team.find(tid)
                 s = stats[tid]
-                { id: tid, name: team.name, logo_url: (team.logo.attached? ? Rails.application.routes.url_helpers.rails_blob_path(team.logo, only_path: true) : nil), pts: s[:pts], played: s[:played], won: s[:won], draw: s[:draw], lost: s[:lost], gf: s[:gf], ga: s[:ga] }
-              }.sort_by { |t| [-t[:pts], -(t[:gf] - t[:ga]), -t[:gf], t[:name]] }
+                team_reg = TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, group_id: group.id, team_id: tid)
+                tiebreaker = team_reg&.tiebreaker_rank || 999
+                { id: tid, name: team.name, logo_url: (team.logo.attached? ? Rails.application.routes.url_helpers.rails_blob_path(team.logo, only_path: true) : nil), pts: s[:pts], played: s[:played], won: s[:won], draw: s[:draw], lost: s[:lost], gf: s[:gf], ga: s[:ga], tiebreaker_rank: tiebreaker }
+              }.sort_by { |t| [-t[:pts], t[:tiebreaker_rank], -(t[:gf] - t[:ga]), -t[:gf], t[:name]] }
               
               { id: group.id, name: group.name, teams: teams_sorted }
             }.select { |g| g[:teams].any? }
