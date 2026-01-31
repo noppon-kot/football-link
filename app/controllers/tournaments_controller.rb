@@ -654,16 +654,18 @@ class TournamentsController < ApplicationController
     end
 
     # รวม matches และ matches_mobile params (mobile layout ใช้ชื่อแยกเพื่อไม่ให้ซ้ำกับ desktop)
-    # ทั้งสอง layout อยู่ใน form เดียวกัน ดังนั้นต้อง merge ทั้งสอง
-    matches_params = (params[:matches] || {}).to_unsafe_h
-    matches_mobile_params = (params[:matches_mobile] || {}).to_unsafe_h
+    # ทั้งสอง layout อยู่ใน form เดียวกัน - ใช้ค่าจาก layout ที่ผู้ใช้กำลังใช้งานจริง
+    # Desktop จะซ่อนบน mobile (d-none d-md-block) และ mobile จะซ่อนบน desktop (d-md-none)
+    matches_params = params[:matches].present? ? params[:matches].to_unsafe_h.deep_dup : {}
+    matches_mobile_params = params[:matches_mobile].present? ? params[:matches_mobile].to_unsafe_h : {}
     
-    # Merge: ถ้า mobile มีค่าที่ไม่ว่าง ให้ใช้ค่าจาก mobile
+    # Merge: ใช้ค่าจาก mobile override desktop เพราะ mobile fields มี js-mobile-field class
+    # ที่จะถูก sync กับ desktop fields เมื่อเปลี่ยนค่า แต่ถ้าไม่มี JS sync ให้ใช้ค่าจาก mobile โดยตรง
     matches_mobile_params.each do |match_id, attrs|
-      next if attrs.values.all?(&:blank?)
       matches_params[match_id] ||= {}
       attrs.each do |key, value|
-        matches_params[match_id][key] = value if value.present? || matches_params[match_id][key].blank?
+        # ใช้ค่าจาก mobile ถ้ามีค่า (ไม่ว่าง)
+        matches_params[match_id][key] = value if value.present?
       end
     end
     

@@ -264,21 +264,52 @@
 
           <% if can_manage_registrations?(@tournament) %>
             <hr />
-            <%= form_with url: match_score_tournament_path(@tournament, match_id: @match.id), method: :patch, local: true do %>
+            <%= form_with url: match_score_tournament_path(@tournament, match_id: @match.id), method: :patch, local: true, html: { id: "match-score-form" } do %>
               <div class="row g-2 align-items-end">
                 <div class="col-6">
                   <label class="form-label" style="font-size:12px;">สกอร์เหย้า</label>
-                  <%= select_tag "match[home_score]", options_for_select((0..30).to_a, @match.home_score), include_blank: "-", class: "form-select form-select-sm" %>
+                  <%= select_tag "match[home_score]", options_for_select((0..30).to_a, @match.home_score), include_blank: "-", class: "form-select form-select-sm js-match-score", data: { side: "home" } %>
                 </div>
                 <div class="col-6">
                   <label class="form-label" style="font-size:12px;">สกอร์เยือน</label>
-                  <%= select_tag "match[away_score]", options_for_select((0..30).to_a, @match.away_score), include_blank: "-", class: "form-select form-select-sm" %>
+                  <%= select_tag "match[away_score]", options_for_select((0..30).to_a, @match.away_score), include_blank: "-", class: "form-select form-select-sm js-match-score", data: { side: "away" } %>
+                </div>
+                <% is_draw = @match.home_score.present? && @match.away_score.present? && @match.home_score == @match.away_score %>
+                <div class="col-12 js-penalty-container" id="match-penalty-container" style="<%= is_draw ? '' : 'display:none;' %>">
+                  <label class="form-label" style="font-size:12px;">ผลจุดโทษ (กรณีเสมอ)</label>
+                  <%= select_tag "match[penalty_winner_side]",
+                        options_for_select([
+                          ["ไม่มียิงจุดโทษ", ""],
+                          ["#{@match.home_name} ชนะ PK", "home"],
+                          ["#{@match.away_name} ชนะ PK", "away"]
+                        ], @match.penalty_winner_side),
+                        class: "form-select form-select-sm" %>
                 </div>
                 <div class="col-12 text-end">
                   <%= submit_tag "บันทึกสกอร์", class: "btn btn-sm btn-outline-primary" %>
                 </div>
               </div>
             <% end %>
+            <script>
+              (function() {
+                var form = document.getElementById('match-score-form');
+                if (!form) return;
+                var homeSelect = form.querySelector('[data-side="home"]');
+                var awaySelect = form.querySelector('[data-side="away"]');
+                var penaltyContainer = document.getElementById('match-penalty-container');
+                
+                function checkDraw() {
+                  if (!homeSelect || !awaySelect || !penaltyContainer) return;
+                  var homeVal = homeSelect.value;
+                  var awayVal = awaySelect.value;
+                  var isDraw = homeVal !== '' && awayVal !== '' && homeVal === awayVal;
+                  penaltyContainer.style.display = isDraw ? '' : 'none';
+                }
+                
+                if (homeSelect) homeSelect.addEventListener('change', checkDraw);
+                if (awaySelect) awaySelect.addEventListener('change', checkDraw);
+              })();
+            </script>
 
             <hr />
             <%= form_with url: match_images_tournament_path(@tournament, match_id: @match.id), method: :patch, local: true, multipart: true do %>

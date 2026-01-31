@@ -50,9 +50,17 @@ class TournamentMatchesController < ApplicationController
       return redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: I18n.t("sessions.flash.login_required")
     end
 
-    permitted = params.require(:match).permit(:home_score, :away_score)
+    permitted = params.require(:match).permit(:home_score, :away_score, :penalty_winner_side)
 
-    if @match.update(permitted)
+    update_attrs = permitted.to_h
+    
+    # Handle penalty winner side
+    if update_attrs.key?("penalty_winner_side")
+      winner_side = update_attrs["penalty_winner_side"].presence
+      update_attrs["decided_by_penalty"] = winner_side.present?
+    end
+
+    if @match.update(update_attrs)
       redirect_to match_tournament_path(@tournament, match_id: @match.id), notice: "บันทึกสกอร์เรียบร้อยแล้ว"
     else
       redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: @match.errors.full_messages.join(", ")

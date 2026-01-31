@@ -641,7 +641,7 @@
               teams_sorted = team_ids.map { |tid|
                 team = Team.find(tid)
                 s = stats[tid]
-                { id: tid, name: team.name, pts: s[:pts], played: s[:played], won: s[:won], draw: s[:draw], lost: s[:lost], gf: s[:gf], ga: s[:ga] }
+                { id: tid, name: team.name, logo_url: (team.logo.attached? ? Rails.application.routes.url_helpers.rails_blob_path(team.logo, only_path: true) : nil), pts: s[:pts], played: s[:played], won: s[:won], draw: s[:draw], lost: s[:lost], gf: s[:gf], ga: s[:ga] }
               }.sort_by { |t| [-t[:pts], -(t[:gf] - t[:ga]), -t[:gf], t[:name]] }
               
               { id: group.id, name: group.name, teams: teams_sorted }
@@ -735,7 +735,8 @@
                 var bgColor = idx === 0 ? '#fffde7' : (idx % 2 === 0 ? '#fff' : '#f9fafb');
                 html += '<tr style="background:' + bgColor + ';">';
                 html += '<td style="padding:10px 10px;text-align:center;font-weight:600;">' + (idx + 1) + '</td>';
-                html += '<td style="padding:10px 16px;white-space:nowrap;">' + t.name + '</td>';
+                var logoHtml = t.logo_url ? '<img src="' + t.logo_url + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-right:6px;vertical-align:middle;">' : '';
+                html += '<td style="padding:10px 16px;white-space:nowrap;">' + logoHtml + t.name + '</td>';
                 html += '<td style="padding:10px 12px;text-align:center;font-weight:900;">' + t.pts + '</td>';
                 html += '<td style="padding:10px 12px;text-align:center;">' + t.played + '</td>';
                 html += '<td style="padding:10px 12px;text-align:center;">' + t.won + '</td>';

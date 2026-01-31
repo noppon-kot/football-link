@@ -541,13 +541,13 @@
                       <table class="table table-sm align-middle mb-0" style="font-size:14px;width:100%;">
                         <thead style="background:#f1f5f9;">
                           <tr>
-                            <th style="white-space:nowrap;padding:8px 6px;">คู่ที่</th>
-                            <th style="white-space:nowrap;padding:8px 6px;">เวลา</th>
-                            <th style="white-space:nowrap;padding:8px 6px;">รุ่น</th>
-                            <th style="white-space:nowrap;padding:8px 6px;">สาย/รอบ</th>
-                            <th style="white-space:nowrap;padding:8px 8px;">ทีมเหย้า</th>
-                            <th style="white-space:nowrap;padding:8px 8px;">ทีมเยือน</th>
-                            <th style="white-space:nowrap;text-align:center;padding:8px 6px;">สกอร์</th>
+                            <th style="white-space:nowrap;padding:8px 4px;width:30px;font-size:11px;">คู่ที่</th>
+                            <th style="white-space:nowrap;padding:8px 4px;width:50px;font-size:11px;">วัน/เวลา</th>
+                            <th style="white-space:nowrap;padding:8px 4px;width:30px;font-size:11px;">รุ่น</th>
+                            <th style="white-space:nowrap;padding:8px 4px;width:50px;font-size:11px;">สาย/รอบ</th>
+                            <th style="padding:8px 8px;min-width:140px;">ทีมเหย้า</th>
+                            <th style="padding:8px 8px;min-width:140px;">ทีมเยือน</th>
+                            <th style="white-space:nowrap;text-align:center;padding:8px 4px;width:45px;font-size:11px;">สกอร์</th>
                           </tr>
                         </thead>
                         <tbody id="download-preview-body">
@@ -566,27 +566,31 @@
                                                group_name.present? ? group_name : "-"
                                              end %>
                             <tr data-match-row="<%= idx + 1 %>">
-                              <td style="color:#0ea5e9;font-weight:600;white-space:nowrap;padding:10px 6px;">คู่ที่ <%= idx + 1 %></td>
-                              <td style="white-space:nowrap;padding:10px 6px;"><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %></td>
-                              <td style="white-space:nowrap;padding:10px 6px;"><%= match.tournament_division&.name || "-" %></td>
-                              <td style="white-space:nowrap;padding:10px 6px;"><%= round_title %></td>
-                              <td style="white-space:nowrap;padding:10px 8px;">
+                              <td style="color:#0ea5e9;font-weight:600;white-space:nowrap;padding:8px 4px;font-size:11px;">คู่ที่ <%= idx + 1 %></td>
+                              <td style="white-space:nowrap;padding:8px 4px;font-size:11px;"><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m %H:%M") : "-" %></td>
+                              <td style="white-space:nowrap;padding:8px 4px;font-size:11px;"><%= match.tournament_division&.name || "-" %></td>
+                              <td style="white-space:nowrap;padding:8px 4px;font-size:11px;"><%= round_title %></td>
+                              <td style="padding:8px 8px;">
                                 <div class="d-flex align-items-center" style="gap:6px;">
                                   <% if match.home_team&.logo&.attached? %>
-                                    <%= image_tag match.home_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;" %>
+                                    <%= image_tag match.home_team.logo, style: "width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;", crossorigin: "anonymous" %>
+                                  <% else %>
+                                    <div style="width:22px;height:22px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></div>
                                   <% end %>
-                                  <span><%= match.home_name %></span>
+                                  <span style="color:#16a34a;"><%= match.home_name %></span>
                                 </div>
                               </td>
-                              <td style="white-space:nowrap;padding:10px 8px;">
+                              <td style="padding:8px 8px;">
                                 <div class="d-flex align-items-center" style="gap:6px;">
                                   <% if match.away_team&.logo&.attached? %>
-                                    <%= image_tag match.away_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;" %>
+                                    <%= image_tag match.away_team.logo, style: "width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;", crossorigin: "anonymous" %>
+                                  <% else %>
+                                    <div style="width:22px;height:22px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></div>
                                   <% end %>
-                                  <span><%= match.away_name %></span>
+                                  <span style="color:#16a34a;"><%= match.away_name %></span>
                                 </div>
                               </td>
-                              <td style="text-align:center;white-space:nowrap;padding:10px 6px;">
+                              <td style="text-align:center;white-space:nowrap;padding:8px 4px;font-size:12px;">
                                 <% if match.home_score.present? && match.away_score.present? %>
                                   <strong><%= match.home_score %> - <%= match.away_score %></strong>
                                 <% else %>
@@ -673,9 +677,11 @@
                             <div class="fixture-team-logo"></div>
                           <% end %>
                           <div class="fixture-team-name"><%= match.home_name %></div>
+                          <% pk_home_win = has_score && match.decided_by_penalty && home_score == away_score && match.penalty_winner_side == "home" %>
+                          <% pk_away_win = has_score && match.decided_by_penalty && home_score == away_score && match.penalty_winner_side == "away" %>
                           <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-team-score-link", style: "text-decoration:none;" do %>
-                            <div class="fixture-team-score <%= 'fixture-team-score--winner' if home_winner %>">
-                              <%= has_score ? home_score : "-" %>
+                            <div class="fixture-team-score <%= 'fixture-team-score--winner' if home_winner || pk_home_win %>">
+                              <%= pk_home_win ? "*#{home_score}" : (has_score ? home_score : "-") %>
                             </div>
                           <% end %>
                         </div>
@@ -687,8 +693,8 @@
                           <% end %>
                           <div class="fixture-team-name"><%= match.away_name %></div>
                           <%= link_to match_tournament_path(@tournament, match_id: match.id), class: "fixture-team-score-link", style: "text-decoration:none;" do %>
-                            <div class="fixture-team-score <%= 'fixture-team-score--winner' if away_winner %>">
-                              <%= has_score ? away_score : "-" %>
+                            <div class="fixture-team-score <%= 'fixture-team-score--winner' if away_winner || pk_away_win %>">
+                              <%= pk_away_win ? "*#{away_score}" : (has_score ? away_score : "-") %>
                             </div>
                           <% end %>
                         </div>
@@ -810,7 +816,16 @@
                       </td>
                       <td class="text-end" style="font-size:12px;white-space:nowrap;">
                         <% if match.home_score.present? && match.away_score.present? %>
-                          <%= match.home_score %> - <%= match.away_score %>
+                          <% hs = match.home_score; as = match.away_score %>
+                          <% if match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
+                            <% if match.penalty_winner_side == "home" %>
+                              *<%= hs %> - <%= as %>
+                            <% else %>
+                              <%= hs %> - *<%= as %>
+                            <% end %>
+                          <% else %>
+                            <%= hs %> - <%= as %>
+                          <% end %>
                         <% else %>
                           <span class="text-muted" style="font-size:12px;">-</span>
                         <% end %>
