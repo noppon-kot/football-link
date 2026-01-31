@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout, :adjust_times, :tiebreaker, :update_tiebreaker, :update_knockout_teams]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout, :reset_knockout, :adjust_times, :tiebreaker, :update_tiebreaker, :update_knockout_teams]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -819,13 +819,17 @@ class TournamentsController < ApplicationController
         cleared_count = matches_scope.count
         matches_scope.update_all(kickoff_at: nil, pitch_no: 1)
       when "scores"
-        # ล้างเฉพาะสกอร์
+        # ล้างสกอร์ และเคลียร์ทีมในรอบ knockout ทั้งหมด
         cleared_count = matches_scope.count
         matches_scope.update_all(home_score: nil, away_score: nil, decided_by_penalty: false, penalty_winner_side: nil)
+        # เคลียร์ทีมในรอบ knockout ทั้งหมด (ให้เหมือนทำครั้งแรก)
+        matches_scope.where(stage: 1).update_all(home_team_id: nil, away_team_id: nil)
       when "all"
-        # ล้างทั้งหมด (ตาราง + สกอร์) - pitch_no reset เป็น 1 (default)
+        # ล้างทั้งหมด (ตาราง + สกอร์ + ทีม knockout) - pitch_no reset เป็น 1 (default)
         cleared_count = matches_scope.count
         matches_scope.update_all(kickoff_at: nil, pitch_no: 1, home_score: nil, away_score: nil, decided_by_penalty: false, penalty_winner_side: nil)
+        # เคลียร์ทีมในรอบ knockout ทั้งหมด
+        matches_scope.where(stage: 1).update_all(home_team_id: nil, away_team_id: nil)
       end
     end
 
@@ -871,6 +875,93 @@ class TournamentsController < ApplicationController
     redirect_to manage_schedule_tournament_path(@tournament), notice: "สร้างรอบน็อคเอาท์ใหม่เรียบร้อยแล้ว"
   rescue StandardError => e
     redirect_to manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
+  end
+
+  # เคลียร์รอบน็อคเอาท์และคำนวณทีมใหม่จากผลรอบแบ่งกลุ่ม
+  def reset_knockout
+    unless can_manage_registrations?(@tournament)
+      return redirect_back fallback_location: fixture_tournament_path(@tournament), alert: I18n.t("sessions.flash.login_required")
+    end
+
+    division_id = params[:division_id]
+    reset_type = params[:reset_type] || "teams" # teams = เคลียร์ทีมและสกอร์, scores = เคลียร์เฉพาะสกอร์
+
+    messages = []
+
+    ActiveRecord::Base.transaction do
+      divisions = if division_id.present?
+        [@tournament.tournament_divisions.find(division_id)]
+      else
+        @tournament.tournament_divisions.to_a
+      end
+
+      divisions.each do |division|
+        knockout_matches = division.matches.knockout
+
+        case reset_type
+        when "resolve"
+          # คำนวณใหม่ว่าใครเจอใคร - เคลียร์ทีมในรอบถัดไปด้วย
+          first_round = knockout_matches.minimum(:round_number)
+          if first_round
+            # เคลียร์ทีมในรอบถัดไป (รอบที่ 2 เป็นต้นไป)
+            knockout_matches.where("round_number > ?", first_round).update_all(
+              home_team_id: nil,
+              away_team_id: nil
+            )
+          end
+          # คำนวณทีมรอบแรกจากผลรอบแบ่งกลุ่ม
+          ::Tournaments::AutoSeedKnockoutService.new(division: division).call
+
+          messages << "#{division.name}: คำนวณใหม่ว่าใครเจอใครแล้ว"
+
+        when "teams"
+          # เคลียร์ทีมและสกอร์ในรอบน็อคเอาท์ทั้งหมด
+          knockout_matches.update_all(
+            home_team_id: nil,
+            away_team_id: nil,
+            home_score: nil,
+            away_score: nil,
+            decided_by_penalty: false,
+            penalty_winner_side: nil
+          )
+
+          # คำนวณทีมใหม่จากผลรอบแบ่งกลุ่ม
+          ::Tournaments::AutoSeedKnockoutService.new(division: division).call
+
+          messages << "#{division.name}: เคลียร์และคำนวณทีมใหม่แล้ว"
+
+        when "scores"
+          # เคลียร์เฉพาะสกอร์ (ไม่เคลียร์ทีม)
+          knockout_matches.update_all(
+            home_score: nil,
+            away_score: nil,
+            decided_by_penalty: false,
+            penalty_winner_side: nil
+          )
+
+          # เคลียร์ทีมในรอบถัดไป (รอบที่ 2 เป็นต้นไป)
+          first_round = knockout_matches.minimum(:round_number)
+          if first_round
+            knockout_matches.where("round_number > ?", first_round).update_all(
+              home_team_id: nil,
+              away_team_id: nil
+            )
+          end
+
+          messages << "#{division.name}: เคลียร์สกอร์และทีมรอบถัดไปแล้ว"
+
+        when "advance"
+          # คำนวณทีมที่เข้ารอบใหม่จากสกอร์ที่มีอยู่
+          ::Tournaments::AutoAdvanceKnockoutWinnersService.new(division: division).call
+
+          messages << "#{division.name}: คำนวณทีมที่เข้ารอบใหม่แล้ว"
+        end
+      end
+    end
+
+    redirect_back fallback_location: fixture_tournament_path(@tournament), notice: messages.join(", ")
+  rescue StandardError => e
+    redirect_back fallback_location: fixture_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
   end
 
   # ปรับเวลาคู่แข่งขันจากคู่ที่เลือกไป

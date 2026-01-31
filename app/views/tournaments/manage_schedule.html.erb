@@ -63,6 +63,20 @@
               </svg>
               <span style="margin-left:4px;">สร้างน็อคเอาท์ใหม่</span>
             </button>
+            <% has_knockout = @tournament.tournament_divisions.any? { |d| d.matches.knockout.exists? } %>
+            <% if has_knockout %>
+            <button type="button"
+                    class="btn btn-sm btn-outline-info"
+                    data-bs-toggle="modal"
+                    data-bs-target="#resetKnockoutModal"
+                    aria-label="คำนวณทีมน็อคเอาท์ใหม่"
+                    style="line-height:1;padding:6px 10px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 0 1 6 12c0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z" fill="currentColor"/>
+              </svg>
+              <span style="margin-left:4px;">คำนวณทีมใหม่</span>
+            </button>
+            <% end %>
             </div>
           </div>
           <% total_matches = @all_matches.size %>
@@ -193,16 +207,7 @@
                             </div>
                             <div class="d-flex align-items-center justify-content-between" style="gap:8px;">
                               <div class="text-truncate" style="flex:1;font-size:12px;">
-                                <% if match.knockout? %>
-                                  <%= select_tag "matches[#{match.id}][home_team_id]",
-                                        options_from_collection_for_select(division_teams, :id, :name, match.home_team_id),
-                                        include_blank: match.home_slot_label.present? ? match.format_slot_label(match.home_slot_label) : "เลือกทีม",
-                                        class: "form-select form-select-sm js-mobile-field",
-                                        style: "max-width:100px;font-size:10px;",
-                                        data: { match_id: match.id, field: "home_team_id" } %>
-                                <% else %>
-                                  <%= match.home_name %>
-                                <% end %>
+                                <%= match.home_name %>
                               </div>
                               <div class="d-flex align-items-center" style="gap:4px;">
                                 <%= select_tag "matches[#{match.id}][home_score]",
@@ -220,16 +225,7 @@
                                       data: { match_id: match.id, side: "away", field: "away_score" } %>
                               </div>
                               <div class="text-truncate text-end" style="flex:1;font-size:12px;">
-                                <% if match.knockout? %>
-                                  <%= select_tag "matches[#{match.id}][away_team_id]",
-                                        options_from_collection_for_select(division_teams, :id, :name, match.away_team_id),
-                                        include_blank: match.away_slot_label.present? ? match.format_slot_label(match.away_slot_label) : "เลือกทีม",
-                                        class: "form-select form-select-sm js-mobile-field",
-                                        style: "max-width:100px;font-size:10px;",
-                                        data: { match_id: match.id, field: "away_team_id" } %>
-                                <% else %>
-                                  <%= match.away_name %>
-                                <% end %>
+                                <%= match.away_name %>
                               </div>
                             </div>
                             <% is_draw = match.home_score.present? && match.away_score.present? && match.home_score == match.away_score %>
@@ -295,46 +291,20 @@
                                       min: 0, max: 99 %>
                               </td>
                               <td>
-                                <% if match.knockout? %>
-                                  <div class="d-flex align-items-center" style="gap:6px;">
-                                    <% if match.home_team&.logo&.attached? %>
-                                      <%= image_tag match.home_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
-                                    <% end %>
-                                    <%= select_tag "matches[#{match.id}][home_team_id]",
-                                          options_from_collection_for_select(division_teams, :id, :name, match.home_team_id),
-                                          include_blank: match.home_slot_label.present? ? match.format_slot_label(match.home_slot_label) : "เลือกทีม",
-                                          class: "form-select form-select-sm",
-                                          style: "max-width:160px;font-size:11px;" %>
-                                  </div>
-                                <% else %>
-                                  <div class="d-flex align-items-center" style="gap:6px;">
-                                    <% if match.home_team&.logo&.attached? %>
-                                      <%= image_tag match.home_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
-                                    <% end %>
-                                    <span><%= match.home_name %></span>
-                                  </div>
-                                <% end %>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.home_team&.logo&.attached? %>
+                                    <%= image_tag match.home_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.home_name %></span>
+                                </div>
                               </td>
                               <td>
-                                <% if match.knockout? %>
-                                  <div class="d-flex align-items-center" style="gap:6px;">
-                                    <% if match.away_team&.logo&.attached? %>
-                                      <%= image_tag match.away_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
-                                    <% end %>
-                                    <%= select_tag "matches[#{match.id}][away_team_id]",
-                                          options_from_collection_for_select(division_teams, :id, :name, match.away_team_id),
-                                          include_blank: match.away_slot_label.present? ? match.format_slot_label(match.away_slot_label) : "เลือกทีม",
-                                          class: "form-select form-select-sm",
-                                          style: "max-width:160px;font-size:11px;" %>
-                                  </div>
-                                <% else %>
-                                  <div class="d-flex align-items-center" style="gap:6px;">
-                                    <% if match.away_team&.logo&.attached? %>
-                                      <%= image_tag match.away_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
-                                    <% end %>
-                                    <span><%= match.away_name %></span>
-                                  </div>
-                                <% end %>
+                                <div class="d-flex align-items-center" style="gap:6px;">
+                                  <% if match.away_team&.logo&.attached? %>
+                                    <%= image_tag match.away_team.logo, class: "rounded-circle", style: "width:20px;height:20px;object-fit:cover;" %>
+                                  <% end %>
+                                  <span><%= match.away_name %></span>
+                                </div>
                               </td>
                               <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-center" style="gap:4px;">
@@ -1389,6 +1359,85 @@
           <button type="submit" class="btn btn-sm btn-warning">สร้างรอบน็อคเอาท์ใหม่</button>
         </div>
       <% end %>
+    </div>
+  </div>
+</div>
+
+<%# Reset Knockout Modal %>
+<div class="modal fade" id="resetKnockoutModal" tabindex="-1" aria-labelledby="resetKnockoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="resetKnockoutModalLabel">
+          <svg viewBox="0 0 24 24" width="20" height="20" style="margin-right:8px;">
+            <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 0 1 6 12c0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z" fill="currentColor"/>
+          </svg>
+          คำนวณทีมน็อคเอาท์ใหม่
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="font-size:13px;">เลือกรุ่นและประเภทการคำนวณ:</p>
+        
+        <%= form_with url: reset_knockout_tournament_path(@tournament), method: :post, local: true do |f| %>
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:13px;">เลือกรุ่น</label>
+            <select name="division_id" class="form-select form-select-sm">
+              <option value="">ทุกรุ่น</option>
+              <% @tournament.tournament_divisions.each do |div| %>
+                <% if div.matches.knockout.exists? %>
+                  <option value="<%= div.id %>"><%= div.name %></option>
+                <% end %>
+              <% end %>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:13px;">ประเภทการคำนวณ</label>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="reset_type" id="resetTypeResolve" value="resolve" checked>
+              <label class="form-check-label" for="resetTypeResolve" style="font-size:13px;">
+                <strong>คำนวณใหม่ว่าใครเจอใคร</strong> - คำนวณทีมรอบแรกจากผลรอบแบ่งกลุ่ม (ไม่ล้างสกอร์)
+              </label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="radio" name="reset_type" id="resetTypeTeams" value="teams">
+              <label class="form-check-label" for="resetTypeTeams" style="font-size:13px;">
+                <strong>เคลียร์ทั้งหมด</strong> - ล้างทีมและสกอร์ทั้งหมด แล้วคำนวณทีมใหม่จากผลรอบแบ่งกลุ่ม
+              </label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="radio" name="reset_type" id="resetTypeScores" value="scores">
+              <label class="form-check-label" for="resetTypeScores" style="font-size:13px;">
+                <strong>เคลียร์สกอร์</strong> - ล้างสกอร์และทีมรอบถัดไป (เก็บทีมรอบแรกไว้)
+              </label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="radio" name="reset_type" id="resetTypeAdvance" value="advance">
+              <label class="form-check-label" for="resetTypeAdvance" style="font-size:13px;">
+                <strong>คำนวณทีมเข้ารอบใหม่</strong> - คำนวณทีมที่เข้ารอบใหม่จากสกอร์ที่มีอยู่
+              </label>
+            </div>
+          </div>
+
+          <div class="alert alert-warning" style="font-size:12px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:4px;">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/>
+            </svg>
+            <strong>คำเตือน:</strong> การรีเซ็ตจะไม่สามารถย้อนกลับได้
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="submit" class="btn btn-info btn-sm" onclick="return confirm('ยืนยันการคำนวณทีมน็อคเอาท์ใหม่?');">
+              <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 0 1 6 12c0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z" fill="currentColor"/>
+              </svg>
+              คำนวณใหม่
+            </button>
+          </div>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>
