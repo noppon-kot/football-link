@@ -61,6 +61,10 @@ class TournamentMatchesController < ApplicationController
     end
 
     if @match.update(update_attrs)
+      # อัพเดททีมในรอบถัดไปอัตโนมัติ (ถ้าเป็นแมตช์ knockout)
+      if @match.knockout?
+        ::Tournaments::AutoAdvanceKnockoutWinnersService.new(division: @match.tournament_division).call
+      end
       redirect_to match_tournament_path(@tournament, match_id: @match.id), notice: "บันทึกสกอร์เรียบร้อยแล้ว"
     else
       redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: @match.errors.full_messages.join(", ")

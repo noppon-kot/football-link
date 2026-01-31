@@ -32,10 +32,18 @@ class Match < ApplicationRecord
   def format_slot_label(label)
     return nil if label.blank?
     case label
+    when /\AR(\d+)#(\d+)\z/
+      rank = $1.to_i
+      order = $2.to_i
+      if order == 1
+        "ที่#{rank} ดีที่สุด"
+      else
+        "ที่#{rank} ดีที่ #{order}"
+      end
     when "BP1"
-      "อันดับ2 ที่ดีที่สุด (ค่าเฉลี่ย)"
+      "BP ที่ดีที่สุด"
     when /\ABP(\d+)\z/
-      "อันดับ2 ที่ดีที่สุด ##{$1} (ค่าเฉลี่ย)"
+      "BP ##{$1}"
     when /\A(\d+)([A-Z])\z/
       "ที่#{$1} สาย#{$2}"
     else

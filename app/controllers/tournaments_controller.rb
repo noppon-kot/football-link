@@ -1228,10 +1228,10 @@ class TournamentsController < ApplicationController
       # ต้องกรอกสกอร์ครบทุกแมตช์รอบแบ่งกลุ่ม
       next if group_matches.where("home_score IS NULL OR away_score IS NULL").exists?
 
-      # รองรับเฉพาะ knockout 4 หรือ 8 ทีม
+      # รองรับ knockout 4, 8, 16 ทีม
       first_round_matches = knockout_matches.where(round_number: 1)
       bracket_size = first_round_matches.count * 2
-      next unless [4, 8].include?(bracket_size)
+      next unless [4, 8, 16].include?(bracket_size)
 
       result = ::Tournaments::AutoSeedKnockoutService.new(
         division: division,

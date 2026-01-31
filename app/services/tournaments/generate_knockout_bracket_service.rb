@@ -427,48 +427,24 @@ module Tournaments
       end
     end
 
-    # สายไม่ครบคู่ (3, 5, 6, 7 สาย): ใช้ ranking system
+    # สายไม่ครบคู่ (3, 5, 6, 7 สาย): ใช้ ranking system R#x
+    # หลักการ: อันดับ 1 เจอ อันดับสุดท้าย, อันดับ 2 เจอ อันดับรองสุดท้าย, ...
+    # รองรับทุกกรณี: 3-7 สาย + 4, 8, 16 ทีม
     def assign_first_round_labels_odd_groups(first_round_matches, group_names, num_groups)
-      # กรณี 3 สาย 4 ทีม: ใช้ ranking labels
-      if num_groups == 3 && @bracket_size == 4
-        assign_first_round_labels_3_groups_4_teams(first_round_matches, group_names)
-        return
-      end
-
-      # กรณี 3 สาย 8 ทีม: ใช้ ranking labels
-      if num_groups == 3 && @bracket_size == 8
-        assign_first_round_labels_3_groups_8_teams(first_round_matches, group_names)
-        return
-      end
-
-      # กรณีอื่นๆ ใช้ BP system
       teams_needed = @bracket_size
       
-      qualifiers = []
+      # สร้าง labels ตามอันดับ: R1#1, R1#2, ..., R2#1, R2#2, ...
+      labels = generate_ranking_labels(num_groups, teams_needed)
       
-      if teams_needed <= num_groups
-        num_groups.times do |i|
-          qualifiers << { rank: 1, group_idx: i, label: "1#{group_names[i]}" }
-        end
-      else
-        full_rounds = teams_needed / num_groups
-        remainder = teams_needed % num_groups
-        
-        (1..full_rounds).each do |rank|
-          num_groups.times do |i|
-            qualifiers << { rank: rank, group_idx: i, label: "#{rank}#{group_names[i]}" }
-          end
-        end
-        
-        if remainder > 0
-          remainder.times do |bp_idx|
-            qualifiers << { rank: full_rounds + 1, group_idx: nil, label: "BP#{bp_idx + 1}" }
-          end
-        end
+      return if labels.size < teams_needed
+
+      # จับคู่: อันดับ 1 vs อันดับสุดท้าย, อันดับ 2 vs อันดับรองสุดท้าย, ...
+      slot_pairs = []
+      half = teams_needed / 2
+      half.times do |i|
+        slot_pairs << [labels[i], labels[teams_needed - 1 - i]]
       end
-      
-      slot_pairs = generate_cross_group_pairings(qualifiers, num_groups)
-      
+
       first_round_matches.each_with_index do |match, idx|
         next if idx >= slot_pairs.size
         home_label, away_label = slot_pairs[idx]
@@ -476,42 +452,29 @@ module Tournaments
       end
     end
 
-    # 3 สาย 4 ทีม: จัดอันดับตามผลงาน
-    # SF1: อันดับ 1 (ดีที่สุด) vs อันดับ 4 (รองแชมป์ที่ดีที่สุด)
-    # SF2: อันดับ 2 vs อันดับ 3
-    def assign_first_round_labels_3_groups_4_teams(first_round_matches, group_names)
-      return unless first_round_matches.size == 2
+    # สร้าง labels ตามอันดับ: R1#1, R1#2, ..., R2#1, R2#2, ...
+    # ตัวอย่าง: 3 สาย 4 ทีม = R1#1, R1#2, R1#3, R2#1
+    # ตัวอย่าง: 5 สาย 8 ทีม = R1#1-R1#5, R2#1-R2#3
+    def generate_ranking_labels(num_groups, teams_needed)
+      labels = []
+      rank = 1
+      order_in_rank = 1
+      teams_at_rank = num_groups # อันดับ 1 มี num_groups ทีม (แชมป์แต่ละสาย)
 
-      # ใช้ label ภาษาไทย: ที่1#1 = อันดับ 1 ที่ดีที่สุดอันดับ 1, ที่1#2 = อันดับ 1 ที่ดีที่สุดอันดับ 2, ที่2#1 = รองแชมป์ที่ดีที่สุด
-      slot_pairs = [
-        ["ที่1#1", "ที่2#1"],  # อันดับ 1 ที่ดีที่สุด vs รองแชมป์ที่ดีที่สุด
-        ["ที่1#2", "ที่1#3"]   # อันดับ 1 ที่ดีอันดับ 2 vs อันดับ 1 ที่ดีอันดับ 3
-      ]
+      while labels.size < teams_needed
+        labels << "R#{rank}##{order_in_rank}"
+        order_in_rank += 1
 
-      first_round_matches.each_with_index do |match, idx|
-        home_label, away_label = slot_pairs[idx]
-        match.update!(home_slot_label: home_label, away_slot_label: away_label)
+        if order_in_rank > teams_at_rank
+          rank += 1
+          order_in_rank = 1
+          # อันดับถัดไปก็มี num_groups ทีม (ถ้ามีทีมพอ)
+          remaining = teams_needed - labels.size
+          teams_at_rank = [num_groups, remaining].min
+        end
       end
-    end
 
-    # 3 สาย 8 ทีม: จัดอันดับตามผลงาน
-    # QF1-4: อันดับ 1-8 ตามผลงาน
-    # (อาจสลับคู่ถ้าทีมจากสายเดียวกันเจอกัน)
-    def assign_first_round_labels_3_groups_8_teams(first_round_matches, group_names)
-      return unless first_round_matches.size == 4
-
-      # ใช้ label ภาษาไทย: ที่1#1 = อันดับ 1 ที่ดีที่สุด, ที่2#2 = อันดับ 2 ที่ดีอันดับ 2
-      slot_pairs = [
-        ["ที่1#1", "ที่3#2"],  # อันดับ 1 ที่ดีที่สุด vs อันดับ 3 ที่ดีอันดับ 2
-        ["ที่1#2", "ที่3#1"],  # อันดับ 1 ที่ดีอันดับ 2 vs อันดับ 3 ที่ดีที่สุด
-        ["ที่1#3", "ที่2#2"],  # อันดับ 1 ที่ดีอันดับ 3 vs อันดับ 2 ที่ดีอันดับ 2
-        ["ที่2#1", "ที่2#3"]   # อันดับ 2 ที่ดีที่สุด vs อันดับ 2 ที่ดีอันดับ 3
-      ]
-
-      first_round_matches.each_with_index do |match, idx|
-        home_label, away_label = slot_pairs[idx]
-        match.update!(home_slot_label: home_label, away_slot_label: away_label)
-      end
+      labels
     end
 
     # สร้างคู่แข่งขันให้ทีมจากสายเดียวกันไม่เจอกันในรอบแรก (สำหรับสายไม่ครบคู่)
