@@ -1322,8 +1322,16 @@ class TournamentsController < ApplicationController
         end
       end
       
-      # Sort by points, then goal difference, then goals for
-      sorted_teams = team_stats.values.sort_by { |t| [-t[:pts], -(t[:gf] - t[:ga]), -t[:gf]] }
+      # Add tiebreaker_rank from TeamRegistration
+      team_stats.each do |team_id, stats|
+        team_reg = TeamRegistration.find_by(tournament_id: division.tournament_id, tournament_division_id: division.id, group_id: group.id, team_id: team_id)
+        team_reg ||= TeamRegistration.find_by(tournament_id: division.tournament_id, tournament_division_id: division.id, team_id: team_id)
+        team_reg ||= TeamRegistration.find_by(tournament_id: division.tournament_id, team_id: team_id)
+        stats[:tiebreaker_rank] = team_reg&.tiebreaker_rank || 999
+      end
+      
+      # Sort by points, then tiebreaker_rank, then goal difference, then goals for
+      sorted_teams = team_stats.values.sort_by { |t| [-t[:pts], t[:tiebreaker_rank], -(t[:gf] - t[:ga]), -t[:gf]] }
       
       standings[group.name] = sorted_teams
     end
@@ -1395,12 +1403,29 @@ class TournamentsController < ApplicationController
       end
     end
 
-    # Auto seed knockout after saving tiebreaker ranks
-    division_ids = @tournament.tournament_divisions.pluck(:id)
-    auto_seed_message = auto_seed_knockout_if_ready(division_ids)
+    # Auto resolve knockout teams after saving tiebreaker ranks
+    resolved_count = 0
+    @tournament.tournament_divisions.each do |division|
+      standings_by_group = calculate_standings_for_division(division)
+      first_round_matches = division.matches.knockout.where(round_number: 1)
+      
+      first_round_matches.each do |match|
+        home_resolved = resolve_slot_to_team(match.home_slot_label, standings_by_group, division)
+        away_resolved = resolve_slot_to_team(match.away_slot_label, standings_by_group, division)
+        
+        update_attrs = {}
+        update_attrs[:home_team_id] = home_resolved[:team_id] if home_resolved
+        update_attrs[:away_team_id] = away_resolved[:team_id] if away_resolved
+        
+        if update_attrs.any?
+          match.update!(update_attrs)
+          resolved_count += 1
+        end
+      end
+    end
 
     notice = "บันทึกลำดับเรียบร้อยแล้ว"
-    notice += " #{auto_seed_message}" if auto_seed_message.present?
+    notice += " และอัพเดททีมในรอบน็อคเอาท์แล้ว (#{resolved_count} คู่)" if resolved_count > 0
     
     redirect_to tiebreaker_tournament_path(@tournament), notice: notice
   rescue => e
