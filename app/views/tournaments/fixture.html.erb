@@ -2360,19 +2360,29 @@
                   <svg viewBox="0 0 24 24" width="20" height="20" style="margin-right:8px;">
                     <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10 0h8v8h-8v-8zm0-10h8v8h-8V3z" fill="currentColor"/>
                   </svg>
-                  Knockout Bracket
+                  สายการแข่งขันรอบน็อคเอาท์
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body" style="overflow-x:auto;">
-                <% divisions_with_knockout.each do |div| %>
+                <%# Dropdown เลือกรุ่น %>
+                <div class="mb-3 d-flex align-items-center" style="gap:12px;">
+                  <label style="font-size:13px;font-weight:600;color:#546e7a;">เลือกรุ่น:</label>
+                  <select id="bracketDivisionSelect" class="form-select form-select-sm" style="max-width:200px;" onchange="showSelectedDivisionBracket()">
+                    <% divisions_with_knockout.each_with_index do |div, idx| %>
+                      <option value="bracket-div-<%= div.id %>" <%= 'selected' if idx == 0 %>><%= div.name %></option>
+                    <% end %>
+                  </select>
+                </div>
+
+                <% divisions_with_knockout.each_with_index do |div, div_idx| %>
                   <% knockout_matches = div.matches.knockout.order(:round_number, :position, :id).to_a %>
                   <% next if knockout_matches.empty? %>
                   
                   <% rounds_grouped = knockout_matches.group_by(&:round_number) %>
                   <% sorted_rounds = rounds_grouped.keys.compact.sort %>
                   
-                  <div class="mb-4">
+                  <div class="bracket-division-content" id="bracket-div-<%= div.id %>" style="<%= 'display:none;' unless div_idx == 0 %>">
                     <h6 class="fw-bold mb-3" style="color:#1976d2;">รุ่น <%= div.name %></h6>
                     <div class="knockout-bracket" style="display:flex;align-items:stretch;min-width:max-content;padding:8px 0;">
                       <% sorted_rounds.each_with_index do |round_num, round_idx| %>
@@ -2470,6 +2480,7 @@
                 <% end %>
               </div>
               <div class="modal-footer" style="justify-content:space-between;">
+                <div id="bracketDivisionNameForDownload" data-division-name="<%= divisions_with_knockout.first&.name %>" style="display:none;"></div>
                 <div style="display:flex;align-items:center;gap:8px;">
                   <%= image_tag "dernsai_icon.png", alt: "DERNSAI", style: "width:20px;height:20px;border-radius:4px;object-fit:contain;" %>
                   <span style="font-size:11px;color:#94a3b8;">DERNSAI.COM</span>
@@ -2494,9 +2505,37 @@
 
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
+  function showSelectedDivisionBracket() {
+    var select = document.getElementById('bracketDivisionSelect');
+    var selectedId = select.value;
+    var selectedText = select.options[select.selectedIndex].text;
+    
+    // ซ่อนทุก division
+    document.querySelectorAll('.bracket-division-content').forEach(function(el) {
+      el.style.display = 'none';
+    });
+    
+    // แสดง division ที่เลือก
+    var selectedDiv = document.getElementById(selectedId);
+    if (selectedDiv) {
+      selectedDiv.style.display = 'block';
+    }
+    
+    // อัพเดทชื่อรุ่นสำหรับดาวน์โหลด
+    var nameHolder = document.getElementById('bracketDivisionNameForDownload');
+    if (nameHolder) {
+      nameHolder.setAttribute('data-division-name', selectedText);
+    }
+  }
+
   function downloadKnockoutBracket() {
     var modal = document.getElementById('knockoutBracketModalPublic');
-    var bracketContent = modal.querySelector('.modal-body');
+    var select = document.getElementById('bracketDivisionSelect');
+    var selectedId = select.value;
+    var divisionName = select.options[select.selectedIndex].text;
+    
+    // หา bracket content ของรุ่นที่เลือก
+    var bracketContent = document.getElementById(selectedId);
     
     if (!bracketContent) {
       alert('ไม่พบ bracket content');
@@ -2512,10 +2551,10 @@
     clonedContent.style.overflow = 'visible';
     clonedContent.style.maxHeight = 'none';
     
-    // เพิ่ม header
+    // เพิ่ม header พร้อมชื่อรุ่น
     var header = document.createElement('div');
     header.style.cssText = 'text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #e0e0e0;';
-    header.innerHTML = '<div style="font-size:20px;font-weight:bold;color:#1976d2;">สายการแข่งขันรอบน็อคเอาท์</div><div style="font-size:12px;color:#78909c;margin-top:4px;"><%= @tournament.title %></div>';
+    header.innerHTML = '<div style="font-size:20px;font-weight:bold;color:#1976d2;">สายการแข่งขันรอบน็อคเอาท์</div><div style="font-size:14px;color:#1976d2;margin-top:4px;font-weight:600;">รุ่น ' + divisionName + '</div><div style="font-size:12px;color:#78909c;margin-top:4px;"><%= @tournament.title %></div>';
     
     // เพิ่ม footer with logo
     var footer = document.createElement('div');
@@ -2535,7 +2574,7 @@
       logging: false
     }).then(function(canvas) {
       var link = document.createElement('a');
-      link.download = 'knockout-bracket-<%= @tournament.id %>.png';
+      link.download = 'knockout-bracket-' + divisionName + '-<%= @tournament.id %>.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
       document.body.removeChild(captureContainer);
