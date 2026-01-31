@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_01_29_043727) do
+ActiveRecord::Schema[7.2].define(version: 2026_01_31_041912) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -147,6 +147,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_01_29_043727) do
     t.integer "round_number"
     t.string "round_label"
     t.integer "pitch_no", default: 1, null: false
+    t.string "video_url"
     t.index ["away_team_id"], name: "index_matches_on_away_team_id"
     t.index ["group_id"], name: "index_matches_on_group_id"
     t.index ["home_team_id"], name: "index_matches_on_home_team_id"

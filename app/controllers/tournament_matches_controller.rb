@@ -50,7 +50,7 @@ class TournamentMatchesController < ApplicationController
       return redirect_to match_tournament_path(@tournament, match_id: @match.id), alert: I18n.t("sessions.flash.login_required")
     end
 
-    permitted = params.require(:match).permit(:home_score, :away_score, :penalty_winner_side)
+    permitted = params.require(:match).permit(:home_score, :away_score, :penalty_winner_side, :video_url)
 
     update_attrs = permitted.to_h
     

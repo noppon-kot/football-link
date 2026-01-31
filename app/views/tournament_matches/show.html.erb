@@ -179,6 +179,18 @@
             </div>
           <% end %>
 
+          <% if @match.video_url.present? %>
+            <hr />
+            <div class="text-center">
+              <a href="<%= @match.video_url %>" target="_blank" rel="noopener noreferrer" class="btn btn-lg" style="background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%); color: #fff; border: none; border-radius: 50px; padding: 12px 32px; font-weight: 600; box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3); transition: all 0.3s ease;">
+                <svg viewBox="0 0 24 24" width="24" height="24" style="margin-right:8px;vertical-align:middle;">
+                  <path fill="currentColor" d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                </svg>
+                ดูวิดีโอแมตช์นี้
+              </a>
+            </div>
+          <% end %>
+
           <% if @match.images.attached? %>
             <hr />
             <div class="row row-cols-2 g-2">
@@ -310,6 +322,24 @@
                 if (awaySelect) awaySelect.addEventListener('change', checkDraw);
               })();
             </script>
+
+            <hr />
+            <%= form_with url: match_score_tournament_path(@tournament, match_id: @match.id), method: :patch, local: true do %>
+              <div class="row g-2 align-items-end">
+                <div class="col-12">
+                  <label class="form-label" style="font-size:12px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;vertical-align:middle;">
+                      <path fill="currentColor" d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                    </svg>
+                    ลิงก์ดูบอล (YouTube, Facebook, etc.)
+                  </label>
+                  <%= text_field_tag "match[video_url]", @match.video_url, class: "form-control form-control-sm", placeholder: "https://..." %>
+                </div>
+                <div class="col-12 text-end">
+                  <%= submit_tag "บันทึกลิงก์", class: "btn btn-sm btn-outline-primary" %>
+                </div>
+              </div>
+            <% end %>
 
             <hr />
             <%= form_with url: match_images_tournament_path(@tournament, match_id: @match.id), method: :patch, local: true, multipart: true do %>
