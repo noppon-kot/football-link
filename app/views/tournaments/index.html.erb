@@ -5,12 +5,12 @@
 
       <div class="d-flex align-items-center" style="gap:8px;">
         <div class="btn-group btn-group-sm" role="group" aria-label="view toggle">
-          <button type="button" class="btn btn-light tournament-view-toggle is-active" data-view="list" title="รายการ" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="รายการ" style="line-height:1;padding:6px 8px;">
+          <button type="button" class="btn btn-light tournament-view-toggle" data-view="list" title="รายการ" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="รายการ" style="line-height:1;padding:6px 8px;">
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
               <path d="M4 6h3v3H4V6zm5 1h11v1H9V7zm-5 6h3v3H4v-3zm5 1h11v1H9v-1zm-5 6h3v3H4v-3zm5 1h11v1H9v-1z" fill="currentColor"/>
             </svg>
           </button>
-          <button type="button" class="btn btn-light tournament-view-toggle" data-view="grid" title="รูปภาพ" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="รูปภาพ" style="line-height:1;padding:6px 8px;">
+          <button type="button" class="btn btn-light tournament-view-toggle is-active" data-view="grid" title="รูปภาพ" data-bs-toggle="tooltip" data-bs-placement="top" aria-label="รูปภาพ" style="line-height:1;padding:6px 8px;">
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
               <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" fill="currentColor"/>
             </svg>
@@ -20,8 +20,8 @@
     </div>
 
     <% if @tournaments.any? %>
-      <div id="tournament-index" data-view="list">
-        <div id="tournament-index-list" class="d-flex flex-column" style="gap:6px;">
+      <div id="tournament-index" data-view="grid">
+        <div id="tournament-index-list" class="d-flex flex-column d-none" style="gap:6px;">
           <% @tournaments.each do |tournament| %>
             <div class="card shadow-sm position-relative" style="text-decoration:none;color:inherit;">
               <%= link_to "", tournament_path(tournament), class: "stretched-link", aria: { label: tournament.title } %>
@@ -68,9 +68,9 @@
           <% end %>
         </div>
 
-        <div id="tournament-index-grid" class="tournament-grid d-none">
+        <div id="tournament-index-grid" class="row row-cols-2 g-2">
           <% @tournaments.each do |tournament| %>
-            <div class="tournament-grid-item">
+            <div class="col">
               <div class="card shadow-sm position-relative" style="border-radius:14px;overflow:hidden;">
                 <%= link_to "", tournament_path(tournament), class: "stretched-link", aria: { label: tournament.title } %>
 
@@ -147,7 +147,7 @@
 
           var saved = null;
           try { saved = localStorage.getItem('tournamentIndexView'); } catch (e) {}
-          applyView(saved === 'grid' ? 'grid' : 'list');
+          applyView(saved === 'list' ? 'list' : 'grid');
 
           buttons.forEach(function(b) {
             b.addEventListener('click', function() {

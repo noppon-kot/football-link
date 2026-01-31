@@ -592,7 +592,12 @@
                               </td>
                               <td style="text-align:center;white-space:nowrap;padding:8px 4px;font-size:12px;">
                                 <% if match.home_score.present? && match.away_score.present? %>
-                                  <strong><%= match.home_score %> - <%= match.away_score %></strong>
+                                  <% hs = match.home_score; as = match.away_score %>
+                                  <% if match.decided_by_penalty && hs == as && match.penalty_winner_side.present? %>
+                                    <strong><%= match.penalty_winner_side == "home" ? "*#{hs}" : hs %> - <%= match.penalty_winner_side == "away" ? "*#{as}" : as %></strong>
+                                  <% else %>
+                                    <strong><%= hs %> - <%= as %></strong>
+                                  <% end %>
                                 <% else %>
                                   -
                                 <% end %>
