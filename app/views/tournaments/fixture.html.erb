@@ -2469,8 +2469,20 @@
                   </div>
                 <% end %>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+              <div class="modal-footer" style="justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <%= image_tag "dernsai_icon.png", alt: "DERNSAI", style: "width:20px;height:20px;border-radius:4px;object-fit:contain;" %>
+                  <span style="font-size:11px;color:#94a3b8;">DERNSAI.COM</span>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button type="button" class="btn btn-success btn-sm" id="downloadBracketBtn" onclick="downloadKnockoutBracket()">
+                    <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                      <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
+                    </svg>
+                    ดาวน์โหลดรูป
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ปิด</button>
+                </div>
               </div>
             </div>
           </div>
@@ -2480,6 +2492,60 @@
   </div>
 </div>
 
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+  function downloadKnockoutBracket() {
+    var modal = document.getElementById('knockoutBracketModalPublic');
+    var bracketContent = modal.querySelector('.modal-body');
+    
+    if (!bracketContent) {
+      alert('ไม่พบ bracket content');
+      return;
+    }
+
+    // สร้าง container สำหรับ capture
+    var captureContainer = document.createElement('div');
+    captureContainer.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff;padding:20px;';
+    
+    // Clone bracket content
+    var clonedContent = bracketContent.cloneNode(true);
+    clonedContent.style.overflow = 'visible';
+    clonedContent.style.maxHeight = 'none';
+    
+    // เพิ่ม header
+    var header = document.createElement('div');
+    header.style.cssText = 'text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #e0e0e0;';
+    header.innerHTML = '<div style="font-size:20px;font-weight:bold;color:#1976d2;">สายการแข่งขันรอบน็อคเอาท์</div><div style="font-size:12px;color:#78909c;margin-top:4px;"><%= @tournament.title %></div>';
+    
+    // เพิ่ม footer with logo
+    var footer = document.createElement('div');
+    footer.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid #e0e0e0;';
+    footer.innerHTML = '<img src="<%= asset_path("dernsai_icon.png") %>" style="width:24px;height:24px;border-radius:4px;" /><span style="font-size:12px;color:#94a3b8;font-weight:600;">DERNSAI.COM</span>';
+    
+    captureContainer.appendChild(header);
+    captureContainer.appendChild(clonedContent);
+    captureContainer.appendChild(footer);
+    document.body.appendChild(captureContainer);
+
+    html2canvas(captureContainer, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false
+    }).then(function(canvas) {
+      var link = document.createElement('a');
+      link.download = 'knockout-bracket-<%= @tournament.id %>.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      document.body.removeChild(captureContainer);
+    }).catch(function(err) {
+      console.error('Error capturing bracket:', err);
+      alert('เกิดข้อผิดพลาดในการดาวน์โหลดรูป');
+      document.body.removeChild(captureContainer);
+    });
+  }
+</script>
 <script>
   (function() {
     function normalizeText(v) {
