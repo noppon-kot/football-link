@@ -1701,7 +1701,15 @@
                                       <% else %>
                                         <div class="fixture-logo"></div>
                                       <% end %>
-                                      <div class="fixture-team-name"><%= match.home_name %></div>
+                                      <% if match.knockout? && match.home_team_id.blank? %>
+                                        <%= select_tag "matches_mobile[#{match.id}][home_team_id]",
+                                              options_from_collection_for_select(division_teams, :id, :name, match.home_team_id),
+                                              include_blank: match.home_slot_label.present? ? match.format_slot_label(match.home_slot_label) : "เลือกทีม",
+                                              class: "form-select form-select-sm",
+                                              style: "max-width:140px;font-size:11px;" %>
+                                      <% else %>
+                                        <div class="fixture-team-name"><%= match.home_name %></div>
+                                      <% end %>
                                     </div>
 
                                     <div class="fixture-score">
@@ -1713,7 +1721,15 @@
                                     </div>
 
                                     <div class="fixture-team fixture-team--away">
-                                      <div class="fixture-team-name"><%= match.away_name %></div>
+                                      <% if match.knockout? && match.away_team_id.blank? %>
+                                        <%= select_tag "matches_mobile[#{match.id}][away_team_id]",
+                                              options_from_collection_for_select(division_teams, :id, :name, match.away_team_id),
+                                              include_blank: match.away_slot_label.present? ? match.format_slot_label(match.away_slot_label) : "เลือกทีม",
+                                              class: "form-select form-select-sm",
+                                              style: "max-width:140px;font-size:11px;" %>
+                                      <% else %>
+                                        <div class="fixture-team-name"><%= match.away_name %></div>
+                                      <% end %>
                                       <% if match.away_team&.logo&.attached? %>
                                         <%= image_tag match.away_team.logo, class: "fixture-logo" %>
                                       <% else %>
@@ -1725,7 +1741,7 @@
                                   <div class="fixture-admin-controls">
                                     <div>
                                       <label class="form-label" style="font-size:12px;margin-bottom:4px;">วันเวลา</label>
-                                      <%= datetime_field_tag "matches[#{match.id}][kickoff_at]",
+                                      <%= datetime_field_tag "matches_mobile[#{match.id}][kickoff_at]",
                                             (match.kickoff_at&.strftime("%Y-%m-%dT%H:%M")),
                                             class: "form-control form-control-sm",
                                             placeholder: "ยังไม่ได้กำหนด" %>
@@ -1791,24 +1807,40 @@
                                             placeholder: "ยังไม่ได้กำหนด" %>
                                     </td>
                                     <td>
-                                      <div class="d-flex align-items-center" style="gap:6px;">
-                                        <% if match.home_team&.logo&.attached? %>
-                                          <%= image_tag match.home_team.logo,
-                                                        class: "rounded-circle",
-                                                        style: "width:24px;height:24px;object-fit:cover;" %>
-                                        <% end %>
-                                        <span><%= match.home_name %></span>
-                                      </div>
+                                      <% if match.knockout? && match.home_team_id.blank? %>
+                                        <%= select_tag "matches[#{match.id}][home_team_id]",
+                                              options_from_collection_for_select(division_teams, :id, :name, match.home_team_id),
+                                              include_blank: match.home_slot_label.present? ? match.format_slot_label(match.home_slot_label) : "เลือกทีม",
+                                              class: "form-select form-select-sm",
+                                              style: "max-width:180px;" %>
+                                      <% else %>
+                                        <div class="d-flex align-items-center" style="gap:6px;">
+                                          <% if match.home_team&.logo&.attached? %>
+                                            <%= image_tag match.home_team.logo,
+                                                          class: "rounded-circle",
+                                                          style: "width:24px;height:24px;object-fit:cover;" %>
+                                          <% end %>
+                                          <span><%= match.home_name %></span>
+                                        </div>
+                                      <% end %>
                                     </td>
                                     <td>
-                                      <div class="d-flex align-items-center" style="gap:6px;">
-                                        <% if match.away_team&.logo&.attached? %>
-                                          <%= image_tag match.away_team.logo,
-                                                        class: "rounded-circle",
-                                                        style: "width:24px;height:24px;object-fit:cover;" %>
-                                        <% end %>
-                                        <span><%= match.away_name %></span>
-                                      </div>
+                                      <% if match.knockout? && match.away_team_id.blank? %>
+                                        <%= select_tag "matches[#{match.id}][away_team_id]",
+                                              options_from_collection_for_select(division_teams, :id, :name, match.away_team_id),
+                                              include_blank: match.away_slot_label.present? ? match.format_slot_label(match.away_slot_label) : "เลือกทีม",
+                                              class: "form-select form-select-sm",
+                                              style: "max-width:180px;" %>
+                                      <% else %>
+                                        <div class="d-flex align-items-center" style="gap:6px;">
+                                          <% if match.away_team&.logo&.attached? %>
+                                            <%= image_tag match.away_team.logo,
+                                                          class: "rounded-circle",
+                                                          style: "width:24px;height:24px;object-fit:cover;" %>
+                                          <% end %>
+                                          <span><%= match.away_name %></span>
+                                        </div>
+                                      <% end %>
                                     </td>
                                     <td class="text-end">
                                       <div class="d-flex justify-content-end align-items-center" style="gap:4px;">

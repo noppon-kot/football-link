@@ -32,6 +32,7 @@ class Match < ApplicationRecord
   def format_slot_label(label)
     return nil if label.blank?
     case label
+    # Format ใหม่: R1#1, R1#2, R2#1, ...
     when /\AR(\d+)#(\d+)\z/
       rank = $1.to_i
       order = $2.to_i
@@ -40,6 +41,10 @@ class Match < ApplicationRecord
       else
         "ที่#{rank} ดีที่ #{order}"
       end
+    # Format เก่า: R1, R2, R3, R4 (สำหรับ bracket เดิม)
+    when /\AR(\d+)\z/
+      rank = $1.to_i
+      "อันดับ #{rank}"
     when "BP1"
       "BP ที่ดีที่สุด"
     when /\ABP(\d+)\z/
