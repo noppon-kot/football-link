@@ -794,7 +794,8 @@ class TournamentsController < ApplicationController
     end
 
     division_id = params[:division_id]
-    clear_type = params[:clear_type] || "schedule" # schedule, scores, all
+    clear_type = params[:clear_type] || "schedule" # schedule, scores, all, day
+    clear_day = params[:clear_day] # วันที่ต้องการล้าง (format: YYYY-MM-DD)
 
     matches_scope = if division_id.present?
       Match.where(tournament_division_id: division_id)
@@ -802,16 +803,28 @@ class TournamentsController < ApplicationController
       Match.joins(:tournament_division).where(tournament_divisions: { tournament_id: @tournament.id })
     end
 
+    # ถ้าเลือกล้างเฉพาะวัน
+    if clear_day.present?
+      day_date = Date.parse(clear_day) rescue nil
+      if day_date
+        matches_scope = matches_scope.where("DATE(kickoff_at) = ?", day_date)
+      end
+    end
+
+    cleared_count = 0
     ActiveRecord::Base.transaction do
       case clear_type
-      when "schedule"
+      when "schedule", "day"
         # ล้างเฉพาะตารางแข่ง (วัน/เวลา, สนาม) - pitch_no reset เป็น 1 (default)
+        cleared_count = matches_scope.count
         matches_scope.update_all(kickoff_at: nil, pitch_no: 1)
       when "scores"
         # ล้างเฉพาะสกอร์
+        cleared_count = matches_scope.count
         matches_scope.update_all(home_score: nil, away_score: nil, decided_by_penalty: false, penalty_winner_side: nil)
       when "all"
         # ล้างทั้งหมด (ตาราง + สกอร์) - pitch_no reset เป็น 1 (default)
+        cleared_count = matches_scope.count
         matches_scope.update_all(kickoff_at: nil, pitch_no: 1, home_score: nil, away_score: nil, decided_by_penalty: false, penalty_winner_side: nil)
       end
     end
@@ -820,11 +833,12 @@ class TournamentsController < ApplicationController
     when "schedule" then "ล้างตารางแข่ง (วัน/เวลา, สนาม) เรียบร้อยแล้ว"
     when "scores" then "ล้างสกอร์เรียบร้อยแล้ว"
     when "all" then "ล้างตารางแข่งและสกอร์เรียบร้อยแล้ว"
+    when "day" then "ล้างตารางแข่งวันที่ #{clear_day} (#{cleared_count} คู่) เรียบร้อยแล้ว"
     end
 
-    redirect_to manage_schedule_tournament_path(@tournament), notice: message
+    redirect_back fallback_location: manage_schedule_tournament_path(@tournament), notice: message
   rescue StandardError => e
-    redirect_to manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
+    redirect_back fallback_location: manage_schedule_tournament_path(@tournament), alert: "เกิดข้อผิดพลาด: #{e.message}"
   end
 
   def regenerate_knockout
