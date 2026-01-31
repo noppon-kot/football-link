@@ -1362,7 +1362,8 @@ class TournamentsController < ApplicationController
 
       groups.each do |group|
         standings = compute_group_standings_for_tiebreaker(division, group)
-        tied_teams = find_tied_teams(standings)
+        total_matches = division.matches.group_stage.where(group_id: group.id).count
+        tied_teams = find_tied_teams(standings, total_matches)
         
         if tied_teams.any?
           division_data[:groups] << {
@@ -1476,8 +1477,15 @@ class TournamentsController < ApplicationController
     }
   end
 
-  def find_tied_teams(standings)
+  def find_tied_teams(standings, total_matches_in_group)
     tied_groups = []
+    
+    # Calculate expected matches per team: (n-1) matches where n = number of teams
+    num_teams = standings.size
+    expected_matches = num_teams > 1 ? (num_teams - 1) : 0
+    
+    # Check if all teams have played all their matches
+    all_matches_played = standings.all? { |s| s[:played] >= expected_matches }
     
     # Group teams by points
     by_pts = standings.group_by { |s| s[:pts] }
@@ -1485,11 +1493,12 @@ class TournamentsController < ApplicationController
     by_pts.each do |pts, teams|
       next if teams.size < 2
       
-      # Always show teams with same points (even if already ranked)
+      # Show teams with same points, but mark if matches are complete
       tied_groups << {
         pts: pts,
         teams: teams,
-        all_ranked: teams.all? { |t| t[:tiebreaker_rank].present? }
+        all_ranked: teams.all? { |t| t[:tiebreaker_rank].present? },
+        matches_complete: all_matches_played
       }
     end
     

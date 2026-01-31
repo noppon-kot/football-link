@@ -565,7 +565,17 @@
                                              else
                                                group_name.present? ? group_name : "-"
                                              end %>
-                            <tr data-match-row="<%= idx + 1 %>">
+                            <% download_row_bg = if match.knockout?
+                                                   case match.round_label.to_s
+                                                   when "FINAL" then "background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);"
+                                                   when "3RD" then "background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);"
+                                                   when "SF" then "background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);"
+                                                   when "QF" then "background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);"
+                                                   when "R16" then "background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);"
+                                                   else nil
+                                                   end
+                                                 end %>
+                            <tr data-match-row="<%= idx + 1 %>" style="<%= download_row_bg %>">
                               <td style="color:#0ea5e9;font-weight:600;white-space:nowrap;padding:8px 4px;font-size:11px;">คู่ที่ <%= idx + 1 %></td>
                               <td style="white-space:nowrap;padding:8px 4px;font-size:11px;"><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m %H:%M") : "-" %></td>
                               <td style="white-space:nowrap;padding:8px 4px;font-size:11px;"><%= match.tournament_division&.name || "-" %></td>
@@ -658,10 +668,18 @@
                                    round_code
                                  end %>
                 <% group_or_round = group_name.presence || round_title.presence || "-" %>
+                <% knockout_bg = case round_code
+                                 when "FINAL" then "background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);"
+                                 when "3RD" then "background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%);"
+                                 when "SF" then "background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);"
+                                 when "QF" then "background: linear-gradient(135deg, #90caf9 0%, #64b5f6 100%);"
+                                 when "R16" then "background: linear-gradient(135deg, #a5d6a7 0%, #81c784 100%);"
+                                 else nil
+                                 end if match.knockout? %>
 
                 <% team_text = [match.home_name, match.away_name].join(" ") %>
                   <div class="fixture-match-card" data-fixture-team-text="<%= team_text.downcase %>">
-                    <div class="fixture-match-card-header">
+                    <div class="fixture-match-card-header" style="<%= knockout_bg %>">
                       <div style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">คู่ที่ <%= match_no %> · <%= match.tournament_division&.name || "-" %></div>
                       <div style="white-space:nowrap;">
                         <%= match.kickoff_at.present? ? match.kickoff_at.strftime("%H:%M") : "-" %>
@@ -725,7 +743,17 @@
                 </thead>
                 <tbody>
                   <% @next_day_matches_page.each_with_index do |match, idx| %>
-                    <tr data-fixture-team-text="<%= [match.home_name, match.away_name].join(" ").downcase %>">
+                    <% row_bg = if match.knockout?
+                                  case match.round_label.to_s
+                                  when "FINAL" then "background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);"
+                                  when "3RD" then "background: linear-gradient(135deg, #ffe0b2 0%, #ffcc80 100%);"
+                                  when "SF" then "background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);"
+                                  when "QF" then "background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);"
+                                  when "R16" then "background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);"
+                                  else nil
+                                  end
+                                end %>
+                    <tr data-fixture-team-text="<%= [match.home_name, match.away_name].join(" ").downcase %>" style="<%= row_bg %>">
                       <td class="text-center" style="font-size:12px;white-space:nowrap;">
                         <%= link_to "คู่ที่ #{((@day_page - 1) * @day_per_page) + idx + 1}", match_tournament_path(@tournament, match_id: match.id), class: "text-decoration-none" %>
                       </td>
@@ -1648,8 +1676,18 @@
 
                           <div class="d-block d-md-none fixture-match-list fixture-mobile-only" data-fixture-scores-mobile>
                             <% matches.each_with_index do |match, idx| %>
+                              <% scores_knockout_bg = if match.knockout?
+                                                        case match.round_label.to_s
+                                                        when "FINAL" then "background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);"
+                                                        when "3RD" then "background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%);"
+                                                        when "SF" then "background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);"
+                                                        when "QF" then "background: linear-gradient(135deg, #90caf9 0%, #64b5f6 100%);"
+                                                        when "R16" then "background: linear-gradient(135deg, #a5d6a7 0%, #81c784 100%);"
+                                                        else nil
+                                                        end
+                                                      end %>
                               <div class="fixture-match-card" data-match-href="<%= match_tournament_path(@tournament, match_id: match.id) %>">
-                                <div class="fixture-match-card-header">
+                                <div class="fixture-match-card-header" style="<%= scores_knockout_bg %>">
                                   <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
                                   <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
                                     <span><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></span>
@@ -1838,8 +1876,18 @@
                         <div class="d-block d-md-none fixture-match-list fixture-mobile-only">
                           <% matches.each_with_index do |match, idx| %>
                             <% hs = match.home_score; as = match.away_score %>
+                            <% view_knockout_bg = if match.knockout?
+                                                    case match.round_label.to_s
+                                                    when "FINAL" then "background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);"
+                                                    when "3RD" then "background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%);"
+                                                    when "SF" then "background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);"
+                                                    when "QF" then "background: linear-gradient(135deg, #90caf9 0%, #64b5f6 100%);"
+                                                    when "R16" then "background: linear-gradient(135deg, #a5d6a7 0%, #81c784 100%);"
+                                                    else nil
+                                                    end
+                                                  end %>
                             <div class="fixture-match-card" data-match-href="<%= match_tournament_path(@tournament, match_id: match.id) %>">
-                              <div class="fixture-match-card-header">
+                              <div class="fixture-match-card-header" style="<%= view_knockout_bg %>">
                                 <div>คู่ที่ <%= (match.position.presence || (idx + 1)) %></div>
                                 <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
                                   <span><%= match.kickoff_at.present? ? match.kickoff_at.strftime("%d/%m/%Y %H:%M") : "ยังไม่ได้กำหนด" %></span>

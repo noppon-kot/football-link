@@ -42,9 +42,22 @@
 
                   <% tied_teams.each do |tied_group| %>
                     <% all_ranked = tied_group[:all_ranked] %>
-                    <div class="alert <%= all_ranked ? 'alert-success' : 'alert-warning' %> mb-3" style="font-size:13px;">
+                    <% matches_complete = tied_group[:matches_complete] %>
+                    <% alert_class = if !matches_complete
+                                       'alert-secondary'
+                                     elsif all_ranked
+                                       'alert-success'
+                                     else
+                                       'alert-warning'
+                                     end %>
+                    <div class="alert <%= alert_class %> mb-3" style="font-size:13px;">
                       <div class="fw-bold mb-2">
-                        <% if all_ranked %>
+                        <% if !matches_complete %>
+                          <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:4px;vertical-align:middle;">
+                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                          </svg>
+                          ทีมที่มีคะแนนเท่ากัน (<%= tied_group[:pts] %> แต้ม) - <span class="text-secondary">แข่งยังไม่ครบ</span>
+                        <% elsif all_ranked %>
                           <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:4px;vertical-align:middle;">
                             <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                           </svg>
@@ -61,17 +74,17 @@
                         <table class="table table-sm table-bordered mb-0" style="font-size:12px;background:#fff;">
                           <thead class="table-light">
                             <tr>
-                              <th style="width:50px;">ลำดับ</th>
+                              <th style="width:40px;">#</th>
                               <th>ทีม</th>
-                              <th style="width:50px;" class="text-center">แข่ง</th>
-                              <th style="width:50px;" class="text-center">ชนะ</th>
-                              <th style="width:50px;" class="text-center">เสมอ</th>
-                              <th style="width:50px;" class="text-center">แพ้</th>
-                              <th style="width:50px;" class="text-center">ได้</th>
-                              <th style="width:50px;" class="text-center">เสีย</th>
-                              <th style="width:50px;" class="text-center">+/-</th>
+                              <th style="width:45px;" class="text-center d-none d-md-table-cell">แข่ง</th>
+                              <th style="width:45px;" class="text-center d-none d-md-table-cell">ชนะ</th>
+                              <th style="width:45px;" class="text-center d-none d-md-table-cell">เสมอ</th>
+                              <th style="width:45px;" class="text-center d-none d-md-table-cell">แพ้</th>
+                              <th style="width:45px;" class="text-center d-none d-md-table-cell">ได้</th>
+                              <th style="width:45px;" class="text-center d-none d-md-table-cell">เสีย</th>
+                              <th style="width:45px;" class="text-center d-none d-md-table-cell">+/-</th>
                               <th style="width:50px;" class="text-center">แต้ม</th>
-                              <th style="width:120px;" class="text-center">ลำดับเข้ารอบ</th>
+                              <th style="width:100px;" class="text-center">ลำดับ</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -87,22 +100,23 @@
                                     <%= team[:team_name] %>
                                   </div>
                                 </td>
-                                <td class="text-center"><%= team[:played] %></td>
-                                <td class="text-center"><%= team[:won] %></td>
-                                <td class="text-center"><%= team[:draw] %></td>
-                                <td class="text-center"><%= team[:lost] %></td>
-                                <td class="text-center"><%= team[:gf] %></td>
-                                <td class="text-center"><%= team[:ga] %></td>
-                                <td class="text-center"><%= team[:gf] - team[:ga] %></td>
+                                <td class="text-center d-none d-md-table-cell"><%= team[:played] %></td>
+                                <td class="text-center d-none d-md-table-cell"><%= team[:won] %></td>
+                                <td class="text-center d-none d-md-table-cell"><%= team[:draw] %></td>
+                                <td class="text-center d-none d-md-table-cell"><%= team[:lost] %></td>
+                                <td class="text-center d-none d-md-table-cell"><%= team[:gf] %></td>
+                                <td class="text-center d-none d-md-table-cell"><%= team[:ga] %></td>
+                                <td class="text-center d-none d-md-table-cell"><%= team[:gf] - team[:ga] %></td>
                                 <td class="text-center fw-bold"><%= team[:pts] %></td>
                                 <td class="text-center">
                                   <%= select_tag "tiebreaker[#{team[:team_reg_id]}][tiebreaker_rank]",
                                         options_for_select(
-                                          [["เลือก...", ""]] + (1..tied_group[:teams].size).map { |n| ["อันดับ #{n}", n] },
+                                          [["เลือก...", ""]] + (1..tied_group[:teams].size).map { |n| ["#{n}", n] },
                                           team[:tiebreaker_rank]
                                         ),
                                         class: "form-select form-select-sm",
-                                        style: "font-size:11px;" %>
+                                        style: "font-size:11px;min-width:60px;",
+                                        disabled: !matches_complete %>
                                 </td>
                               </tr>
                             <% end %>
@@ -112,9 +126,13 @@
                       
                       <div class="d-flex justify-content-between align-items-center mt-2">
                         <div class="text-muted" style="font-size:11px;">
-                          <strong>วิธีใช้:</strong> เลือกลำดับตามผลจับสลากที่สนาม (อันดับ 1 = เข้ารอบก่อน)
+                          <% if matches_complete %>
+                            <strong>วิธีใช้:</strong> เลือกลำดับตามผลจับสลากที่สนาม (อันดับ 1 = เข้ารอบก่อน)
+                          <% else %>
+                            <span class="text-danger"><strong>หมายเหตุ:</strong> ต้องแข่งให้ครบก่อนจึงจะเลือกลำดับได้</span>
+                          <% end %>
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary">
+                        <button type="submit" class="btn btn-sm btn-primary" <%= 'disabled' unless matches_complete %>>
                           <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
                             <path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
                           </svg>
