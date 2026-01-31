@@ -3,7 +3,7 @@ require "set"
 class TournamentsController < ApplicationController
   # ให้ทุกคนเข้า view ได้ทุกเมนูของทัวร์นาเมนต์ ยกเว้น action ที่แก้ไขข้อมูล
   before_action :require_login, except: [:index, :show, :teams, :groups, :fixture, :table, :knockout, :package]
-  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout, :adjust_times, :tiebreaker, :update_tiebreaker]
+  before_action :set_tournament, only: [:show, :edit, :update, :approve, :teams, :groups, :fixture, :manage_schedule, :table, :knockout, :package, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :bulk_schedule, :destroy, :add_team_to_group, :add_match, :resolve_knockout_slots, :clear_schedule, :regenerate_knockout, :adjust_times, :tiebreaker, :update_tiebreaker, :update_knockout_teams]
   before_action :require_edit_permission, only: [:edit, :update]
   before_action :require_pro_plan, only: [:groups, :fixture, :table, :knockout, :generate_knockout, :generate_mock_schedule, :assign_slot_teams, :update_points, :update_scores, :update_knockout_teams]
   def index
@@ -1134,10 +1134,10 @@ class TournamentsController < ApplicationController
         away_resolved = resolve_slot_to_team(match.away_slot_label, standings_by_group, division)
         
         update_attrs = {}
-        if home_resolved && match.home_team_id.blank?
+        if home_resolved
           update_attrs[:home_team_id] = home_resolved[:team_id]
         end
-        if away_resolved && match.away_team_id.blank?
+        if away_resolved
           update_attrs[:away_team_id] = away_resolved[:team_id]
         end
         

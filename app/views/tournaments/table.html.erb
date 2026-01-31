@@ -334,6 +334,8 @@
 
                                 <% sorted = team_ids.map { |tid| 
                                   team_reg = TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, group_id: group.id, team_id: tid)
+                                  team_reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, team_id: tid)
+                                  team_reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, team_id: tid)
                                   tiebreaker = team_reg&.tiebreaker_rank || 999
                                   [tid, stats[tid].merge(tiebreaker_rank: tiebreaker)]
                                 }.sort_by { |tid, s| [-s[:pts], s[:tiebreaker_rank], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
@@ -438,6 +440,8 @@
 
                               <% sorted = team_ids.map { |tid| 
                                 team_reg = TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, group_id: group.id, team_id: tid)
+                                team_reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, team_id: tid)
+                                team_reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, team_id: tid)
                                 tiebreaker = team_reg&.tiebreaker_rank || 999
                                 [tid, stats[tid].merge(tiebreaker_rank: tiebreaker)]
                               }.sort_by { |tid, s| [-s[:pts], s[:tiebreaker_rank], -(s[:gf] - s[:ga]), -s[:gf], Team.find(tid).name] } %>
@@ -658,6 +662,8 @@
                 team = Team.find(tid)
                 s = stats[tid]
                 team_reg = TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, group_id: group.id, team_id: tid)
+                team_reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, tournament_division_id: div.id, team_id: tid)
+                team_reg ||= TeamRegistration.find_by(tournament_id: @tournament.id, team_id: tid)
                 tiebreaker = team_reg&.tiebreaker_rank || 999
                 { id: tid, name: team.name, logo_url: (team.logo.attached? ? Rails.application.routes.url_helpers.rails_blob_path(team.logo, only_path: true) : nil), pts: s[:pts], played: s[:played], won: s[:won], draw: s[:draw], lost: s[:lost], gf: s[:gf], ga: s[:ga], tiebreaker_rank: tiebreaker }
               }.sort_by { |t| [-t[:pts], t[:tiebreaker_rank], -(t[:gf] - t[:ga]), -t[:gf], t[:name]] }
