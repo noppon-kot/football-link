@@ -349,7 +349,7 @@ module Tournaments
         end
       end
 
-      # สร้าง mapping: รองรับทั้ง format เก่าและใหม่
+      # สร้าง mapping: รองรับทุก format
       slot_to_team = {}
       
       # Format ใหม่: R1#1, R1#2, R2#1, ...
@@ -360,13 +360,21 @@ module Tournaments
       end
 
       # Format เก่า: R1, R2, R3, R4, ... (เรียงตามผลงานรวม)
-      # รวมทีมทั้งหมดแล้วเรียงตามผลงาน
       all_teams_sorted = []
       teams_by_rank.keys.sort.each do |rank|
         all_teams_sorted.concat(teams_by_rank[rank])
       end
       all_teams_sorted.each_with_index do |t, idx|
         slot_to_team["R#{idx + 1}"] = t[:team_id]
+      end
+
+      # Format: 1A, 2A, 1B, 2B, 1C, 2C, 1D, 2D, ... (อันดับ + ชื่อสาย)
+      ordered_groups.each do |g|
+        standings = standings_by_group[g.id] || []
+        standings.each_with_index do |(team_id, _stats), rank_idx|
+          rank = rank_idx + 1
+          slot_to_team["#{rank}#{g.name}"] = team_id
+        end
       end
 
       # อัพเดททีมตาม slot label ในแมตช์

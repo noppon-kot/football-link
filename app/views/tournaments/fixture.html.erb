@@ -442,6 +442,16 @@
                 <path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4.01 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 1.4-1.42L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a1 1 0 0 1 1-1Z" fill="currentColor"/>
               </svg>
             </button>
+
+            <%# ปุ่มดู Bracket สำหรับทุกคน %>
+            <% has_knockout = @tournament.tournament_divisions.any? { |d| d.matches.knockout.exists? } %>
+            <% if has_knockout %>
+              <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#knockoutBracketModalPublic" title="ดู Bracket" aria-label="ดู Bracket" style="line-height:1;padding:6px 8px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                  <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10 0h8v8h-8v-8zm0-10h8v8h-8V3z" fill="currentColor"/>
+                </svg>
+              </button>
+            <% end %>
           </div>
         </div>
         <div class="card-body" style="background:#f3f4f6;">
@@ -1580,15 +1590,26 @@
                   <% teams_by_group[g.name.to_s] = division_teams.select { |t| ids.include?(t.id) } %>
                 <% end %>
 
+                <% knockout_matches_for_bracket = div_matches.select(&:knockout?).sort_by { |m| [m.round_number || 999, m.position || 0, m.id] } %>
                 <div class="mb-3 p-2 p-md-3 rounded" style="background-color:#f8f9fa;">
-                  <div class="d-flex align-items-center mb-2" style="gap:8px;">
-                    <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
-                    <div>
-                      <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
-                      <% if can_manage_registrations?(@tournament) %>
-                        <div style="font-size:11px;color:#78909c;">ตารางแข่งขันแบบ mock ตามสายในรุ่นนี้</div>
-                      <% end %>
+                  <div class="d-flex align-items-center justify-content-between mb-2" style="gap:8px;">
+                    <div class="d-flex align-items-center" style="gap:8px;">
+                      <div class="border-start border-4 <%= color_class %>" style="height:20px;"></div>
+                      <div>
+                        <div class="fw-bold" style="font-size:13px;">รุ่น <%= div.name %></div>
+                        <% if can_manage_registrations?(@tournament) %>
+                          <div style="font-size:11px;color:#78909c;">ตารางแข่งขันแบบ mock ตามสายในรุ่นนี้</div>
+                        <% end %>
+                      </div>
                     </div>
+                    <% if knockout_matches_for_bracket.any? %>
+                      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#knockoutBracketModal-<%= div.id %>">
+                        <svg viewBox="0 0 24 24" width="14" height="14" style="margin-right:4px;">
+                          <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10 0h8v8h-8v-8zm0-10h8v8h-8V3z" fill="currentColor"/>
+                        </svg>
+                        ดู Bracket
+                      </button>
+                    <% end %>
                   </div>
 
                   <% matches_by_group = div_matches.group_by do |m| %>
@@ -2203,6 +2224,253 @@
                     <%= submit_tag "บันทึกเวลา", class: "btn btn-primary" %>
                   </div>
                 <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Knockout Bracket Modals %>
+      <% divisions.each do |div| %>
+        <% knockout_matches = div.matches.knockout.order(:round_number, :position, :id).to_a %>
+        <% next if knockout_matches.empty? %>
+        
+        <% rounds_grouped = knockout_matches.group_by(&:round_number) %>
+        <% sorted_rounds = rounds_grouped.keys.compact.sort %>
+        
+        <div class="modal fade" id="knockoutBracketModal-<%= div.id %>" tabindex="-1" aria-labelledby="knockoutBracketModalLabel-<%= div.id %>" aria-hidden="true">
+          <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="knockoutBracketModalLabel-<%= div.id %>">
+                  <svg viewBox="0 0 24 24" width="20" height="20" style="margin-right:8px;">
+                    <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10 0h8v8h-8v-8zm0-10h8v8h-8V3z" fill="currentColor"/>
+                  </svg>
+                  Knockout Bracket - รุ่น <%= div.name %>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body" style="overflow-x:auto;">
+                <div class="knockout-bracket" style="display:flex;align-items:stretch;min-width:max-content;padding:16px;">
+                  <% sorted_rounds.each_with_index do |round_num, round_idx| %>
+                    <% round_matches = rounds_grouped[round_num].sort_by { |m| [m.position || 0, m.id] } %>
+                    <% round_label = round_matches.first&.round_label || "R#{round_num}" %>
+                    <% round_title = case round_label
+                                     when "SF" then "รอบ 4 ทีม"
+                                     when "QF" then "รอบ 8 ทีม"
+                                     when "R16" then "รอบ 16 ทีม"
+                                     when "R32" then "รอบ 32 ทีม"
+                                     when "FINAL" then "ชิงชนะเลิศ"
+                                     when "3RD" then "ชิงอันดับ 3"
+                                     else round_label
+                                     end %>
+                    
+                    <div class="bracket-round" style="display:flex;flex-direction:column;min-width:260px;">
+                      <div style="text-align:center;font-weight:bold;font-size:13px;color:#546e7a;padding:8px;background:#e3f2fd;border-radius:8px;margin-bottom:12px;">
+                        <%= round_title %>
+                      </div>
+                      
+                      <div style="display:flex;flex-direction:column;justify-content:space-around;flex:1;">
+                        <% round_matches.each do |match| %>
+                          <% has_result = match.home_score.present? && match.away_score.present? %>
+                          <% home_won = has_result && match.home_score.to_i > match.away_score.to_i %>
+                          <% away_won = has_result && match.away_score.to_i > match.home_score.to_i %>
+                          <% if has_result && match.home_score == match.away_score && match.penalty_winner_side.present? %>
+                            <% home_won = match.penalty_winner_side == "home" %>
+                            <% away_won = match.penalty_winner_side == "away" %>
+                          <% end %>
+                          
+                          <div class="bracket-match" style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin:8px 0;">
+                            <div style="background:#f5f5f5;padding:6px 10px;font-size:11px;color:#78909c;border-bottom:1px solid #e0e0e0;">
+                              <% if match.kickoff_at.present? %>
+                                Date <%= match.kickoff_at.strftime("%d/%m/%Y") %> Time <%= match.kickoff_at.strftime("%H:%M") %>
+                              <% else %>
+                                ยังไม่กำหนดเวลา
+                              <% end %>
+                            </div>
+                            
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #f0f0f0;<%= home_won ? 'background:#e8f5e9;' : '' %>">
+                              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                                <% if match.home_team&.logo&.attached? %>
+                                  <%= image_tag match.home_team.logo, style: "width:24px;height:24px;border-radius:50%;object-fit:cover;" %>
+                                <% else %>
+                                  <div style="width:24px;height:24px;border-radius:50%;background:#e0e0e0;"></div>
+                                <% end %>
+                                <span style="font-size:13px;font-weight:<%= home_won ? '700' : '500' %>;color:<%= home_won ? '#2e7d32' : '#333' %>;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                  <%= match.home_name %>
+                                </span>
+                              </div>
+                              <span style="font-size:15px;font-weight:700;color:<%= home_won ? '#2e7d32' : '#666' %>;min-width:24px;text-align:right;">
+                                <%= match.home_score.present? ? match.home_score : '' %>
+                              </span>
+                            </div>
+                            
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;<%= away_won ? 'background:#e8f5e9;' : '' %>">
+                              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                                <% if match.away_team&.logo&.attached? %>
+                                  <%= image_tag match.away_team.logo, style: "width:24px;height:24px;border-radius:50%;object-fit:cover;" %>
+                                <% else %>
+                                  <div style="width:24px;height:24px;border-radius:50%;background:#e0e0e0;"></div>
+                                <% end %>
+                                <span style="font-size:13px;font-weight:<%= away_won ? '700' : '500' %>;color:<%= away_won ? '#2e7d32' : '#333' %>;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                  <%= match.away_name %>
+                                </span>
+                              </div>
+                              <span style="font-size:15px;font-weight:700;color:<%= away_won ? '#2e7d32' : '#666' %>;min-width:24px;text-align:right;">
+                                <%= match.away_score.present? ? match.away_score : '' %>
+                              </span>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                    
+                    <%# Connector lines %>
+                    <% if round_idx < sorted_rounds.size - 1 && round_matches.size >= 2 %>
+                      <div style="display:flex;flex-direction:column;justify-content:space-around;width:30px;padding:40px 0;">
+                        <% (round_matches.size / 2).times do |pair_idx| %>
+                          <div style="position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;">
+                            <div style="position:absolute;left:0;top:25%;bottom:25%;width:15px;border-top:2px solid #bdbdbd;border-right:2px solid #bdbdbd;border-bottom:2px solid #bdbdbd;border-radius:0 4px 4px 0;"></div>
+                            <div style="position:absolute;right:0;top:50%;width:15px;height:2px;background:#bdbdbd;transform:translateY(-50%);"></div>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% elsif round_idx < sorted_rounds.size - 1 %>
+                      <div style="width:30px;"></div>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Public Knockout Bracket Modal (สำหรับทุกคน) %>
+      <% divisions_with_knockout = @tournament.tournament_divisions.select { |d| d.matches.knockout.exists? } %>
+      <% if divisions_with_knockout.any? %>
+        <div class="modal fade" id="knockoutBracketModalPublic" tabindex="-1" aria-labelledby="knockoutBracketModalPublicLabel" aria-hidden="true">
+          <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="knockoutBracketModalPublicLabel">
+                  <svg viewBox="0 0 24 24" width="20" height="20" style="margin-right:8px;">
+                    <path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10 0h8v8h-8v-8zm0-10h8v8h-8V3z" fill="currentColor"/>
+                  </svg>
+                  Knockout Bracket
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body" style="overflow-x:auto;">
+                <% divisions_with_knockout.each do |div| %>
+                  <% knockout_matches = div.matches.knockout.order(:round_number, :position, :id).to_a %>
+                  <% next if knockout_matches.empty? %>
+                  
+                  <% rounds_grouped = knockout_matches.group_by(&:round_number) %>
+                  <% sorted_rounds = rounds_grouped.keys.compact.sort %>
+                  
+                  <div class="mb-4">
+                    <h6 class="fw-bold mb-3" style="color:#1976d2;">รุ่น <%= div.name %></h6>
+                    <div class="knockout-bracket" style="display:flex;align-items:stretch;min-width:max-content;padding:8px 0;">
+                      <% sorted_rounds.each_with_index do |round_num, round_idx| %>
+                        <% round_matches = rounds_grouped[round_num].sort_by { |m| [m.position || 0, m.id] } %>
+                        <% round_label = round_matches.first&.round_label || "R#{round_num}" %>
+                        <% round_title = case round_label
+                                         when "SF" then "รอบ 4 ทีม"
+                                         when "QF" then "รอบ 8 ทีม"
+                                         when "R16" then "รอบ 16 ทีม"
+                                         when "R32" then "รอบ 32 ทีม"
+                                         when "FINAL" then "ชิงชนะเลิศ"
+                                         when "3RD" then "ชิงอันดับ 3"
+                                         else round_label
+                                         end %>
+                        <% match_height = 90 %>
+                        <% match_gap = 16 %>
+                        <% first_round_matches_count = rounds_grouped[sorted_rounds.first]&.size || 1 %>
+                        
+                        <div class="bracket-round" style="display:flex;flex-direction:column;min-width:240px;">
+                          <div style="text-align:center;font-weight:bold;font-size:12px;color:#546e7a;padding:6px;background:#e3f2fd;border-radius:6px;margin-bottom:12px;">
+                            <%= round_title %>
+                          </div>
+                          
+                          <div style="display:flex;flex-direction:column;justify-content:space-around;flex:1;">
+                            <% round_matches.each_with_index do |match, match_idx| %>
+                              <% has_result = match.home_score.present? && match.away_score.present? %>
+                              <% home_won = has_result && match.home_score.to_i > match.away_score.to_i %>
+                              <% away_won = has_result && match.away_score.to_i > match.home_score.to_i %>
+                              <% if has_result && match.home_score == match.away_score && match.penalty_winner_side.present? %>
+                                <% home_won = match.penalty_winner_side == "home" %>
+                                <% away_won = match.penalty_winner_side == "away" %>
+                              <% end %>
+                              
+                              <div class="bracket-match" style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.06);margin:8px 0;">
+                                <div style="background:#f5f5f5;padding:4px 8px;font-size:10px;color:#78909c;border-bottom:1px solid #e0e0e0;">
+                                  <% if match.kickoff_at.present? %>
+                                    Date <%= match.kickoff_at.strftime("%d/%m/%Y") %> Time <%= match.kickoff_at.strftime("%H:%M") %>
+                                  <% else %>
+                                    ยังไม่กำหนดเวลา
+                                  <% end %>
+                                </div>
+                                
+                                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #f0f0f0;<%= home_won ? 'background:#e8f5e9;' : '' %>">
+                                  <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+                                    <% if match.home_team&.logo&.attached? %>
+                                      <%= image_tag match.home_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;" %>
+                                    <% else %>
+                                      <div style="width:20px;height:20px;border-radius:50%;background:#e0e0e0;"></div>
+                                    <% end %>
+                                    <span style="font-size:12px;font-weight:<%= home_won ? '700' : '500' %>;color:<%= home_won ? '#2e7d32' : '#333' %>;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                      <%= match.home_name %>
+                                    </span>
+                                  </div>
+                                  <span style="font-size:14px;font-weight:700;color:<%= home_won ? '#2e7d32' : '#666' %>;min-width:20px;text-align:right;">
+                                    <%= match.home_score.present? ? match.home_score : '' %>
+                                  </span>
+                                </div>
+                                
+                                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;<%= away_won ? 'background:#e8f5e9;' : '' %>">
+                                  <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+                                    <% if match.away_team&.logo&.attached? %>
+                                      <%= image_tag match.away_team.logo, style: "width:20px;height:20px;border-radius:50%;object-fit:cover;" %>
+                                    <% else %>
+                                      <div style="width:20px;height:20px;border-radius:50%;background:#e0e0e0;"></div>
+                                    <% end %>
+                                    <span style="font-size:12px;font-weight:<%= away_won ? '700' : '500' %>;color:<%= away_won ? '#2e7d32' : '#333' %>;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                      <%= match.away_name %>
+                                    </span>
+                                  </div>
+                                  <span style="font-size:14px;font-weight:700;color:<%= away_won ? '#2e7d32' : '#666' %>;min-width:20px;text-align:right;">
+                                    <%= match.away_score.present? ? match.away_score : '' %>
+                                  </span>
+                                </div>
+                              </div>
+                            <% end %>
+                          </div>
+                        </div>
+                        
+                        <%# Connector lines %>
+                        <% if round_idx < sorted_rounds.size - 1 && round_matches.size >= 2 %>
+                          <div style="display:flex;flex-direction:column;justify-content:space-around;width:30px;padding:30px 0;">
+                            <% (round_matches.size / 2).times do |pair_idx| %>
+                              <div style="position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;">
+                                <div style="position:absolute;left:0;top:25%;bottom:25%;width:15px;border-top:2px solid #bdbdbd;border-right:2px solid #bdbdbd;border-bottom:2px solid #bdbdbd;border-radius:0 4px 4px 0;"></div>
+                                <div style="position:absolute;right:0;top:50%;width:15px;height:2px;background:#bdbdbd;transform:translateY(-50%);"></div>
+                              </div>
+                            <% end %>
+                          </div>
+                        <% elsif round_idx < sorted_rounds.size - 1 %>
+                          <div style="width:30px;"></div>
+                        <% end %>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
               </div>
             </div>
           </div>
