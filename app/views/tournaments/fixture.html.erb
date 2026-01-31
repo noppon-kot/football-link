@@ -1613,10 +1613,10 @@
 
           <% all_matches = @all_matches_for_all_match || [] %>
 
-          <% if divisions.any? && all_matches.any? %>
+          <% if divisions&.any? && all_matches.any? %>
             <% color_classes = ["border-primary", "border-success", "border-warning", "border-info", "border-danger"] %>
 
-              <% divisions.each_with_index do |div, idx| %>
+              <% (divisions || []).each_with_index do |div, idx| %>
                 <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
                 <% next if div_matches.empty? %>
 
@@ -2112,7 +2112,7 @@
                 </div>
 
 
-          <% elsif divisions.any? %>
+          <% elsif divisions&.any? %>
             <div class="alert alert-info" role="alert">
               <p class="mb-0 text-muted" style="font-size:13px;">ยังไม่มีการสร้างโปรแกรมแข่งขันสำหรับรุ่นใดเลย</p>
             </div>
@@ -2208,7 +2208,7 @@
 
                     <div class="mt-3 fw-bold" style="font-size:12px;">2) รายการคู่ทั้งหมด (คลิกเพื่อเพิ่มเข้าคิว)</div>
                     <div style="max-height:38vh;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-top:8px;">
-                      <% divisions.each do |div| %>
+                      <% (divisions || []).each do |div| %>
                         <% div_matches = all_matches.select { |m| m.tournament_division_id == div.id } %>
                         <% next if div_matches.empty? %>
                         <div class="fw-bold" style="font-size:12px;margin:8px 0 6px 0;">รุ่น <%= div.name %></div>
@@ -2283,7 +2283,7 @@
       <% end %>
 
       <%# Knockout Bracket Modals %>
-      <% divisions.each do |div| %>
+      <% (divisions || []).each do |div| %>
         <% knockout_matches = div.matches.knockout.order(:round_number, :position, :id).to_a %>
         <% next if knockout_matches.empty? %>
         
