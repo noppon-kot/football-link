@@ -751,9 +751,16 @@ class TournamentsController < ApplicationController
         end
 
         if update_attrs.any?
+          # ตรวจสอบว่ามีการเปลี่ยนทีมในรอบ knockout หรือไม่
+          team_changed = match.knockout? && (update_attrs[:home_team_id].present? || update_attrs[:away_team_id].present?)
+          
           match.update!(update_attrs)
           affected_division_ids << match.tournament_division_id
 
+          # ถ้าเปลี่ยนทีมในรอบ knockout ให้ cascade update ทีมในรอบถัดไปทันที
+          if team_changed
+            ::Tournaments::AutoAdvanceKnockoutWinnersService.new(division: match.tournament_division).call
+          end
         end
       end
     end
