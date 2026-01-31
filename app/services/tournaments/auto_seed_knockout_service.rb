@@ -148,12 +148,20 @@ module Tournaments
         [-s[:pts], -gd, -s[:gf]]
       end
 
-      # สร้าง mapping: R1#x, R2#x => team_id
+      # สร้าง mapping: รองรับทั้ง format เก่าและใหม่
       slot_to_team = {}
+      
+      # Format ใหม่: R1#1, R1#2, R1#3, R2#1
       slot_to_team["R1#1"] = champions[0][:team_id] if champions[0]
       slot_to_team["R1#2"] = champions[1][:team_id] if champions[1]
       slot_to_team["R1#3"] = champions[2][:team_id] if champions[2]
       slot_to_team["R2#1"] = runner_up_candidates[0][:team_id] if runner_up_candidates[0]
+      
+      # Format เก่า: R1, R2, R3, R4 (เรียงตามผลงานรวม)
+      slot_to_team["R1"] = champions[0][:team_id] if champions[0]
+      slot_to_team["R2"] = champions[1][:team_id] if champions[1]
+      slot_to_team["R3"] = champions[2][:team_id] if champions[2]
+      slot_to_team["R4"] = runner_up_candidates[0][:team_id] if runner_up_candidates[0]
 
       # อัพเดททีมตาม slot label ในแมตช์
       sf_matches = @division.matches.knockout.where(round_number: 1).order(:position, :id).to_a
@@ -218,11 +226,26 @@ module Tournaments
       sort_by_performance.call(rank2_teams)
       sort_by_performance.call(rank3_teams)
 
-      # สร้าง mapping: R1#x, R2#x, R3#x => team_id
+      # สร้าง mapping: รองรับทั้ง format เก่าและใหม่
       slot_to_team = {}
+      
+      # Format ใหม่: R1#x, R2#x, R3#x
       rank1_teams.each_with_index { |t, i| slot_to_team["R1##{i + 1}"] = t[:team_id] }
       rank2_teams.each_with_index { |t, i| slot_to_team["R2##{i + 1}"] = t[:team_id] }
       rank3_teams.each_with_index { |t, i| slot_to_team["R3##{i + 1}"] = t[:team_id] }
+      
+      # Format เก่า: R1-R8 (เรียงตามผลงานรวม)
+      all_teams = rank1_teams + rank2_teams + rank3_teams.first(2)
+      all_teams.each_with_index { |t, i| slot_to_team["R#{i + 1}"] = t[:team_id] }
+      
+      # Format เก่า: 1A, 2A, 1B, 2B, 1C, 2C, BP1, BP2
+      group_names = ordered_groups.map { |g| g.name.presence || ('A'.ord + ordered_groups.index(g)).chr }
+      ordered_groups.each_with_index do |g, idx|
+        standings = standings_by_group[g.id]
+        slot_to_team["1#{group_names[idx]}"] = standings[0][0] if standings.size >= 1
+        slot_to_team["2#{group_names[idx]}"] = standings[1][0] if standings.size >= 2
+      end
+      rank3_teams.first(2).each_with_index { |t, i| slot_to_team["BP#{i + 1}"] = t[:team_id] }
 
       # อัพเดททีมตาม slot label ในแมตช์
       qf_matches = @division.matches.knockout.where(round_number: 1).order(:position, :id).to_a
@@ -296,7 +319,7 @@ module Tournaments
     end
 
     # Generic seeding สำหรับทุกขนาด bracket และจำนวนสาย
-    # รองรับ R#x labels: R1#1, R1#2, ..., R2#1, R2#2, ...
+    # รองรับทั้ง format เก่า (R1, R2, R3, R4) และ format ใหม่ (R1#1, R1#2, R2#1)
     # หลักการ: จัดทีมตาม slot label ในแมตช์
     def seed_generic(groups, standings_by_group)
       return if groups.empty?
@@ -326,12 +349,24 @@ module Tournaments
         end
       end
 
-      # สร้าง mapping: R#x => team_id
+      # สร้าง mapping: รองรับทั้ง format เก่าและใหม่
       slot_to_team = {}
+      
+      # Format ใหม่: R1#1, R1#2, R2#1, ...
       teams_by_rank.each do |rank, teams|
         teams.each_with_index do |t, order|
           slot_to_team["R#{rank}##{order + 1}"] = t[:team_id]
         end
+      end
+
+      # Format เก่า: R1, R2, R3, R4, ... (เรียงตามผลงานรวม)
+      # รวมทีมทั้งหมดแล้วเรียงตามผลงาน
+      all_teams_sorted = []
+      teams_by_rank.keys.sort.each do |rank|
+        all_teams_sorted.concat(teams_by_rank[rank])
+      end
+      all_teams_sorted.each_with_index do |t, idx|
+        slot_to_team["R#{idx + 1}"] = t[:team_id]
       end
 
       # อัพเดททีมตาม slot label ในแมตช์
